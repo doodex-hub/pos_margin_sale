@@ -7,11 +7,18 @@ class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
 
-    is_rental_order = fields.Boolean(string="Rental Order", default=False)  
+    is_rental_order_installed_true = fields.Boolean(default=False, compute='_compute_is_rental_order_installed', store=False)
+
+    def _compute_is_rental_order_installed(self):
+        for record in self:
+            if hasattr(self, 'is_rental_order') and self.is_rental_order:
+                record.is_rental_order_installed_true = True
+            else:
+                record.is_rental_order_installed_true = False
 
     def action_confirm(self):
 
-        if self.is_rental_order:
+        if self.is_rental_order_installed_true:
             return super(SaleOrder, self).action_confirm()  
 
         skip_check_price = self._context.get('skip_check_price')
@@ -58,7 +65,7 @@ class SaleOrder(models.Model):
         products = []
 
     # Skip checking if this is a rental order
-        if self.is_rental_order:
+        if self.is_rental_order_installed_true:
             return products # Empty list, so no validation error will trigger
 
         for line in self.order_line:
