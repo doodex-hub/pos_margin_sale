@@ -18,7 +18,7 @@
 
     'depends': [
         'base', 
-        # 'point_of_sale', 
+        'point_of_sale', 
         'product', 
         'sale', 
         'stock_account'

@@ -12,10 +12,13 @@ class SaleConfirmationWizard(models.TransientModel):
     def action_confirm(self):
         active_model = self._context.get('active_model')
         active_id = self._context.get('active_ids')
+        
         if active_model == 'sale.order':
             sale = self.env[active_model].browse(active_id)
-            sale.with_context(skip_check_price=True).action_confirm()
-
+            if sale.is_rental_order_installed_true():
+                sale.action_confirm()
+            else:
+                sale.with_context(skip_check_price=True).action_confirm()
     
 
             
