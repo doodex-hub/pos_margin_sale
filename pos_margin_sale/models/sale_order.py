@@ -63,11 +63,6 @@ class SaleOrder(models.Model):
 
     def check_product_price(self):
         products = []
-
-    # Skip checking if this is a rental order
-        if self.is_rental_order_installed_true:
-            return products # Empty list, so no validation error will trigger
-
         for line in self.order_line:
             if line.price_unit < line.minimum_sale_price:
                 products.append(line.product_id)
