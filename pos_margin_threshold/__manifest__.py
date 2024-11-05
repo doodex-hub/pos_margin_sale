@@ -20,7 +20,6 @@
         'base', 
         'point_of_sale', 
         'product', 
-
         'stock_account'
     ],
 

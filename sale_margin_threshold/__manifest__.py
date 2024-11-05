@@ -31,6 +31,11 @@
         'wizard/wizard_margin_product.xml',
     ],
 
+    'assets': {
+        'sale_margin_threshold._assets_sale': [
+            'sale_margin_threshold/static/src/**/*', 
+        ]
+    },
     'demo': [
         'demo/demo.xml',
     ],
