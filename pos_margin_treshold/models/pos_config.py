@@ -5,7 +5,7 @@ class PosConfig(models.Model):
     _inherit = 'pos.config'
 
     is_blocked_warning = fields.Boolean(string="Blocked warning", compute='_compute_blocked_warning')
-
+    epson_printer_ip = fields.Char(string='Epson Printer IP')
 
     def _compute_blocked_warning(self):
         for record in self:
