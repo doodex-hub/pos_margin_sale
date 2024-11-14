@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 {
-    'name': "POS Margin Treshold",
+    'name': "POS Margin Threshold",
 
     'summary': "Ensure products are sold above their minimum price with margin checks in POS orders.",
 
