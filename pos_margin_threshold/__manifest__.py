@@ -32,9 +32,9 @@
 
     'assets': {
         'point_of_sale.assets': [
-            'pos_margin_treshold/static/src/**/*.js',
-            'pos_margin_treshold/static/src/**/*.xml',
-            'pos_margin_treshold/static/src/**/*.scss',
+            'pos_margin_threshold/static/src/**/*.js',
+            'pos_margin_threshold/static/src/**/*.xml',
+            'pos_margin_threshold/static/src/**/*.scss',
         ]
     },
 

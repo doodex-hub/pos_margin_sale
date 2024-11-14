@@ -1,4 +1,4 @@
-odoo.define('pos_margin_treshold.models', function (require) {
+odoo.define('pos_margin_threshold.models', function (require) {
     "use strict";
 
     const { PosGlobalState, Product, Orderline } = require('point_of_sale.models');

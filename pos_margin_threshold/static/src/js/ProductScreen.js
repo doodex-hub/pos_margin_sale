@@ -1,4 +1,4 @@
-odoo.define('pos_margin_treshold.ProductScreen', function (require) {
+odoo.define('pos_margin_threshold.ProductScreen', function (require) {
     "use strict";
 
     const ProductScreen = require('point_of_sale.ProductScreen');
