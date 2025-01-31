@@ -6,9 +6,10 @@ from odoo.exceptions import ValidationError
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
-
+    price_unit = fields.Float(string="Price unit")
     is_rental_order_installed_true = fields.Boolean(default=False, compute='_compute_is_rental_order_installed', store=False)
-
+    minimum_sale_price = fields.Float(comodel_name='product.template', string="Minimum sale price")
+    minimum_sale_price_with_tax = fields.Float(comodel_name='product.template', string="Minimum sale price with tax")
     def _compute_is_rental_order_installed(self):
         for record in self:
             if hasattr(self, 'is_rental_order') and self.is_rental_order:
@@ -71,5 +72,6 @@ class SaleOrder(models.Model):
 class SaleOrderLine(models.Model):
     _inherit = 'sale.order.line'
 
-
+    price_unit = fields.Float(string="Price unit")
     minimum_sale_price = fields.Float(string="Minimum sale price", related='product_id.minimum_sale_price')
+    minimum_sale_price_with_tax = fields.Float(string="Minimum sale price with tax", related='product_id.minimum_sale_price_with_tax')
