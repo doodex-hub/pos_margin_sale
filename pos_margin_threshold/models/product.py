@@ -61,6 +61,11 @@ class ProductProduct(models.Model):
     minimum_sale_price = fields.Float(string="Minimum sale price", compute="_compute_minimum_sale_price", inverse='_inverse_minimum_sale_price', store=True, readonly=False)
     is_less_minimum_sale = fields.Boolean(string="Less minimum price", compute="_compute_warning")
 
+    @api.model
+    def get_minimal_price_tax(self, product_id):
+        model = self.env['product.product'].browse(product_id)
+        return model.minimum_sale_price_with_tax
+
     @api.onchange('margin_sale')
     def _set_product_margin_sale(self):
         for rec in self:

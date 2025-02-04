@@ -14,7 +14,7 @@
     'website': "https://www.doodex.net",
     'license': "AGPL-3",
     'category': 'Point of Sale',
-    'version': '17.0.1.0',
+    'version': '18.0.1.0',
 
     'depends': [
         'base', 
@@ -31,9 +31,13 @@
     ],
 
     'assets': {
+        'point_of_sale.base_app': [
+            'pos_margin_threshold/static/src/store/orderline.xml',
+            'pos_margin_threshold/static/src/store/pos_store.js'
+        ],
         'point_of_sale._assets_pos': [
-            'pos_margin_threshold/static/src/**/*', 
-        ]
+            'pos_margin_threshold/static/src/store/models/models.js'
+        ],
     },
 
     'demo': [

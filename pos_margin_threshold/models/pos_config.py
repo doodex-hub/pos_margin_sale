@@ -6,6 +6,13 @@ class PosConfig(models.Model):
 
     is_blocked_warning = fields.Boolean(string="Blocked warning", compute='_compute_blocked_warning')
 
+    @api.model
+    def get_block_config(self):
+        block_warning = self.env['ir.config_parameter'].sudo().get_param('post_margin_sale.blocking_transaction_pos')
+        if block_warning:
+            return True
+        else:
+            return False
 
     def _compute_blocked_warning(self):
         for record in self:

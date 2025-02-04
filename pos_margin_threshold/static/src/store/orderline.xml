@@ -7,7 +7,7 @@
                 {{ line.isLessMinimumSalePrice ? 'text-danger' : '' }}
             </attribute>
         </xpath>
-        <xpath expr="//li[contains(@class, 'orderline')]/ul[hasclass('info-list')]/t[@t-slot='default']" position="before">
+        <xpath expr="//li[contains(@class, 'orderline')]/div[hasclass('flex-column')]/ul[hasclass('info-list')]/t[@t-slot='default']" position="before">
             <li t-if="line.isLessMinimumSalePrice">
                 <strong>*The price of this product is less than minimum sale price <t t-esc="line.minimumSalePriceWithTax"/></strong> 
             </li>
