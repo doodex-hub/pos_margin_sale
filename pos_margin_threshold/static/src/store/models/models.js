@@ -105,5 +105,8 @@ patch(PosStore.prototype, {
                 });
             }
         }
+        else{
+            return super.pay(...arguments);
+        }
     }
 });
