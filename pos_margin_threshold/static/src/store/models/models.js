@@ -40,7 +40,7 @@ Orderline.props = {
 
 patch(PosOrderline.prototype, {
     getDisplayData() {
-        const priceStr = formatCurrency(this.get_unit_display_price(), this.currency).replace(/[^0-9.]/g, ""); // Removes any non-numeric characters except the decimal point
+        const priceStr = this.get_unit_display_price(); // Removes any non-numeric characters except the decimal point
         const priceNum = parseFloat(priceStr); // Converts cleaned string to a float
         const isLessMinimumSalePrice = !isNaN(priceNum) && priceNum < this.product_id.minimal_price_tax; // Ensures it's a valid number before comparison
         return {
