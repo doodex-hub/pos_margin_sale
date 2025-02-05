@@ -15,7 +15,21 @@ class ProductTemplate(models.Model):
     minimum_sale_price = fields.Float(string="Minimum sale price", compute='_compute_minimum_sale_price', 
                                       inverse='_inverse_minimum_sale_price', store=True, readonly=False)
     minimum_sale_price_with_tax = fields.Float(string="Minimum sale price (Tax include)", compute='_compute_minimum_sale_price_with_tax', store=True)
-    
+    module_pos_margin_threshold = fields.Boolean(
+    compute='_compute_module_pos_margin_threshold',
+        store=False,
+    )
+
+    @api.depends_context('uid')
+    def _compute_module_pos_margin_threshold(self):
+        pos_margin_installed = self.env['ir.module.module'].search([
+            ('name', '=', 'pos_margin_threshold'),
+            ('state', '=', 'installed')
+        ], limit=1)
+        
+        for record in self:
+            record.module_pos_margin_threshold = bool(pos_margin_installed) 
+            
     @api.depends('categ_id.margin_sale')
     def _compute_margin_sale(self):
         for rec in self:

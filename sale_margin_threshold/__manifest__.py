@@ -27,6 +27,8 @@
         'security/ir.model.access.csv',
         'views/res_config_settings.xml',
         'views/sale_order.xml',
+        'views/products_template.xml',
+        'views/product.xml',
         'wizard/sale_confirmation.xml',
         'wizard/wizard_margin_product.xml',
     ],
