@@ -24,9 +24,12 @@
     ],
 
     'data': [
+        'security/groups.xml',
         'security/ir.model.access.csv',
         'views/res_config_settings.xml',
         'views/sale_order.xml',
+        'views/product_template_views.xml',
+        'views/products.xml',
         'wizard/sale_confirmation.xml',
         'wizard/wizard_margin_product.xml',
     ],
@@ -37,7 +40,7 @@
         ]
     },
     'demo': [
-        'demo/sale_margin_threshold_demo.xml'
+        'demo/demo.xml'
     ],
     'application': True,
     'installable': True,

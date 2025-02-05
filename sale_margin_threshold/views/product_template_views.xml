@@ -12,12 +12,12 @@
             </field>
             <field name="categ_id" position="before">
                 <label for="margin_sale"/>
-                <div class="d-inline-block" >
+                <div class="d-inline-block" attrs="{'invisible': [('module_pos_margin_threshold', '=', True)]}">
                   <field name="margin_sale" widget="float" class="oe_inline o_input_6ch" decoration-danger="margin_sale &lt; 0.0"/>
                   <span class="oe_grey"> %</span>
                 </div>
-                <field name="minimum_sale_price" widget="monetary"/>
-                <field name="minimum_sale_price_with_tax" widget="monetary" />
+                <field name="minimum_sale_price" widget="monetary" attrs="{'invisible': [('module_pos_margin_threshold', '=', True)]}"/>
+                <field name="minimum_sale_price_with_tax" widget="monetary" attrs="{'invisible': [('module_pos_margin_threshold', '=', True)]}"/>
 
             </field>
         </field>
