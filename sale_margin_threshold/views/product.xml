@@ -73,10 +73,10 @@
         <field name="binding_model_id" ref="model_product_template"/>
         <field name="state">code</field>
         <field name="code">
-            if not records.module_pos_margin_threshold:
-                action = records.action_assign_margin()
-            else:
-                action = {"type": "ir.actions.act_window_close"}
+if not records.module_pos_margin_threshold:
+    action = records.action_assign_margin()
+else:
+    action = {"type": "ir.actions.act_window_close"}
         </field>
     </record>
 
@@ -86,10 +86,10 @@
         <field name="binding_model_id" ref="model_product_product"/>
         <field name="state">code</field>
         <field name="code">
-            if not records.module_pos_margin_threshold:
-                action = records.action_assign_margin()
-            else:
-                action = {"type": "ir.actions.act_window_close"}
+if not records.module_pos_margin_threshold:
+    action = records.action_assign_margin()
+else:
+    action = {"type": "ir.actions.act_window_close"}
         </field>
     </record>
 
