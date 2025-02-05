@@ -21,14 +21,5 @@
         </field>
     </record>
 
-    <record id="product_template_margin_sale_action_server" model="ir.actions.server">
-        <field name="name">Update margin sale</field>
-        <field name="model_id" ref="model_product_template"/>
-        <field name="binding_model_id" ref="model_product_template"/>
-        <field name="state">code</field>
-        <field name="code">
-            action = records.action_assign_margin()
-        </field>
-    </record>
 
 </odoo>

@@ -24,6 +24,7 @@
     ],
 
     'data': [
+        'security/groups.xml',
         'security/ir.model.access.csv',
         'views/res_config_settings.xml',
         'views/sale_order.xml',

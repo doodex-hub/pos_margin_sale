@@ -112,3 +112,22 @@ class ProductProduct(models.Model):
             'target': 'new',
             'res_id': wizard.id,
         }
+    
+    @api.model
+    def _register_hook(self):
+        super()._register_hook()
+        
+        
+        group = self.env.ref('sale_margin_threshold.group_sale_margin_action', raise_if_not_found=False)
+        if group:
+            pos_margin_installed = self.env['ir.module.module'].search([
+                ('name', '=', 'pos_margin_threshold'),
+                ('state', '=', 'installed')
+            ], limit=1)
+            
+            if pos_margin_installed:
+                group.users = [(5, 0, 0)]  # Remove all users
+            else:
+                internal_users = self.env.ref('base.group_user').users
+                group.users = [(6, 0, internal_users.ids)]
+    
