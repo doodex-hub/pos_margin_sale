@@ -66,4 +66,31 @@
             </group>
         </field>
     </record>
+
+     <record id="product_template_margin_sale_action_server" model="ir.actions.server">
+        <field name="name">Update margin sale</field>
+        <field name="model_id" ref="model_product_template"/>
+        <field name="binding_model_id" ref="model_product_template"/>
+        <field name="state">code</field>
+        <field name="code">
+            if not records.module_pos_margin_threshold:
+                action = records.action_assign_margin()
+            else:
+                action = {"type": "ir.actions.act_window_close"}
+        </field>
+    </record>
+
+    <record id="product_product_margin_sale_action_server" model="ir.actions.server">
+        <field name="name">Update margin sale</field>
+        <field name="model_id" ref="model_product_product"/>
+        <field name="binding_model_id" ref="model_product_product"/>
+        <field name="state">code</field>
+        <field name="code">
+            if not records.module_pos_margin_threshold:
+                action = records.action_assign_margin()
+            else:
+                action = {"type": "ir.actions.act_window_close"}
+        </field>
+    </record>
+
 </odoo>
