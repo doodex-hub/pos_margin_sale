@@ -15,7 +15,21 @@ class ProductTemplate(models.Model):
     minimum_sale_price = fields.Float(string="Minimum sale price", compute='_compute_minimum_sale_price', 
                                       inverse='_inverse_minimum_sale_price', store=True, readonly=False)
     minimum_sale_price_with_tax = fields.Float(string="Minimum sale price (Tax include)", compute='_compute_minimum_sale_price_with_tax', store=True)
-    
+    module_pos_margin_threshold = fields.Boolean(
+    compute='_compute_module_pos_margin_threshold',
+        store=False,
+    )
+
+    @api.depends_context('uid')
+    def _compute_module_pos_margin_threshold(self):
+        pos_margin_installed = self.env['ir.module.module'].search([
+            ('name', '=', 'pos_margin_threshold'),
+            ('state', '=', 'installed')
+        ], limit=1)
+        
+        for record in self:
+            record.module_pos_margin_threshold = bool(pos_margin_installed) 
+            
     @api.depends('categ_id.margin_sale')
     def _compute_margin_sale(self):
         for rec in self:
@@ -98,3 +112,21 @@ class ProductProduct(models.Model):
             'target': 'new',
             'res_id': wizard.id,
         }
+    @api.model
+    def _register_hook(self):
+        super()._register_hook()
+        
+        
+        group = self.env.ref('sale_margin_threshold.group_sale_margin_action', raise_if_not_found=False)
+        if group:
+            pos_margin_installed = self.env['ir.module.module'].search([
+                ('name', '=', 'pos_margin_threshold'),
+                ('state', '=', 'installed')
+            ], limit=1)
+            
+            if pos_margin_installed:
+                group.users = [(5, 0, 0)]  # Remove all users
+            else:
+                internal_users = self.env.ref('base.group_user').users
+                group.users = [(6, 0, internal_users.ids)]
+    
