@@ -1,0 +1,8 @@
+.o-mail-PinnedMessages .card {
+    background-color: rgba(165, 42, 42, 0.1) !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+.o-mail-PinnedMessages .card-body {
+    background-color: rgba(165, 42, 42, 0.1) !important;
+}

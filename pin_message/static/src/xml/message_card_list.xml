@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-inherit="mail.MessageCardList" t-inherit-mode="extension">
+        <xpath expr="//button[contains(@class, 'o-mail-MessageCard-jump')]" position="replace">
+            <button class="o-mail-MessageCard-jump btn rounded bg-400 badge opacity-0 flex-shrink-0"
+                    t-att-class="{ 'opacity-100 py-1 px-2': ui.isSmall }"
+                    t-on-click="() => this.onClickJump(message)">
+                See
+            </button>
+        </xpath>
+    </t>
+</templates>
