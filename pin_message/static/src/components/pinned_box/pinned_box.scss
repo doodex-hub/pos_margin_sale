@@ -1,0 +1,37 @@
+// ------------------------------------------------------------------
+// Layout
+// ------------------------------------------------------------------
+
+.o_PinnedBox_core {
+    min-width: 0;
+}
+
+.o_PinnedBox_sidebar {
+    width: $o-mail-thread-avatar-size;
+    min-width: $o-mail-thread-avatar-size;
+    height: $o-mail-thread-avatar-size;
+}
+
+.o_PinnedBox_userAvatar {
+    object-fit: cover;
+    height: 18px;
+    width: 18px;
+}
+
+.o_PinnedBox_content p {
+    margin-bottom: map-get($spacers, 0);
+}
+
+// ------------------------------------------------------------------
+// Style
+// ------------------------------------------------------------------
+
+.o_PinnedBox_unpinButton {
+    @include o-hover-text-color($default-color: $o-main-color-muted);
+}
+
+.o_PinnedMessages {
+    border: 1px solid $border-color;
+    border-radius: $border-radius;
+    margin-bottom: 1rem;
+}

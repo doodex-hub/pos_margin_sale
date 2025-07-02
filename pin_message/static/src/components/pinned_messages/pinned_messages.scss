@@ -1,0 +1,17 @@
+
+.o_PinnedMessages_pinnedList {
+    max-width: var(--Chatter-max-width, none);
+    background-color: #ffcccc;
+}
+
+.o_PinnedMessages_title {
+    margin-top: var(--PinnedMessages_title-margin, #{map-get($spacers, 4)});
+}
+
+.o_PinnedMessages_titleLine {
+    border-top: $border-width dashed $border-color;
+}
+
+.o_PinnedMessages_titleBadge {
+    font-size: 0.75rem;
+}

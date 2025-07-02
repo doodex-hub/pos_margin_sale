@@ -1,0 +1,46 @@
+.o_PinnedMessageBox {
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    
+    .o_PinnedMessageBox_header {
+        padding: 8px;
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #ddd;
+        font-weight: bold;
+        
+        .fa-thumb-tack {
+            margin-right: 5px;
+            color: #28a745;
+        }
+    }
+    
+    .o_PinnedMessageBox_content {
+        padding: 8px;
+        max-height: 200px;
+        overflow-y: auto;
+        
+        .o_PinnedMessageBox_message {
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+
+            
+            &:last-child {
+                border-bottom: none;
+            }
+        }
+    }
+}
+
+.o_MessageActionView_actionTogglePin_active {
+    transform: rotate(45deg);
+}
+
+.o_MessageActionView_actionPin_active {
+    transform: rotate(45deg);
+    color: #28a745;
+}
+
+.o_MessageActionView_actionPin {
+    color: #6c757d;
+}

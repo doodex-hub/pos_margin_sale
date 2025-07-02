@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-inherit="mail.Message" t-inherit-mode="extension">
+        <xpath expr="//t[@t-if='messageView.message.date']" position="after">
+            <t t-if="!messageView.composerViewInEditing">
+                <div class="mt-2 d-flex justify-content-end">
+                    <t t-if="messageView.message.isPinned">
+                        <small class="o_Message_pin o_Message_headerDate me-2 ms-2 cursor-pointer text-success" 
+                            t-att-class="{ 'o-message-selected': messageView.isSelected }" 
+                            t-on-click="messageView.onClickUnpin"
+                            title="Unpin">
+                            <i class="fa fa-thumb-tack"/> Pinned
+                        </small>
+                    </t>
+                </div>
+            </t>
+        </xpath>
+    </t>
+</templates>

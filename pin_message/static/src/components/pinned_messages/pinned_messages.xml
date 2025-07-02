@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="pin_message.PinnedMessages" owl="1">
+        <div class="o_PinnedMessages" t-attf-class="{{ className }}" t-ref="root">
+            <a href="#" role="button" class="o_PinnedMessages_title btn d-flex align-items-center p-0 w-100 fw-bold" 
+               t-att-aria-expanded="pinnedMessagesView.isPinnedMessageListVisible ? 'true' : 'false'" 
+               t-on-click="pinnedMessagesView.onClickPinnedMessagesTitle">
+                <hr class="o_PinnedMessages_titleLine w-auto flex-grow-1 me-3" />
+                <span class="o_PinnedMessages_titleText">
+                    <i class="fa fa-fw" t-att-class="pinnedMessagesView.isPinnedMessageListVisible ? 'fa-caret-down' : 'fa-caret-right'"/>
+                    Pinned messages
+                </span>
+                <t t-if="!pinnedMessagesView.isPinnedMessageListVisible">
+                    <span class="o_PinnedMessages_titleBadges ms-2">
+                        <span class="o_PinnedMessages_titleBadge me-1 badge text-bg-warning">
+                            <t t-esc="pinnedMessagesView.pinnedBoxViews.length"/>
+                        </span>
+                    </span>
+                </t>
+                <hr class="o_PinnedMessages_titleLine w-auto flex-grow-1 ms-3"/>
+            </a>
+            <t t-if="pinnedMessagesView.isPinnedMessageListVisible">
+                <div class="o_PinnedMessages_pinnedList">
+                    <t t-foreach="pinnedMessagesView.pinnedBoxViews" t-as="pinnedBoxView" t-key="pinnedBoxView.localId">
+                        <PinnedBox className="'o_PinnedMessages_pinned'" record="pinnedBoxView"/>
+                    </t>
+                </div>
+            </t>
+        </div>
+    </t>
+
+</templates>
