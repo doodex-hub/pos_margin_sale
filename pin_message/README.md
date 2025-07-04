@@ -54,7 +54,7 @@ This module allows users to pin important messages in the chatter of Odoo, helpi
 For how to use this module you can go to here
 
 ## Compatibility
-Odoo version: 17.0
+Odoo version: 16.0
 
 ## License
 This module is licensed under [LGPLv3 licensed](./LICENSE)
