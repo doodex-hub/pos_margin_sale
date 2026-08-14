@@ -1,0 +1,47 @@
+# Instantiated from doc-dev-backfill/templates/docker-compose.yml.template
+# Adaptasi multi-modul: SATU instance untuk 3 addon (pos_margin_threshold, sale_margin_threshold,
+# pin_message) — mount seluruh repo (bukan satu folder addon) supaya addons-path menemukan
+# ketiganya sekaligus; Odoo mengabaikan sub-folder tanpa __manifest__.py (docker-env/, doc-dev/).
+name: pos_margin_sale_backfill
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: odoo
+      POSTGRES_DB: postgres
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  odoo:
+    image: odoo:17.0
+    depends_on:
+      - db
+    environment:
+      HOST: db
+      USER: odoo
+      PASSWORD: odoo
+    ports:
+      - "8079:8069"
+    volumes:
+      - ../:/mnt/extra-addons
+      - ./logs:/var/log/odoo
+    # Mode G2 (server tetap hidup untuk cek manual/browser) -- Step 07 QA. G1 (--test-enable dst,
+    # dipakai Step 04) dikomentari di bawah, tinggal uncomment kalau perlu jalankan test lagi.
+    command: >
+      odoo -d pos_margin_sale_test
+      -u pos_margin_threshold,sale_margin_threshold,pin_message
+      --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons
+      --logfile=/var/log/odoo/odoo.log
+    # command: >
+    #   odoo -d pos_margin_sale_test
+    #   -i pos_margin_threshold,sale_margin_threshold,pin_message
+    #   --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons
+    #   --test-enable
+    #   --test-tags=/pos_margin_threshold,/sale_margin_threshold,/pin_message
+    #   --stop-after-init
+    #   --logfile=/var/log/odoo/odoo.log
+
+volumes:
+  db-data:
