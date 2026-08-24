@@ -15,7 +15,13 @@ registry.category("web_tour.tours").add("pos_margin_threshold_below_minimum_conf
     steps: () =>
         [
             Chrome.startPoS(),
-            Dialog.confirm("Open Register"),
+            // main_pos_config already computes cash_control=True (a default cash payment method
+            // exists on the config before we add Bank on top) -- opening control dialog appears.
+            // No text match (env renders this in whatever --load-language ends up active, not
+            // necessarily the test user's own .lang) -- Dialog.confirm() with no argument just
+            // clicks the modal's primary button, which is unambiguous here (only one exists).
+            Dialog.confirm(),
+            ProductScreen.isShown(),
             // Test Product is set up with standard_price=10, margin_sale=50 -> minimum_sale_price=15.
             // Selling at unit price 5 is below that minimum.
             ProductScreen.addOrderline("Margin Threshold Test Product", "1", "5"),

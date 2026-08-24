@@ -20,6 +20,9 @@
                 'pin_message/static/src/js/chatter.js',
                 'pin_message/static/src/js/message.js'
             ],
+        'web.assets_tests': [
+            'pin_message/static/tests/tours/**/*',
+        ],
     },
     'license': 'LGPL-3',
     'price' : 19,

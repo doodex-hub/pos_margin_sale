@@ -8,8 +8,8 @@
 **Modul:** `pos_margin_threshold`, `sale_margin_threshold`, `pin_message` (satu file, prefix modul di
 tiap judul finding)
 **Migrasi:** 17.0 → 18.0
-**Terakhir update:** 2026-08-24 (Step 6, Mode D — `pos_margin_threshold` POS data-model architecture
-overhaul ditemukan+diperbaiki+diverifikasi tour test nyata; total 20 finding, 9 diwarisi backfill)
+**Terakhir update:** 2026-08-24 (Step 6, Mode D — Tour test `pos_margin_threshold` DAN `pin_message`
+kedua-duanya "tour succeeded" di database bersih; total 23 finding, 9 diwarisi backfill)
 
 ---
 
@@ -60,6 +60,8 @@ backfill, buat `MF-NNN` yang mereferensikan `F-NNN` aslinya secara eksplisit (ta
 | MF-19 | Komponen Owl `Orderline` sekarang validasi ketat `props.line` (shape schema) — field custom yang ditambahkan `getDisplayData()` di-reject sebagai "unknown key" | pos_margin_threshold | 6 | `[GAP-MIGRASI]` | Tinggi (crash render kalau tidak diperbaiki) | ✅ **RESOLVED** — `Orderline.props.line.shape` di-patch untuk mendeklarasikan 3 key baru |
 | MF-20 | `orderline.xml` xpath `/ul[hasclass('info-list')]` (direct child) — core 18.0 menambah `<div>` wrapper, xpath direct-child tidak match lagi | pos_margin_threshold | 6 | `[GAP-MIGRASI]` | Tinggi (crash render QWeb) | ✅ **RESOLVED** — xpath diubah jadi descendant (`//ul[...]`) |
 | MF-21 | `Environment.lang` (18.0) validasi ketat — `UserError` kalau context `lang=fr_FR` tapi bahasa Prancis tidak diinstall di database | sale_margin_threshold | 6 | `[CATATAN-DEPLOYMENT]` | Sedang | ✅ Bukan bug kode — dikonfirmasi test pass 0 error setelah bahasa Prancis diinstall (`--load-language=fr_FR`). **Perlu dikonfirmasi ke dev:** environment production harus punya bahasa Prancis terinstall, atau `action_confirm()` bilingual EN/FR modul ini akan crash di 18.0 (TIDAK crash di 17.0 — lihat detail) |
+| MF-22 | `pin_message/chatter.js` — `load()` full-override memanggil `this.threadService.fetchData(thread, requestList, options)`, service+signature ini sudah tidak ada di 18.0 | pin_message | 6 | `[GAP-MIGRASI]` | **Tinggi** — crash total begitu chatter mount | ✅ **RESOLVED** — override dihapus (extend, bukan replace), terkonfirmasi Tour test nyata "tour succeeded" |
+| MF-23 | `is_pinned` tidak lagi bisa "diminta" lewat field-list custom di `Chatter.load()` — field kustom ke frontend mail sekarang lewat `mail.message._to_store()` (per-model, seperti pola POS `_load_pos_data_fields`, `MF-18`) | pin_message | 6 | `[GAP-MIGRASI]` | Tinggi (silent, field tidak pernah sampai ke frontend tanpa fix) | ✅ **RESOLVED** — `mail.message._to_store()` di-extend, tambah `store.add(message, {'is_pinned': ...})`, terkonfirmasi Tour test |
 
 ---
 
@@ -323,6 +325,30 @@ backfill, buat `MF-NNN` yang mereferensikan `F-NNN` aslinya secara eksplisit (ta
 **Dampak:** Kalau environment PRODUCTION modul ini nanti dijalankan TANPA bahasa Prancis terinstall, `action_confirm()` akan crash `UserError` setiap kali cabang `blocking_transaction_order=False` (wizard konfirmasi) dieksekusi — meng-crash alur core (confirm quotation), bukan cuma gagal senyap.
 **Status:** ✅ Dikonfirmasi bukan bug kode — **butuh keputusan/konfirmasi dev**: pastikan bahasa Prancis terinstall di environment production sebelum go-live 18.0 (kemungkinan besar SUDAH terinstall kalau modul ini memang dipakai user berbahasa Prancis, tapi wajib dikonfirmasi eksplisit, jangan diasumsikan).
 **Keputusan pemilik modul:** *(kosong — perlu konfirmasi eksplisit dev: bahasa Prancis terinstall di production?)*
+
+---
+
+### MF-22 — `pin_message/chatter.js` `load()` full-override memanggil service yang sudah tidak ada — RESOLVED
+**Ditemukan di:** Step 6 (2026-08-24), lewat Tour test nyata (Mode D) — `TypeError: Cannot read properties of undefined (reading 'fetchData')` tepat setelah klik "Log note"
+**Tag:** `[GAP-MIGRASI]`
+**Prioritas:** **Tinggi** — crash total begitu chatter mount (bukan cuma fitur pin, SELURUH chatter modul manapun yang render lewat `initialLoad()` modul ini)
+**Lokasi:** `pin_message/static/src/js/chatter.js` (method `load()`)
+**Deskripsi:** Sama pola dengan `MF-15`/`MF-19`/`MF-20` (`pos_margin_threshold`) — modul ini FULL-OVERRIDE `Chatter.prototype.load(thread, requestList)` (bukan extend) untuk menyisipkan `messageFields: ['is_pinned']` sebagai argumen ke-3 (`options`) ke `this.threadService.fetchData(thread, requestList, options)`. Di 18.0: (1) tidak ada lagi property `this.threadService` pada Chatter (dikonfirmasi baca source `chatter.js`/`thread_model_patch.js` container — `fetchData` sekarang milik objek `thread` itu sendiri, dipanggil `thread.fetchData(requestList)`), (2) `fetchData()` cuma menerima SATU argumen (`requestList`, daftar KATEGORI data seperti "messages"/"activities" — bukan daftar NAMA FIELD custom).
+**Dampak:** Fatal — `this.threadService` selalu `undefined`, method crash SETIAP KALI chatter mount pertama kali (`onMounted → initialLoad → load`), sebelum user sempat berinteraksi apapun.
+**Status:** ✅ **RESOLVED dan TERVERIFIKASI** — override `load()` dihapus total (modul ini tidak perlu override `load()` sama sekali lagi, lihat `MF-23` untuk mekanisme pengganti field custom). Dikonfirmasi Tour test `pin_message_toggle_pin_tour` — "tour succeeded".
+**Keputusan pemilik modul:** Tidak perlu — perbaikan wajib kompatibilitas (API lama dihapus total).
+
+---
+
+### MF-23 — Field custom (`is_pinned`) butuh `mail.message._to_store()`, bukan lagi field-list di `Chatter.load()` — RESOLVED
+**Ditemukan di:** Step 6 (2026-08-24), sambungan investigasi `MF-22` — dicek `_to_store()` di source `mail_message.py` container untuk cari mekanisme pengganti
+**Tag:** `[GAP-MIGRASI]`
+**Prioritas:** Tinggi (silent — field tidak pernah sampai ke frontend, tidak ada error, fitur cuma "tidak bekerja")
+**Lokasi:** `pin_message/models/mail_message.py` (method baru `_to_store()`)
+**Deskripsi:** Pola SAMA seperti `MF-18` (POS `_load_pos_data_fields`) tapi di area `mail`: field custom yang perlu dikirim ke frontend sekarang WAJIB didaftarkan lewat override `_to_store(self, store, /, **kwargs)` per-model (di sini `mail.message`), memanggil `store.add(message, {field: value})` — BUKAN lagi lewat parameter field-list di sisi client (`Chatter.load()`, sudah dihapus di `MF-22`). Tanpa fix ini, `is_pinned` tidak akan pernah muncul di data message yang dikirim ke JS, walau field-nya ada di database.
+**Dampak:** Sebelum fix ini digabung dengan `MF-22`, section "Pinned Messages" akan selalu kosong (badge count `0`) walau ada pesan yang `is_pinned=True` di database — silent, tidak ada error apapun.
+**Status:** ✅ **RESOLVED dan TERVERIFIKASI** — `mail.message._to_store()` di-extend (`super()._to_store(store, **kwargs)` lalu `store.add(message, {'is_pinned': message.is_pinned})` per message). Dikonfirmasi Tour test: badge muncul benar dengan angka 1 setelah pin, section menampilkan pesan yang benar, badge kembali kosong setelah unpin.
+**Keputusan pemilik modul:** Tidak perlu — perbaikan wajib kompatibilitas, field yang di-expose sama persis dengan 17.0.
 
 ---
 

@@ -12,6 +12,9 @@ class TestMarginThresholdTour(TestPointOfSaleHttpCommon):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        # `--load-language=fr_FR` (dipasang di docker-compose.yml untuk MF-21) membuat UI
+        # ter-render Prancis kalau tidak dipaksa eksplisit -- tour ini mencocokkan teks Inggris.
+        cls.pos_admin.write({'lang': 'en_US'})
         cls.env['ir.config_parameter'].sudo().set_param(
             'post_margin_sale.blocking_transaction_pos', False
         )

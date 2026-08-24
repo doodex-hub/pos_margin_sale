@@ -18,3 +18,12 @@ class Message(models.Model):
                 }
             )
         return True
+
+    def _to_store(self, store, /, **kwargs):
+        # 18.0: field ke frontend TIDAK LAGI diambil lewat Chatter.load() dengan
+        # messageFields custom (mekanisme itu sudah dihapus, lihat MF-xx) -- pindah ke
+        # override _to_store() ini, dipanggil server-side setiap message diserialisasi ke
+        # frontend (chatter, discuss, dst).
+        super()._to_store(store, **kwargs)
+        for message in self:
+            store.add(message, {'is_pinned': message.is_pinned})

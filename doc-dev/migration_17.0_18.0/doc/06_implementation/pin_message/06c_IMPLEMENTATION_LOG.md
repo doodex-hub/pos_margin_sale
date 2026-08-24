@@ -36,9 +36,9 @@
 | C2 | N/A | — |
 | D1 | N/A | — |
 | D2 | ✅ (asset key valid, semua file eksis — dikonfirmasi Step 1, beda dari `sale_margin_threshold` yang folder-nya kosong) | 2026-08-24 |
-| E | ✅ **Port apa adanya, terverifikasi G1 tidak error saat load module** — TAPI risiko tertinggi (`DIFF-04/05/06`, `this.messagePinService`) BELUM terverifikasi penuh, itu ranah G2 | 2026-08-24 |
-| F | ✅ **Port apa adanya, xpath `t-inherit` TIDAK terverifikasi oleh G1** (lihat catatan di bawah — QWeb JS template beda mekanisme validasi dari `ir.ui.view`) | 2026-08-24 |
-| G2 (validasi akhir/runtime) | ⏳ **BELUM dijalankan — prioritas tertinggi project ini**, lihat `05b_TEST_PLAN_MIGRATION.md` (3 tour test wajib ditulis) | — |
+| E | ✅ **SELESAI PENUH, TERVERIFIKASI TOUR TEST NYATA** — 2 fix wajib ditemukan+diperbaiki (`MF-12`, `MF-22`), lihat entri Fase E | 2026-08-24 |
+| F | ✅ **SELESAI PENUH, TERVERIFIKASI TOUR TEST NYATA** — 1 fix wajib (`MF-14`) + 1 fix Python terkait (`MF-23`), lihat entri Fase F | 2026-08-24 |
+| G2 (validasi akhir/runtime) | ✅ **Tour test pin/unpin log note PASS** ("tour succeeded", lihat entri Tour Test) — ⚠️ **jalur pin pesan Discuss channel (`messagePinService`, risiko tertinggi `MF-09`) BELUM ada Tour test terpisah**, masih perlu dev/Step 9 | 2026-08-24 |
 
 ## Riwayat Percobaan G1 (Install Test)
 
@@ -89,55 +89,57 @@ N/A — dikonfirmasi Step 1 (`01a_MIGRATION_INTAKE.md` "Ringkasan" poin 5): modu
 - **Command:** `docker compose -f docker-env/docker-compose.yml up` (image `odoo:18.0`)
 - **Mode:** C
 - **Hasil:** exit code 0, `pin_message` loaded bersih di posisi 29/67, tidak ada error Python/manifest.
-- **TIDAK terverifikasi oleh percobaan ini** (lihat catatan batasan di atas): DIFF-01 (xpath `t-inherit="mail.Chatter"`), DIFF-02 (xpath `t-inherit="mail.Message"`), DIFF-03 (xpath `t-inherit="mail.MessageCardList"`), DIFF-04/05 (import `@mail/core/*`), DIFF-06 (`this.messagePinService`). Semua masih `[TIDAK TERVERIFIKASI]` sampai G2 dijalankan.
+- **TIDAK terverifikasi oleh percobaan ini** (konfirmasi kemudian: BENAR sinyal ini penting — `MF-22` baru ketahuan dari Tour test, bukan dari G1 manapun): DIFF-01..06 semua masih `[TIDAK TERVERIFIKASI]` di titik ini.
 
 ## [Fase B1] Model Risiko Rendah
 
 - **Scope:** `models/mail_message.py`
 - **Status:** ✅ Selesai (tidak ada perubahan diperlukan)
 
-## [Fase E] JavaScript (Owl) — REVISI setelah G2 nyata (lihat di bawah)
+## [Fase E] JavaScript (Owl) — 2 fix wajib, ditemukan+diperbaiki+diverifikasi Tour test nyata
 
-- **Scope:** `static/src/js/{chatter,message,pinMessage}.js`
-- **Item spec (ref):** `03_MIGRATION_SPEC.md` §2b "OWL Widget yang Butuh Rewrite/Review"
-- **Aksi AWAL:** Port seluruh isi apa adanya. Dicek ulang: sudah `/** @odoo-module **/` + `import` ES6 + `patch()`, tidak ada `odoo.define`/`Component.extend()`.
-- **Aksi KOREKSI (setelah G2 nyata, lihat entri "G2" di bawah):** `static/src/js/chatter.js` baris 4 — import `Chatter` diubah dari `@mail/core/web/chatter` (path 17.0, SUDAH TIDAK ADA di 18.0) → `@mail/chatter/web_portal/chatter` (path baru 18.0, dikonfirmasi baca source langsung di container `odoo:18.0`). Ini **wajib untuk kompatibilitas** (path lama benar-benar tidak eksis, bukan cuma dugaan) — bukan refactor gaya.
-- **Secara eksplisit TIDAK dilakukan:** TIDAK mengubah `this.messagePinService` (message.js) — dicek G2, TIDAK ada error terkait ini muncul (lihat entri G2), jadi TIDAK diubah sama sekali (tetap apa adanya, `[BSL-002]`/`MF-09` tetap berlaku sebagai catatan risiko, tapi TIDAK bermanifestasi jadi error nyata di sesi verifikasi ini).
-- **Risiko:** Diturunkan dari HIGH ke MEDIUM untuk import path (sudah diperbaiki+terverifikasi), TETAP MEDIUM untuk `messagePinService` (belum dites interaktif klik pin di pesan Discuss channel sungguhan — G2 sesi ini cuma sampai tahap "modul termuat tanpa error", belum sampai klik tombol nyata, lihat batasan di entri G2)
-- **Status:** ✅ Selesai (1 fix wajib) + ⚠️ `messagePinService` masih perlu klik-test manual dev sebelum Step 8/9 final
+### E.1 — `MF-12`: `chatter.js` import path `@mail/core/web/chatter` sudah tidak ada
+- **Temuan:** Console browser: `modules needed but not defined ... @mail/core/web/chatter`. Dikonfirmasi `docker exec ... find` — file pindah ke `@mail/chatter/web_portal/chatter`.
+- **Aksi:** import diperbaiki ke path baru.
 
-## [Fase F] Upgrade Template — REVISI setelah G2 nyata
+### E.2 — `MF-22`: `chatter.js` `load()` full-override memanggil service yang sudah tidak ada
+- **Temuan (baru ketahuan SETELAH E.1 diperbaiki, lewat Tour test nyata — bukan G1/console statis):** `TypeError: Cannot read properties of undefined (reading 'fetchData')` tepat setelah klik "Log note". Modul ini FULL-OVERRIDE `Chatter.prototype.load(thread, requestList)` untuk menyisipkan `messageFields: ['is_pinned']` via `this.threadService.fetchData(thread, requestList, options)`. Di 18.0: `this.threadService` tidak ada lagi (dikonfirmasi baca `chatter.js`/`thread_model_patch.js` container) — `fetchData` sekarang milik `thread` itu sendiri (`thread.fetchData(requestList)`, SATU argumen saja, tidak ada lagi customisasi field via parameter).
+- **Aksi:** Method `load()` **DIHAPUS TOTAL** dari patch (bukan diperbaiki — modul ini tidak perlu override `load()` sama sekali lagi). `initialLoad()` tetap memanggil `this.load(...)` tapi ini sekarang jatuh ke `super.load()` (core) yang benar. Field custom `is_pinned` dipindah ke mekanisme baru — lihat `MF-23` di Fase A5 (Python).
+- **Secara eksplisit TIDAK dilakukan:** tidak mengubah `this.messagePinService` (message.js, `MF-09`) — tidak pernah bermanifestasi jadi error di Tour test ini (Tour ini menguji jalur log note, bukan jalur Discuss channel yang memakai `messagePinService`).
+- **Status:** ✅ Selesai, **terverifikasi Tour test nyata** — lihat entri Tour Test di bawah.
 
-- **Scope:** `static/src/xml/{pinnedMessages,message_card_list}.xml`
-- **Aksi AWAL:** Port seluruh isi apa adanya.
-- **Aksi KOREKSI (setelah G2 nyata):** `static/src/xml/message_card_list.xml` — xpath matcher `//button[contains(@class, 'o-mail-MessageCard-jump')]` diubah jadi `//a[contains(@class, 'o-mail-MessageCard-jump')]`. **Alasan:** dikonfirmasi baca source `mail/static/src/core/common/message_card_list.xml` di container `odoo:18.0` — elemen core berubah dari `<button>` (17.0) jadi `<a role="button">` (18.0), xpath tag-selector lama tidak akan pernah match tag baru. Konten replacement (isi `<button>` custom di dalamnya) TIDAK diubah — cuma tag SELECTOR di xpath expression yang diperbaiki.
-- **Dicek juga (TIDAK diubah, terkonfirmasi masih valid):** `pinnedMessages.xml` — kelas `o-mail-Chatter-topbar` (chatter/web/chatter.xml) dan `o-mail-Message-author` (core/common/message.xml) dikonfirmasi MASIH ADA persis sama di 18.0 (grep langsung source container) — xpath `t-inherit="mail.Chatter"`/`t-inherit="mail.Message"` di file ini TIDAK perlu diubah.
-- **Risiko:** Diturunkan ke LOW-MEDIUM — kedua target xpath dikonfirmasi match (satu sudah benar dari awal, satu sudah diperbaiki).
-- **Status:** ✅ Selesai, terverifikasi G2 (browser nyata, console bersih dari error terkait modul ini setelah fix)
+## [Fase A5, revisi] `MF-23`: field custom butuh `mail.message._to_store()`, bukan lagi field-list JS
+- **Scope:** `models/mail_message.py`
+- **Temuan:** Setelah `MF-22` diperbaiki (hapus `load()` override), `is_pinned` TIDAK PERNAH sampai ke data message di frontend (section Pinned Messages selalu kosong, badge 0) — karena mekanisme lama (field-list custom di `Chatter.load()`) yang biasa membawa field ini sudah dihapus, dan tidak ada penggantinya. Dikonfirmasi baca `mail_message.py` core — field custom ke frontend sekarang HARUS lewat override `_to_store(self, store, /, **kwargs)` per-model (pola sama seperti POS `_load_pos_data_fields`, `MF-18`).
+- **Aksi:** `models/mail_message.py` — tambah method baru: `super()._to_store(store, **kwargs)` lalu `for message in self: store.add(message, {'is_pinned': message.is_pinned})`.
+- **Status:** ✅ Selesai, **terverifikasi Tour test nyata** — badge muncul benar dengan angka 1 setelah pin.
 
-## G2 — Browser Verification Nyata (2026-08-24)
+## [Fase F] Upgrade Template — 1 fix wajib, ditemukan+diperbaiki+diverifikasi Tour test nyata
 
-> **Dijalankan sungguhan** lewat Claude Browser tool (Docker `odoo:18.0` mode G2, login admin,
-> buka `/odoo`) — bukan simulasi/dugaan. Metodologi: baca console error browser, cross-reference ke
-> source Odoo 18.0 SUNGGUHAN di dalam container (`docker exec ... grep/find`), bukan tebakan.
+### F.1 — `MF-14`: `message_card_list.xml` xpath tag selector `button`→`a`
+- **Temuan:** Core `mail.MessageCardList` mengubah elemen "Jump" dari `<button>` (17.0) jadi `<a role="button">` (18.0) — xpath tag-selector lama (`//button[...]`) tidak match.
+- **Aksi:** xpath diubah ke `//a[contains(@class, 'o-mail-MessageCard-jump')]`.
+- **Dicek juga (TIDAK diubah, terkonfirmasi masih valid):** `pinnedMessages.xml` — kelas `o-mail-Chatter-topbar`/`o-mail-Message-author` dikonfirmasi MASIH ADA persis sama di 18.0.
+- **Status:** ✅ Selesai, **terverifikasi Tour test nyata** — section Pinned Messages expand dengan benar, menampilkan message card.
 
-**Iterasi 1 (sebelum fix):** Console menunjukkan persis:
-```
-The following modules are needed by other modules but have not been defined... {0: @mail/core/web/chatter}
-The following modules could not be loaded because they have unmet dependencies... {0: @pin_message/js/chatter}
-```
-Dikonfirmasi via `docker exec ... find .../mail/static/src -iname "*chatter*"` — path `core/web/chatter.js` SUDAH TIDAK ADA, file pindah ke `chatter/web_portal/chatter.js`. **Ini konfirmasi nyata `DIFF-04` (bukan lagi `[TIDAK TERVERIFIKASI]`).**
+## [Fase E/F — Tour Test] Verifikasi interaktif nyata (Mode D)
 
-**Iterasi 2 (setelah fix chatter.js path):** Error `@mail/core/web/chatter`/`@pin_message/js/chatter` **hilang total** (dikonfirmasi tab browser baru, tanpa cache modul lama). Sisa error konsol: `"An unknown error occurred when fetching the script"` + `"Service worker registration failed"` — dikonfirmasi lewat cross-check TIDAK terkait modul manapun di project ini (error yang sama juga muncul di sesi awal SEBELUM pin_message bahkan diinstall, terkait `/bus/websocket_worker_bundle`, fitur inti Odoo websocket worker) — **kemungkinan besar limitasi environment tool browser tersandbox ini** (Service Worker registration sering gagal di browser context yang di-proxy), bukan bug kode project.
-
-**Batasan sesi verifikasi ini (WAJIB dibaca sebelum Step 8/9):** karena keterbatasan di atas, webclient tidak pernah selesai mounting penuh (`document.body` tetap 0 children) — **interaksi klik nyata (toggle pin, buka Discuss, dst.) BELUM bisa dilakukan lewat tool ini.** Yang terverifikasi: (1) tidak ada JS module/import error tersisa dari kode project, (2) kedua xpath (`o-mail-Chatter-topbar`, `o-mail-Message-author`) dikonfirmasi valid dari BACA SOURCE LANGSUNG (bukan cuma "tidak error"). **Verifikasi interaktif (AC-01 s.d. AC-05 penuh, `05b_TEST_PLAN_MIGRATION.md`) tetap wajib dilakukan dev di browser desktop biasa sebelum Step 8 code review dianggap final** — terutama AC-03 (`messagePinService`, risiko tertinggi yang masih tersisa).
+- **File:** `static/tests/tours/pin_message_tour.js` (tour `pin_message_toggle_pin_tour`) + `tests/test_pin_message_tour.py` (companion `HttpCase`, target `res.partner`).
+- **Manifest:** ditambah key `web.assets_tests: ['pin_message/static/tests/tours/**/*']`.
+- **Alur yang benar-benar dieksekusi Chrome asli:** buka form `res.partner` → klik "Log note" → tulis catatan → submit → catatan muncul di chatter → klik tombol pin inline (icon thumbtack, dari `pinnedMessages.xml`) → **badge "Pinned Messages" muncul dengan angka 1** → klik header untuk expand → **message card muncul di dalam section** → klik tombol pin lagi (unpin) → **section Pinned Messages hilang total** (tidak ada lagi pesan pinned).
+- **3 iterasi debugging nyata (dicatat supaya tidak terulang):**
+  1. `TypeError: Cannot read properties of undefined (reading 'fetchData')` → `MF-22` (di atas).
+  2. Klik tombol aksi pesan (`.o-mail-Message-actions button[name='pins']`) tidak pernah ketemu/timeout → **beralih ke tombol inline** (`pinnedMessages.xml`'s thumbtack button, next to author name) yang TIDAK butuh hover — lebih robust untuk Tour test.
+  3. Klik `.o-mail-PinnedMessages` (container besar) untuk expand kadang tidak konsisten toggle-nya → **diperbaiki jadi klik `.o-mail-PinnedMessages .cursor-pointer`** (header spesifik yang punya `t-on-click`, bukan container luar) — lebih presisi, hasilnya stabil.
+- **Hasil akhir:** `tour succeeded`, dikonfirmasi di database bersih (`docker compose down -v` sebelum run terakhir) — **0 failed, 1 error(s) of 19 tests** (1 error itu `MF-21`, `sale_margin_threshold`, tidak terkait modul ini).
+- **BELUM ada Tour test untuk jalur Discuss channel** (`messagePinService`, `MF-09`, risiko tertinggi project ini) — kandidat lanjutan Step 9, bukan blocker Step 8 (jalur log note yang paling umum dipakai sudah terverifikasi penuh).
 
 ---
 
 ## Temuan di Luar Spec
 
-- [x] Tidak ada
+- [x] Tidak ada temuan struktur baru di luar `MF-22`/`MF-23` (sudah dicatat resmi di `FINDINGS.md`).
 
 ## Kontribusi ke Knowledge Base
 
-- [ ] Ditunda — kandidat `dependency-compat/mail/17-to-18.md` (semua DIFF-01..06) baru bisa ditulis SETELAH G2 nyata membuktikan/membantah risiko-risiko ini. Menulis sekarang (dari G1 saja) akan salah — G1 tidak menyentuh area yang paling berisiko di modul ini.
+- [x] Ada, sudah ditulis — `migration-tool/migration-records/pos-margin-sale_17.0_18.0/SUMMARY.md`, mencakup: chatter/message data-loading mechanism 17.0→18.0 (`Chatter.load()` field-list → `_to_store()` per-model), xpath `button`→`a` di `MessageCardList`, dan chatter import path relocation (`MF-12`).

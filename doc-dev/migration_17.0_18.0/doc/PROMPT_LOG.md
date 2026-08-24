@@ -32,6 +32,7 @@ kolom modul ditambahkan di tabel supaya tetap bisa dipilah.
 | 5 — Acceptance Criteria & Test Plan | pos_margin_threshold, sale_margin_threshold, pin_message | 1 | 0 | Lanjut otomatis tanpa prompt baru (mengikuti feedback "jangan berhenti") — AC diturunkan dari BSL-NNN, test plan mengidentifikasi 4 tour test baru yang wajib ditulis (1 pos_margin_threshold, 3 pin_message) |
 | 6 — Code Migration (semua fase A-G2) | pos_margin_threshold, sale_margin_threshold, pin_message | 1 | 0 | Prompt ("commit saja dulu" lalu "status apa?" lalu commit) — Fase A dikerjakan ketiganya + G1 Docker nyata (pass) + G2 browser nyata via Claude Browser tool + `docker exec` cross-check source 18.0. Menemukan & memperbaiki 3 breaking change nyata (MF-12/13/14) yang TIDAK mungkin ketemu dari analisis statis Step 2 saja — validasi kuat metodologi G1≠G2≠review statis |
 | 6 — Code Migration, Mode D (Tour test) | pos_margin_threshold, sale_margin_threshold, pin_message | 1 | 0 | Prompt ("Ya, lanjut" ke setup Mode D) — pasang Chrome asli di Docker (`Dockerfile`), tulis Tour test `pos_margin_threshold`. Perjalanan 7 percobaan G1/Tour menemukan arsitektur data POS 18.0 berubah total (`MF-15..20`) yang TIDAK terdeteksi G1/browser-console sebelumnya — akhirnya "tour succeeded" penuh. Juga menemukan `MF-21` (validasi bahasa 18.0) dari `sale_margin_threshold`. Menulis `migration-records/pos-margin-sale_17.0_18.0/SUMMARY.md` (kandidat knowledge base baru). Tidak ada tool-fix ke `migration-tool/templates` itu sendiri (semua temuan spesifik project ini) |
+| 6 — Code Migration, Mode D (Tour test `pin_message`) + doc catch-up | pin_message | 1 | 0 | Prompt ("Lanjutkan" setelah konfirmasi commit manual `SUMMARY.md`) — tulis Tour test `pin_message` (jalur log note, pin/unpin). Menemukan 2 finding kritis baru yang TIDAK terdeteksi G1/G2 statis sebelumnya (`MF-22`: `chatter.js load()` full-override butuh service yang sudah hilang; `MF-23`: field custom `is_pinned` butuh `mail.message._to_store()`, bukan lagi field-list JS) — pola sama seperti `_load_pos_data_fields` POS di `MF-18`. Juga root-cause regresi environment palsu di `pos_margin_threshold` (flag `--load-language=fr_FR` bocor jadi bahasa default sesi, bukan bug kode) via screenshot `docker cp`, diperbaiki permanen di `docker-compose.yml`. Hasil akhir gabungan: kedua Tour test (`pos_margin_threshold`, `pin_message`) "tour succeeded", 0 failed/1 error (19 test, 1 error = `MF-21` tidak terkait). Diikuti update dokumentasi (`FINDINGS.md`, kedua `06c_IMPLEMENTATION_LOG.md`, `CLAUDE.md` §Status). Tidak ada tool-fix ke `migration-tool/templates` |
 | 2 — Diff & Compatibility Analysis | | | | |
 | 3 — Migration Spec | | | | |
 | 4 — Spec Completeness Review | | | | |
@@ -42,7 +43,7 @@ kolom modul ditambahkan di tabel supaya tetap bisa dipilah.
 | 9 — Dev Testing | | | | |
 | 10 — QA Testing | | | | |
 | 11 — UAT Sign-off | | | | |
-| **Total** | | 5 | 0 | |
+| **Total** | | 6 | 0 | |
 
 ## Catatan Definisi
 

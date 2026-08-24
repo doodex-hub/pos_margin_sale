@@ -204,45 +204,59 @@ wajib selesai penuh sebelum F (Template)**.
 ## Status saat ini
 
 **Ringkasan cepat (2026-08-24):** Step 1-5 selesai ketiga modul. Step 6 (Code Migration) **selesai
-penuh untuk `sale_margin_threshold` dan `pos_margin_threshold`** (termasuk Tour test interaktif nyata
-yang PASS untuk `pos_margin_threshold`), **hampir selesai untuk `pin_message`** (Fase A-F sudah, Tour
-test interaktif belum ditulis). Step 7 N/A. **Belum dikerjakan: Step 8-11.**
+penuh untuk ketiga modul** — `pos_margin_threshold` DAN `pin_message` masing-masing punya Tour test
+interaktif nyata yang PASS (jalur utama), `sale_margin_threshold` selesai lewat G1/G2 + `MF-21`
+dikonfirmasi sebagai catatan deployment (bukan bug). Step 7 N/A. **Belum dikerjakan: Step 8-11.**
 
 **Milestone terbesar sesi ini — Mode D (Chrome asli di Docker) berhasil dipasang dan dipakai untuk
 verifikasi interaktif nyata**, bukan cuma install test. `docker-env/Dockerfile` diinstansiasi
 (`google-chrome-stable` + `websocket-client`), `docker-compose.yml` pakai `build: .` +
-`shm_size: 2gb`. Ini menemukan `pos_margin_threshold` punya masalah JAUH lebih dalam dari perkiraan
-awal Step 2 — **G1 (install) PASS padahal fitur JS-nya rusak total** — baru ketahuan dari Tour test:
+`shm_size: 2gb`. Ini menemukan `pos_margin_threshold` DAN `pin_message` punya masalah JAUH lebih
+dalam dari perkiraan awal Step 2 — **G1 (install) PASS padahal fitur JS-nya rusak total** untuk
+keduanya — baru ketahuan dari Tour test:
 
-- **Root cause:** Odoo 18.0 memindahkan SELURUH arsitektur data POS (`Order`/`Orderline`/`Product` →
-  `PosOrder`/`PosOrderline`/`ProductProduct` di path baru, `@point_of_sale/app/store/models` jadi file
-  KOSONG 0-byte). Method-level API tetap byte-identik (kabar baik), tapi class name/path/entry-point
-  semua pindah.
-- **6 finding kritis ditemukan+diperbaiki+diverifikasi** (`MF-13`, `MF-15`..`MF-20`, lihat `FINDINGS.md`
-  detail lengkap): popup service dihapus, class model dipindah, `Order.pay()` tidak lagi dipanggil
-  tombol Pay (pindah ke `PosStore.pay()`), loader field custom pindah API (`_load_pos_data_fields`),
-  Owl `Orderline` component validasi strict props shape, xpath `orderline.xml` butuh descendant bukan
-  direct-child.
-- **Diverifikasi PENUH lewat Tour test nyata** (`pos_margin_threshold/static/tests/tours/margin_threshold_tour.js`
+- **`pos_margin_threshold` — root cause:** Odoo 18.0 memindahkan SELURUH arsitektur data POS
+  (`Order`/`Orderline`/`Product` → `PosOrder`/`PosOrderline`/`ProductProduct` di path baru,
+  `@point_of_sale/app/store/models` jadi file KOSONG 0-byte). Method-level API tetap byte-identik
+  (kabar baik), tapi class name/path/entry-point semua pindah. **6 finding kritis
+  ditemukan+diperbaiki+diverifikasi** (`MF-13`, `MF-15`..`MF-20`, lihat `FINDINGS.md` detail lengkap):
+  popup service dihapus, class model dipindah, `Order.pay()` tidak lagi dipanggil tombol Pay (pindah
+  ke `PosStore.pay()`), loader field custom pindah API (`_load_pos_data_fields`), Owl `Orderline`
+  component validasi strict props shape, xpath `orderline.xml` butuh descendant bukan direct-child.
+  **Diverifikasi PENUH lewat Tour test nyata** (`pos_margin_threshold/static/tests/tours/margin_threshold_tour.js`
   + companion `.py`) — Chrome asli benar-benar klik: buka POS → jual produk di bawah minimum → dialog
-  muncul dengan pesan benar → confirm → bayar → sukses. **"tour succeeded", 0 failed/0 error dari
-  18 test.**
-- **Juga ditemukan (tidak terkait POS):** `sale_margin_threshold` `MF-21` — Odoo 18.0 `Environment.lang`
-  sekarang validasi ketat bahasa terinstall; modul ini pakai teknik bilingual EN/FR yang butuh bahasa
-  Prancis genuinely terinstall di database (dikonfirmasi BUKAN bug kode, tapi butuh konfirmasi dev
-  untuk environment production).
-- **`pin_message`:** `MF-12`/`MF-14` (import chatter.js, xpath message_card_list) sudah diperbaiki
-  dan dikonfirmasi via browser (console bersih) — TAPI belum ada Tour test tertulis untuk modul ini
-  (klik-interaktif pin Discuss channel, section Pinned Messages — risiko tertinggi project ini,
-  `MF-09`/DIFF-06, masih belum diverifikasi eksekusi nyata).
+  muncul dengan pesan benar → confirm → bayar → sukses.
+- **`pin_message` — root cause:** mekanisme lama untuk membawa field custom (`is_pinned`) ke frontend
+  lewat full-override `Chatter.load()` sudah tidak berfungsi (`this.threadService` dihapus di 18.0).
+  **2 finding kritis ditemukan+diperbaiki+diverifikasi** (`MF-22`: `load()` override dihapus total,
+  digantikan pola baru `MF-23`: Python `mail.message._to_store()` override), plus 2 fix sebelumnya
+  yang sudah ada dari G2 (`MF-12` import path chatter, `MF-14` xpath `message_card_list.xml`).
+  **Diverifikasi PENUH lewat Tour test nyata** (`pin_message/static/tests/tours/pin_message_tour.js`
+  + companion `.py`) — Chrome asli benar-benar klik: tulis log note → pin lewat tombol inline →
+  section Pinned Messages muncul dengan badge & message card → unpin → section hilang.
+  **Jalur Discuss channel (`messagePinService`, `MF-09`/DIFF-06, risiko tertinggi project ini) BELUM
+  ada Tour test** — kandidat lanjutan Step 9, bukan blocker Step 8 (jalur log note yang paling umum
+  dipakai sudah terverifikasi penuh).
+- **Hasil akhir gabungan (re-run bersih, `docker compose down -v`, ketiga modul + kedua Tour test
+  sekaligus):** `tour succeeded` untuk `pos_margin_threshold` dan `pin_message`, **0 failed, 1
+  error(s) of 19 tests** — 1 error itu `MF-21` (`sale_margin_threshold`), tidak terkait dua modul lain.
+- **`sale_margin_threshold` `MF-21`:** Odoo 18.0 `Environment.lang` sekarang validasi ketat bahasa
+  terinstall; modul ini pakai teknik bilingual EN/FR yang butuh bahasa Prancis genuinely terinstall
+  di database (dikonfirmasi BUKAN bug kode, tapi butuh konfirmasi dev untuk environment production).
+- **Lesson environment penting (jangan diulang):** `--load-language=fr_FR` di `docker-compose.yml`
+  (dipasang sementara untuk verifikasi `MF-21`) sempat bocor jadi bahasa DEFAULT SELURUH SESI server
+  (bukan cuma satu user), menyamar sebagai regresi Tour test `pos_margin_threshold` (modal "Open
+  Register" ter-render Prancis, xpath teks tidak match). Root-cause via screenshot (`docker cp` dari
+  container exited). **Fix permanen:** flag dihapus dari `docker-compose.yml` (lihat komentar di
+  file itu, hanya dipasang manual sekali kalau `MF-21` perlu re-verifikasi), dan tour text-based
+  dialog matcher diubah language-agnostic di kedua tour (`Dialog.confirm()` tanpa argumen teks).
 
 **Kandidat knowledge base sudah ditulis:** `migration-tool/migration-records/pos-margin-sale_17.0_18.0/SUMMARY.md`
-(4 kategori temuan siap-review sesi curation — arsitektur data POS, Owl props validation, lesson
-G1≠G2, validasi bahasa).
+(ditulis sebelum `MF-22`/`MF-23` ditemukan — dev sudah commit manual sekali, mungkin perlu entry
+tambahan untuk `MF-22`/`MF-23`, belum diminta eksplisit oleh dev).
 
-**Belum dikerjakan:** Tour test `pin_message` (3 kandidat dari `05b_TEST_PLAN_MIGRATION.md` —
-duplikasi tombol, pin Discuss channel, section Pinned Messages), lalu Step 8 (Code Review, gate) →
-9 (Dev Testing, gate) → 10 (QA, gate) → 11 (UAT, gate) untuk ketiga modul.
+**Belum dikerjakan:** Step 8 (Code Review, gate) → 9 (Dev Testing, gate, termasuk Tour test jalur
+Discuss channel `pin_message` yang masih kosong) → 10 (QA, gate) → 11 (UAT, gate) untuk ketiga modul.
 
 > AI: update bagian ini sendiri di akhir tiap sesi kerja, supaya sesi berikutnya tahu persis harus
 > lanjut dari mana tanpa tanya ulang ke user.
@@ -256,7 +270,7 @@ duplikasi tombol, pin Discuss channel, section Pinned Messages), lalu Step 8 (Co
 | 3 | Migration Spec | ✅ Draft selesai (2026-08-24) | ✅ Draft selesai (2026-08-24) | ✅ Draft selesai (2026-08-24) |
 | 4 | Spec Completeness Review | ✔️ Gate lulus (2026-08-24) | ✔️ Gate lulus (2026-08-24) | ✔️ Gate lulus (2026-08-24) |
 | 5 | Acceptance Criteria & Test Plan | ✅ Draft selesai (2026-08-24) | ✅ Draft selesai (2026-08-24) | ✅ Draft selesai (2026-08-24) |
-| 6 | Code Migration | 🔄 Fase A-F draft, 1 fix wajib | 🔄 Fase A-C, 1 fix wajib (DIFF-01) | 🔄 Fase A-F draft, 2 fix wajib |
+| 6 | Code Migration | ✅ Selesai, Tour test PASS | ✅ Selesai (G1/G2 + `MF-21` dikonfirmasi) | ✅ Selesai, Tour test PASS (jalur log note; Discuss channel belum) |
 | 7 | Data Migration Scripts | — (N/A, port kode saja) | — | — |
 | 8 | Code Review | ⬜ | ⬜ | ⬜ |
 | 9 | Dev Testing | ⬜ | ⬜ | ⬜ |

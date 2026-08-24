@@ -56,17 +56,10 @@ patch(Chatter.prototype, {
     togglePinnedMessages() {
         this.state.showPinnedMessages = !this.state.showPinnedMessages;
     },
-    async load(thread, requestList = ["followers", "attachments", "messages", "suggestedRecipients"]) {
-        if (!thread.id || !this.state.thread?.eq(thread)) {
-            return;
-        }
-        if (this.props.hasActivities && !requestList.includes("activities")) {
-            requestList.push("activities");
-        }
-        const options = {
-            messageFields: ['is_pinned']
-        };
-        await this.threadService.fetchData(thread, requestList, options);
-    },
+    // 18.0: `load()` core (`chatter/web_portal/chatter.js`) sudah tidak menerima parameter
+    // custom field ("messageFields") -- `fetchData(requestList)` cuma minta kategori data
+    // ("messages", "activities", dst), bukan field spesifik. `is_pinned` sekarang datang
+    // otomatis lewat `mail.message._to_store()` (Python, lihat models/mail_message.py) --
+    // method ini EXTEND super() apa adanya, tidak lagi full-override.
 });
 Chatter.components = { ...Chatter.components, MessageCardList };
