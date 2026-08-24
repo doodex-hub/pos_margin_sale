@@ -234,10 +234,18 @@ DAN `sale_margin_threshold` sama-sama melewatkan seluruh folder `wizard/` (pola 
 diperbaiki sebelum gate dinyatakan lulus. `pin_message` lulus tanpa gap (struktur modul lebih
 sederhana).
 
+**Step 5 (Acceptance Criteria & Test Plan) selesai draft ketiga modul.** AC diturunkan dari
+`01b_BASELINE_SPEC.md` (BSL-NNN), bukan dari migration spec. **Tour test BARU yang wajib ditulis
+Step 6/9:** `pos_margin_threshold` 1 (blocking/confirm popup POS), `pin_message` 3 (duplikasi
+tombol, pin Discuss channel — prioritas tertinggi, section Pinned Messages). `sale_margin_threshold`
+tidak butuh tour sama sekali (tidak ada Owl/JS).
+
 **Field terbuka:** tidak ada untuk checklist Step 1. Untuk Step 6, kandidat entry baru ke
 `migration-tool/knowledge/dependency-compat/` (mail, point_of_sale, sale — lihat §3 tiap
 `02_DIFF_ANALYSIS.md`) menunggu verifikasi instalasi nyata sebelum ditulis ke `migration-records/`.
-**Belum dikerjakan:** Step 5-11 untuk ketiga modul.
+**Belum dikerjakan:** Step 6-11 untuk ketiga modul — Step 6 (Code Migration) adalah step pertama
+yang benar-benar menulis kode 18.0, per-fase A1→G2, satu fase per giliran (disiplin wajib, beda
+dari Step 1-5 yang boleh sekaligus lintas modul).
 
 > AI: update bagian ini sendiri di akhir tiap sesi kerja, supaya sesi berikutnya tahu persis harus
 > lanjut dari mana tanpa tanya ulang ke user.
@@ -250,7 +258,7 @@ sederhana).
 | 2 | Diff & Compatibility Analysis | ✅ Draft selesai (2026-08-24) | ✅ Draft selesai (2026-08-24) | ✅ Draft selesai (2026-08-24) |
 | 3 | Migration Spec | ✅ Draft selesai (2026-08-24) | ✅ Draft selesai (2026-08-24) | ✅ Draft selesai (2026-08-24) |
 | 4 | Spec Completeness Review | ✔️ Gate lulus (2026-08-24) | ✔️ Gate lulus (2026-08-24) | ✔️ Gate lulus (2026-08-24) |
-| 5 | Acceptance Criteria & Test Plan | ⬜ | ⬜ | ⬜ |
+| 5 | Acceptance Criteria & Test Plan | ✅ Draft selesai (2026-08-24) | ✅ Draft selesai (2026-08-24) | ✅ Draft selesai (2026-08-24) |
 | 6 | Code Migration | ⬜ | ⬜ | ⬜ |
 | 7 | Data Migration Scripts | — (N/A, port kode saja) | — | — |
 | 8 | Code Review | ⬜ | ⬜ | ⬜ |

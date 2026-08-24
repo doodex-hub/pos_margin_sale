@@ -29,6 +29,7 @@ kolom modul ditambahkan di tabel supaya tetap bisa dipilah.
 | 2 — Diff & Compatibility Analysis | pos_margin_threshold, sale_margin_threshold, pin_message | 1 | 0 | Satu prompt ("lanjut") menghasilkan Step 2 ketiga modul sekaligus (tanpa native-target — sebagian besar ditandai `[TIDAK TERVERIFIKASI]`) + 1 finding baru (`MF-11`). Temuan kritis: `sale_margin_threshold` DIFF-01 (`<tree>`→`<list>` install-blocking, high confidence dari knowledge base) |
 | 3 — Migration Spec | pos_margin_threshold, sale_margin_threshold, pin_message | 1 | 0 | Sama prompt ("lanjut") lanjut tanpa jeda ke Step 3 ketiga modul — strategi per-file + Critical Migration Blockers + urutan testing, berdasar Step 1/2. Tidak ada tool-fix |
 | 4 — Spec Completeness Review | pos_margin_threshold, sale_margin_threshold, pin_message | 1 | 0 | Prompt ("LANJUUT, kenapa sering berhenti...") — feedback: hanya berhenti di gate/keputusan asli. Step 4 menemukan gap nyata (folder `wizard/` hilang dari draft Step 3 di 2 modul), diperbaiki sebelum gate dinyatakan lulus |
+| 5 — Acceptance Criteria & Test Plan | pos_margin_threshold, sale_margin_threshold, pin_message | 1 | 0 | Lanjut otomatis tanpa prompt baru (mengikuti feedback "jangan berhenti") — AC diturunkan dari BSL-NNN, test plan mengidentifikasi 4 tour test baru yang wajib ditulis (1 pos_margin_threshold, 3 pin_message) |
 | 2 — Diff & Compatibility Analysis | | | | |
 | 3 — Migration Spec | | | | |
 | 4 — Spec Completeness Review | | | | |
