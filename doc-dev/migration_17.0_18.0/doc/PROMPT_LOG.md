@@ -25,6 +25,7 @@ kolom modul ditambahkan di tabel supaya tetap bisa dipilah.
 | 0 — Bootstrap | (semua) | 5 | 0 | Scope 3-modul + sifat migrasi + keputusan dual-branch (bukan dual-clone) + keputusan mengabaikan `origin/18.0` — semua lewat AskUserQuestion, tidak ada perubahan ke `migration-tool/templates` itu sendiri |
 | 1 — Intake & Baseline Spec | pos_margin_threshold | 1 | 0 | Satu prompt ("lanjut") menghasilkan `01a_MIGRATION_INTAKE.md` + `01b_BASELINE_SPEC.md` draft lengkap + 4 finding (`MF-01..04`) ke `FINDINGS.md` — sebagian besar leverage dokumen backfill (`01A_FUNCTIONAL_SPEC.md`/`01B_ACCEPTANCE_CRITERIA.md`) yang sudah tervalidasi eksekusi, bukan ditulis dari nol |
 | 1 — Intake & Baseline Spec | sale_margin_threshold | 1 | 0 | Satu prompt ("comit saja dan lanjut") menghasilkan Step 1 lengkap modul ini + 4 finding baru (`MF-05..08`), termasuk 1 temuan `[PERLU-KEPUTUSAN]` prioritas Tinggi (`MF-06`, batch-confirm crash) |
+| 1 — Intake & Baseline Spec | pin_message | 1 | 0 | Prompt ("kenapa harus berhenti, tidak lanjut saja") — feedback: lanjutkan tiap modul tanpa berhenti minta konfirmasi. Step 1 modul ini selesai + 2 finding (`MF-09..10`) dalam giliran yang sama tanpa jeda |
 | 2 — Diff & Compatibility Analysis | | | | |
 | 3 — Migration Spec | | | | |
 | 4 — Spec Completeness Review | | | | |

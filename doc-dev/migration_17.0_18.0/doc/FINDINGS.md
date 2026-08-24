@@ -8,7 +8,7 @@
 **Modul:** `pos_margin_threshold`, `sale_margin_threshold`, `pin_message` (satu file, prefix modul di
 tiap judul finding)
 **Migrasi:** 17.0 → 18.0
-**Terakhir update:** 2026-08-24 (Step 1 `pos_margin_threshold` + `sale_margin_threshold` — 7 finding diwarisi dari backfill, 2 temuan baru)
+**Terakhir update:** 2026-08-24 (Step 1 ketiga modul selesai — 9 finding diwarisi dari backfill, 3 temuan baru)
 
 ---
 
@@ -46,6 +46,8 @@ backfill, buat `MF-NNN` yang mereferensikan `F-NNN` aslinya secara eksplisit (ta
 | MF-06 | `action_confirm` override asumsi singleton — memecah batch-confirm Odoo core | sale_margin_threshold | 1 | `[DIWARISI-SOURCE]` `[PERLU-KEPUTUSAN]` | **Tinggi** | Terbuka |
 | MF-07 | Duplikasi XML-ID `product_template_inherit_sale_margin_threshold` — KEDUA file dimuat, yang kedua menimpa total yang pertama | sale_margin_threshold | 1 | `[DIWARISI-SOURCE]` | Sedang | Terbuka — baru ditemukan, lebih serius dari MF-04 (di sini file aktif dimuat, bukan dead) |
 | MF-08 | Manifest declare `assets._assets_sale` menunjuk folder `static/src/` yang tidak eksis | sale_margin_threshold | 1 | `[DIWARISI-SOURCE]` | Rendah | Terbuka — baru ditemukan |
+| MF-09 | `onClickPin` JS menimpa total (bukan extend) patch core `discuss/message_pin` | pin_message | 1 | `[DIWARISI-SOURCE]` `[PERLU-KEPUTUSAN]` | Sedang | Terbuka |
+| MF-10 | `console.log` debug tertinggal di `pinMessage.js` | pin_message | 1 | `[DIWARISI-SOURCE]` | Rendah | Terbuka |
 
 ---
 
@@ -145,6 +147,31 @@ backfill, buat `MF-NNN` yang mereferensikan `F-NNN` aslinya secara eksplisit (ta
 **Deskripsi:** Manifest mendeklarasikan glob asset ke `sale_margin_threshold/static/src/**/*`, tapi folder `static/src/` tidak ada sama sekali di modul ini. Tidak error (glob kosong), kemungkinan sisa boilerplate scaffold yang tidak dibersihkan.
 **Dampak di 18.0:** Sangat rendah — tidak ada perilaku yang bergantung padanya.
 **Rekomendasi:** Bisa dihapus sebagai bagian cleanup, TAPI itu perubahan (walau trivial) di luar "port kode saja" murni — cukup pertahankan apa adanya kecuali dev menyetujui pembersihan.
+**Keputusan pemilik modul:** *(kosong)*
+
+---
+
+### MF-09 — `onClickPin` JS menimpa total (bukan extend) patch core `discuss/message_pin`
+**Ditemukan di:** Step 1 (2026-08-24) — diwarisi dari `doc-dev/backfill/FINDINGS.md` **F-06**
+**Tag:** `[DIWARISI-SOURCE]` `[PERLU-KEPUTUSAN]`
+**Ref:** `BSL-002` (`01_intake/pin_message/01b_BASELINE_SPEC.md`), backfill `F-06`
+**Lokasi:** `pin_message/static/src/js/message.js:11-27` (`Message.prototype.onClickPin`)
+**Deskripsi:** Patch `onClickPin` MENIMPA TOTAL (tidak pernah panggil `super.onClickPin()`) method dengan nama sama di patch core `discuss/message_pin/common/message_patch.js`. Perilaku SAAT INI identik dengan core (dikonfirmasi baca source core saat backfill), tapi pola override total ini berisiko silent-diverge kalau core berubah.
+**Dampak di 18.0:** **Risiko migrasi PALING TINGGI di modul `pin_message`** — kalau Odoo 18.0 mengubah behavior `onClickPin` di core (bukan cuma lokasi/nama file), full-override modul ini TIDAK akan otomatis ikut berubah karena tidak pernah delegasi ke `super()`. WAJIB dicek ulang line-by-line terhadap source core `message_patch.js` versi 18.0 di Step 2 — tidak cukup diasumsikan sama dari kecocokan di 17.0.
+**Rekomendasi:** Backfill merekomendasikan ganti jadi `super.onClickPin()` untuk robustness — itu **perubahan struktural** (bukan cuma port), di luar scope "port kode saja" kecuali disetujui eksplisit sebagai bagian migrasi (bisa dipertimbangkan KHUSUS kalau Step 2 menemukan core 18.0 sudah berubah dan override total ini pasti pecah — di titik itu "mengikuti pola `super()`" jadi WAJIB demi kompatibilitas, bukan lagi opsional).
+**Keputusan pemilik modul:** *(kosong — diisi manusia)*
+
+---
+
+### MF-10 — `console.log` debug tertinggal di `pinMessage.js`
+**Ditemukan di:** Step 1 (2026-08-24) — diwarisi dari `doc-dev/backfill/FINDINGS.md` **F-07**
+**Tag:** `[DIWARISI-SOURCE]`
+**Prioritas:** Rendah
+**Ref:** `BSL-005`
+**Lokasi:** `pin_message/static/src/js/pinMessage.js:7`
+**Deskripsi:** `console.log(component.message.type)` di baris pertama callback `condition` action registry — dieksekusi setiap kali action menu pesan di-render (berpotensi sangat sering di chatter aktif).
+**Dampak di 18.0:** Sangat rendah — tidak ada risiko fungsional, cuma noise di browser console.
+**Rekomendasi:** Bisa dihapus sebagai cleanup trivial, tapi tetap di luar "port kode saja" murni kecuali disetujui eksplisit.
 **Keputusan pemilik modul:** *(kosong)*
 
 ---
