@@ -203,61 +203,46 @@ wajib selesai penuh sebelum F (Template)**.
 
 ## Status saat ini
 
-**Step 1 + Step 2 SELESAI untuk KETIGA modul (2026-08-24).** Bootstrap: branch `migration/18.0` dari
-`backfill/17.0` (commit `9d55d23`/`26ab2be`). Step 1 leverage berat `doc-dev/backfill/spec/` (tervalidasi
-Docker). Step 2 disusun TANPA akses `native-target` (dikonfirmasi dev tidak ada) — sebagian besar
-temuan Step 2 ditandai `[TIDAK TERVERIFIKASI]`, WAJIB dicek ulang empiris di Step 6 G1 (install)/G2
-(browser), bukan diperlakukan final. **11 finding total** di `FINDINGS.md`, termasuk 1 baru dari Step 2
-(`MF-11`, pola sama `MF-09`).
+**Ringkasan cepat (2026-08-24):** Step 1-5 selesai ketiga modul. Step 6 (Code Migration) **selesai
+penuh untuk `sale_margin_threshold` dan `pos_margin_threshold`** (termasuk Tour test interaktif nyata
+yang PASS untuk `pos_margin_threshold`), **hampir selesai untuk `pin_message`** (Fase A-F sudah, Tour
+test interaktif belum ditulis). Step 7 N/A. **Belum dikerjakan: Step 8-11.**
 
-**Temuan Step 2 PALING KRITIS:** `sale_margin_threshold` **DIFF-01** — 2 xpath di `views/sale_order.xml`
-menarget elemen `<tree>` di embedded order_line view core (`sale.view_order_form`). Odoo 18.0
-mengganti `<tree>`→`<list>` SECARA UNIVERSAL (**install-blocking, High Confidence dari PR resmi**,
-bukan dugaan) — kedua xpath ini **WAJIB diubah `/tree`→`/list`** di Step 3/6, atau modul gagal install
-total. Ini satu-satunya temuan Step 2 yang high-confidence/pasti (bukan `[TIDAK TERVERIFIKASI]`).
+**Milestone terbesar sesi ini — Mode D (Chrome asli di Docker) berhasil dipasang dan dipakai untuk
+verifikasi interaktif nyata**, bukan cuma install test. `docker-env/Dockerfile` diinstansiasi
+(`google-chrome-stable` + `websocket-client`), `docker-compose.yml` pakai `build: .` +
+`shm_size: 2gb`. Ini menemukan `pos_margin_threshold` punya masalah JAUH lebih dalam dari perkiraan
+awal Step 2 — **G1 (install) PASS padahal fitur JS-nya rusak total** — baru ketahuan dari Tour test:
 
-**Prioritas risiko Step 2 (urutan penanganan Step 6), per modul:**
-1. `sale_margin_threshold` — DIFF-01 (fix wajib konkret di atas) + `MF-06` (batch-confirm, verifikasi ulang)
-2. `pin_message` — paling banyak unknown `[TIDAK TERVERIFIKASI]` (import path `@mail/core/*`, xpath ke class QWeb `mail.Chatter`/`mail.Message`, `this.messagePinService` implicit access) — TIDAK ADA fix konkret yang bisa ditulis sekarang, semua butuh verifikasi G1/G2 nyata
-3. `pos_margin_threshold` — unknown serupa di area POS store (`@point_of_sale/app/store/*`), + `MF-11` baru (pola override total, sama seperti `MF-09`)
+- **Root cause:** Odoo 18.0 memindahkan SELURUH arsitektur data POS (`Order`/`Orderline`/`Product` →
+  `PosOrder`/`PosOrderline`/`ProductProduct` di path baru, `@point_of_sale/app/store/models` jadi file
+  KOSONG 0-byte). Method-level API tetap byte-identik (kabar baik), tapi class name/path/entry-point
+  semua pindah.
+- **6 finding kritis ditemukan+diperbaiki+diverifikasi** (`MF-13`, `MF-15`..`MF-20`, lihat `FINDINGS.md`
+  detail lengkap): popup service dihapus, class model dipindah, `Order.pay()` tidak lagi dipanggil
+  tombol Pay (pindah ke `PosStore.pay()`), loader field custom pindah API (`_load_pos_data_fields`),
+  Owl `Orderline` component validasi strict props shape, xpath `orderline.xml` butuh descendant bukan
+  direct-child.
+- **Diverifikasi PENUH lewat Tour test nyata** (`pos_margin_threshold/static/tests/tours/margin_threshold_tour.js`
+  + companion `.py`) — Chrome asli benar-benar klik: buka POS → jual produk di bawah minimum → dialog
+  muncul dengan pesan benar → confirm → bayar → sukses. **"tour succeeded", 0 failed/0 error dari
+  18 test.**
+- **Juga ditemukan (tidak terkait POS):** `sale_margin_threshold` `MF-21` — Odoo 18.0 `Environment.lang`
+  sekarang validasi ketat bahasa terinstall; modul ini pakai teknik bilingual EN/FR yang butuh bahasa
+  Prancis genuinely terinstall di database (dikonfirmasi BUKAN bug kode, tapi butuh konfirmasi dev
+  untuk environment production).
+- **`pin_message`:** `MF-12`/`MF-14` (import chatter.js, xpath message_card_list) sudah diperbaiki
+  dan dikonfirmasi via browser (console bersih) — TAPI belum ada Tour test tertulis untuk modul ini
+  (klik-interaktif pin Discuss channel, section Pinned Messages — risiko tertinggi project ini,
+  `MF-09`/DIFF-06, masih belum diverifikasi eksekusi nyata).
 
-Folder referensi (`native-*`/`third-party-*`): dikonfirmasi dev tidak ada, project-wide. Source
-dibekukan. **Step 3 (Migration Spec) juga selesai draft ketiga modul** — `03_MIGRATION_SPEC.md`
-tiap modul sudah berisi strategi per-file, Critical Migration Blockers, dan urutan testing. **Belum
-dikerjakan:** Step 4-11 untuk ketiga modul (Step 6 Code Migration BELUM dimulai — semua "strategi"
-di Step 3 masih rencana, belum ada kode 18.0 yang benar-benar ditulis).
+**Kandidat knowledge base sudah ditulis:** `migration-tool/migration-records/pos-margin-sale_17.0_18.0/SUMMARY.md`
+(4 kategori temuan siap-review sesi curation — arsitektur data POS, Owl props validation, lesson
+G1≠G2, validasi bahasa).
 
-**Step 4 (Spec Completeness Review) gate lulus ketiga modul (2026-08-24)** — commit `45848a7`
-(Step 2+3). Gate ini menangkap **gap nyata**: draft `03_MIGRATION_SPEC.md` `pos_margin_threshold`
-DAN `sale_margin_threshold` sama-sama melewatkan seluruh folder `wizard/` (pola berulang, dicatat di
-`04_completeness/sale_margin_threshold/04_SPEC_COMPLETENESS_REVIEW.md` sebagai lesson) — sudah
-diperbaiki sebelum gate dinyatakan lulus. `pin_message` lulus tanpa gap (struktur modul lebih
-sederhana).
-
-**Step 6 (Code Migration) SEDANG BERJALAN (2026-08-24) — sudah menghasilkan bukti nyata, bukan cuma
-draft.** Docker `docker-env/docker-compose.yml` diupdate ke `odoo:18.0` (project name
-`pos_margin_sale_migration_18`). **G1 (install test) dijalankan sungguhan lewat Bash — PASS untuk
-ketiga modul** (exit code 0, 67/67 modules loaded) setelah 2 fix: manifest version bump ketiganya,
-dan `<tree>`→`<list>` di `sale_margin_threshold/views/sale_order.xml` (`DIFF-01`, install-blocking
-terkonfirmasi). **G2 (browser nyata) juga dijalankan** lewat Claude Browser tool + `docker exec`
-cross-check ke source Odoo 18.0 sungguhan (bukan dugaan) — menemukan DAN memperbaiki **3 breaking
-change nyata**:
-- `MF-12` — `pin_message/static/src/js/chatter.js`: import `@mail/core/web/chatter` (path 17.0)
-  sudah tidak ada di 18.0 → diganti `@mail/chatter/web_portal/chatter`. **RESOLVED.**
-- `MF-13` — `pos_margin_threshold/static/src/store/models/models.js`: `ConfirmPopup`/`ErrorPopup`
-  + service `popup` **dihapus total** di 18.0 (fitur inti blocking-payment modul ini) → diganti
-  service `dialog` + `ConfirmationDialog`/`AlertDialog`/`ask()`. **RESOLVED**, prioritas Tinggi.
-- `MF-14` — `pin_message/static/src/xml/message_card_list.xml`: xpath `//button[...]` tidak match
-  elemen core yang berubah jadi `<a role="button">` → diperbaiki jadi `//a[...]`. **RESOLVED.**
-
-**Batasan JUJUR sesi ini:** interaksi klik nyata (toggle pin, jual produk di bawah minimum, buka
-dialog) BELUM bisa dilakukan — tool browser sesi ini kena isu Service Worker (`/bus/websocket_worker_bundle`)
-yang mencegah webclient mounting penuh, dikonfirmasi TIDAK terkait kode project (juga muncul di
-sesi sebelum modul manapun diinstall). **Dev WAJIB klik-test manual di browser desktop biasa**
-sebelum Step 8 dianggap final — checklist di `05b_TEST_PLAN_MIGRATION.md` tiap modul.
-
-**Belum dikerjakan:** sisa Fase Step 6 untuk `sale_margin_threshold` (E/F N/A, tapi B1/C1 belum
-dicatat detail), klik-test G2 manual dev, lalu Step 7 (N/A) → 8-11.
+**Belum dikerjakan:** Tour test `pin_message` (3 kandidat dari `05b_TEST_PLAN_MIGRATION.md` —
+duplikasi tombol, pin Discuss channel, section Pinned Messages), lalu Step 8 (Code Review, gate) →
+9 (Dev Testing, gate) → 10 (QA, gate) → 11 (UAT, gate) untuk ketiga modul.
 
 > AI: update bagian ini sendiri di akhir tiap sesi kerja, supaya sesi berikutnya tahu persis harus
 > lanjut dari mana tanpa tanya ulang ke user.

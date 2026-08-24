@@ -109,12 +109,20 @@
 
 - **Status:** ✅ Selesai (sudah sintaks modern, tidak ada perubahan)
 
+## [Fase A5, revisi] `MF-21` — `Environment.lang` validasi ketat bahasa terinstall (ditemukan saat run test suite penuh)
+
+- **Scope:** `models/sale_order.py:42` (`wizard.with_context(lang='fr_FR').write(...)`)
+- **Temuan:** Menjalankan test suite penuh (`--test-enable`, bukan cuma `-i` install) pertama kali di 18.0 menemukan `test_action_confirm_wizard_path_when_not_blocking` gagal `UserError: Invalid language code: fr_FR` — Odoo 18.0 `Environment.lang` (`odoo/api.py`) sekarang validasi ketat bahasa context terhadap `res.lang` yang benar-benar terinstall.
+- **Verifikasi:** Menambahkan `--load-language=fr_FR` ke command Docker membuat test yang sama (dan semua 17 test lain) pass `0 failed, 0 error`. **Dikonfirmasi ini BUKAN bug kode** — teknik bilingual `with_context(lang=...).write(...)` tetap valid selama bahasa target genuinely terinstall.
+- **Aksi:** TIDAK ADA perubahan kode (`sale_order.py` port apa adanya) — ini murni temuan environment/deployment, dicatat sebagai `MF-21` `[CATATAN-DEPLOYMENT]` di `FINDINGS.md`, butuh konfirmasi dev bahwa production akan punya bahasa Prancis terinstall.
+- **Status:** ✅ Dikonfirmasi, bukan blocker kode — **perlu keputusan dev** (lihat `MF-21`).
+
 ---
 
 ## Temuan di Luar Spec
 
-- [x] Tidak ada temuan STRUKTUR baru — TAPI ada eskalasi dampak `MF-06` (lihat entri G1 di atas), dicatat balik ke `FINDINGS.md`.
+- [x] Tidak ada temuan STRUKTUR baru — TAPI ada eskalasi dampak `MF-06` (lihat entri G1 di atas) dan temuan baru `MF-21` (validasi bahasa), dicatat balik ke `FINDINGS.md`.
 
 ## Kontribusi ke Knowledge Base
 
-- [ ] Ada — kandidat `dependency-compat/sale/17-to-18.md`: konfirmasi `<tree>`→`<list>` di embedded `order_line` view `sale.view_order_form` genuinely install-blocking di 18.0 (dikonfirmasi eksekusi nyata, bukan cuma baca PR) — dicatat ke `migration-records/pos-margin-sale_17.0_18.0/SUMMARY.md`.
+- [x] Ada, sudah ditulis — `migration-records/pos-margin-sale_17.0_18.0/SUMMARY.md`: (1) konfirmasi `<tree>`→`<list>` di embedded `order_line` view `sale.view_order_form` genuinely install-blocking di 18.0 (dikonfirmasi eksekusi nyata, bukan cuma baca PR); (2) `Environment.lang` validasi ketat bahasa terinstall (`MF-21`).

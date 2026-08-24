@@ -8,7 +8,8 @@
 **Modul:** `pos_margin_threshold`, `sale_margin_threshold`, `pin_message` (satu file, prefix modul di
 tiap judul finding)
 **Migrasi:** 17.0 → 18.0
-**Terakhir update:** 2026-08-24 (Step 1 + Step 2 ketiga modul — 9 finding diwarisi dari backfill, 4 temuan baru)
+**Terakhir update:** 2026-08-24 (Step 6, Mode D — `pos_margin_threshold` POS data-model architecture
+overhaul ditemukan+diperbaiki+diverifikasi tour test nyata; total 20 finding, 9 diwarisi backfill)
 
 ---
 
@@ -52,6 +53,13 @@ backfill, buat `MF-NNN` yang mereferensikan `F-NNN` aslinya secara eksplisit (ta
 | MF-12 | `chatter.js` import `@mail/core/web/chatter` — path SUDAH TIDAK ADA di 18.0 | pin_message | 6 | `[GAP-MIGRASI]` | Tinggi | ✅ **RESOLVED** (2026-08-24) — diperbaiki jadi `@mail/chatter/web_portal/chatter`, dikonfirmasi via G2 browser + cross-check source container `odoo:18.0` |
 | MF-13 | `ConfirmPopup`/`ErrorPopup` (`@point_of_sale/app/utils/confirm_popup/*`, `@point_of_sale/app/errors/popups/*`) — komponen & service `popup` DIHAPUS TOTAL di 18.0 | pos_margin_threshold | 6 | `[GAP-MIGRASI]` | **Tinggi** | ✅ **RESOLVED** (2026-08-24) — diganti `dialog` service + `ConfirmationDialog`/`AlertDialog`/`ask()` dari `@web/core/confirmation_dialog/confirmation_dialog` + `@point_of_sale/app/store/make_awaitable_dialog`, dikonfirmasi cross-check source container `odoo:18.0` (pola dipakai core POS sendiri) |
 | MF-14 | `message_card_list.xml` xpath `//button[...]` — elemen core berubah jadi `<a role="button">` di 18.0, tag selector tidak match | pin_message | 6 | `[GAP-MIGRASI]` | Sedang | ✅ **RESOLVED** (2026-08-24) — xpath diubah jadi `//a[...]`, dikonfirmasi cross-check source container |
+| MF-15 | `@point_of_sale/app/store/models` — `Order`/`Orderline`/`Product` classes SUDAH TIDAK ADA (file kosong 0 byte); dipindah ke `@point_of_sale/app/models/*` dengan nama baru | pos_margin_threshold | 6 | `[GAP-MIGRASI]` | **Kritis** | ✅ **RESOLVED** — import diarahkan ke `ProductProduct`/`PosOrderline`/`PosOrder` di path baru |
+| MF-16 | `Order.prototype.pay()` — tombol "Pay" TIDAK LAGI memanggilnya sama sekali; entry point pindah ke `PosStore.prototype.pay()` | pos_margin_threshold | 6 | `[GAP-MIGRASI]` | **Kritis** — fitur inti blocking-payment tidak akan pernah jalan tanpa fix ini | ✅ **RESOLVED** — logic blocking dipindah ke patch `PosStore.prototype.pay()` di `pos_store.js` |
+| MF-17 | `PosStore.prototype._loadProductProduct()` — hook ini sudah tidak ada di 18.0, patch modul ini jadi dead code total | pos_margin_threshold | 6 | `[GAP-MIGRASI]` | Rendah (dead code, tidak crash) | ✅ **RESOLVED** — patch dihapus, tidak diperlukan lagi (fields.Float() core sudah default 0.0 aman) |
+| MF-18 | `pos.session._loader_params_product_product()` — hook dihapus total, diganti `_load_pos_data_fields()` per-model (`product.product`) | pos_margin_threshold | 6 | `[GAP-MIGRASI]` | **Tinggi** — field custom modul tidak akan pernah sampai ke frontend POS tanpa fix ini | ✅ **RESOLVED** — override dipindah ke `ProductProduct._load_pos_data_fields()` di `models/product.py`, override lama di `pos_session.py` dihapus |
+| MF-19 | Komponen Owl `Orderline` sekarang validasi ketat `props.line` (shape schema) — field custom yang ditambahkan `getDisplayData()` di-reject sebagai "unknown key" | pos_margin_threshold | 6 | `[GAP-MIGRASI]` | Tinggi (crash render kalau tidak diperbaiki) | ✅ **RESOLVED** — `Orderline.props.line.shape` di-patch untuk mendeklarasikan 3 key baru |
+| MF-20 | `orderline.xml` xpath `/ul[hasclass('info-list')]` (direct child) — core 18.0 menambah `<div>` wrapper, xpath direct-child tidak match lagi | pos_margin_threshold | 6 | `[GAP-MIGRASI]` | Tinggi (crash render QWeb) | ✅ **RESOLVED** — xpath diubah jadi descendant (`//ul[...]`) |
+| MF-21 | `Environment.lang` (18.0) validasi ketat — `UserError` kalau context `lang=fr_FR` tapi bahasa Prancis tidak diinstall di database | sale_margin_threshold | 6 | `[CATATAN-DEPLOYMENT]` | Sedang | ✅ Bukan bug kode — dikonfirmasi test pass 0 error setelah bahasa Prancis diinstall (`--load-language=fr_FR`). **Perlu dikonfirmasi ke dev:** environment production harus punya bahasa Prancis terinstall, atau `action_confirm()` bilingual EN/FR modul ini akan crash di 18.0 (TIDAK crash di 17.0 — lihat detail) |
 
 ---
 
@@ -212,7 +220,7 @@ backfill, buat `MF-NNN` yang mereferensikan `F-NNN` aslinya secara eksplisit (ta
 **Lokasi:** `pos_margin_threshold/static/src/store/models/models.js:4-5` (import), `:62,70` (pemakaian)
 **Deskripsi:** `@point_of_sale/app/utils/confirm_popup/confirm_popup` dan `@point_of_sale/app/errors/popups/error_popup`, plus service `this.env.services.popup` itu sendiri, **dihapus total** di Odoo 18.0 — diganti mekanisme `dialog` service + `ConfirmationDialog`/`AlertDialog` (`@web/core/confirmation_dialog/confirmation_dialog`) + helper `ask()` (`@point_of_sale/app/store/make_awaitable_dialog`), dikonfirmasi ini pola yang dipakai core POS 18.0 sendiri (`pos_store.js`).
 **Dampak:** Ini FITUR INTI modul (blocking/warning saat bayar produk di bawah minimum) — tanpa fix, `Order.pay()` akan crash (`popup` service undefined) SETIAP KALI kasir mencoba bayar order dengan produk di bawah minimum, walau modul "terinstall" sukses.
-**Status:** ✅ **RESOLVED 2026-08-24** — diganti ke `ask(this.env.services.dialog, {...})` (cabang confirm) dan `this.env.services.dialog.add(AlertDialog, {...})` (cabang block), pesan title/body tidak diubah. Dikonfirmasi import valid dari source container. **BELUM dikonfirmasi lewat klik interaktif nyata** (keterbatasan tool browser sesi ini) — dev WAJIB klik-test manual sebelum Step 8 final.
+**Status:** ✅ **RESOLVED dan TERVERIFIKASI PENUH 2026-08-24** — diganti ke `ask(this.env.services.dialog, {...})` (cabang confirm) dan `this.env.services.dialog.add(AlertDialog, {...})` (cabang block), pesan title/body tidak diubah. Blocking logic-nya sendiri juga dipindah dari `Order.pay()` (sudah tidak ada, lihat `MF-16`) ke `PosStore.pay()`. **Dikonfirmasi lewat Tour test nyata (Mode D, Chrome asli di Docker)** — `tests/test_margin_threshold_tour.py::test_pos_margin_threshold_below_minimum_confirm_tour`: klik Pay dengan produk di bawah minimum → dialog "Price unit less than minimum price" benar-benar muncul dengan body yang benar → klik Confirm → lanjut ke Payment Screen → validasi pembayaran sukses. "tour succeeded", 0 failed/0 error.
 **Keputusan pemilik modul:** Tidak perlu — perbaikan wajib kompatibilitas.
 
 ---
@@ -226,6 +234,95 @@ backfill, buat `MF-NNN` yang mereferensikan `F-NNN` aslinya secara eksplisit (ta
 **Dampak:** Kustomisasi tombol "See" (mengganti label "Jump") tidak akan pernah aktif — bukan install-blocking (QWeb JS template tidak divalidasi saat install, cuma saat asset bundle compile/dipakai), silent-gagal.
 **Status:** ✅ **RESOLVED 2026-08-24** — xpath diubah ke `//a[contains(@class, 'o-mail-MessageCard-jump')]`.
 **Keputusan pemilik modul:** Tidak perlu — perbaikan wajib kompatibilitas (bukan perubahan tampilan yang disengaja).
+
+---
+
+### MF-15 — POS data-model architecture: `Order`/`Orderline`/`Product` classes dipindah total — RESOLVED
+**Ditemukan di:** Step 6 Fase E (2026-08-24), lewat audit source proaktif (cross-check import path modul ini SATU PER SATU ke source container `odoo:18.0`, dipicu curiga setelah `MF-13`) — **bukan** dari error konsol otomatis, karena bug ini baru bermanifestasi saat asset bundle POS benar-benar di-render browser (tidak kelihatan dari install/G1, tidak kelihatan dari G2 awal yang cuma cek backend login)
+**Tag:** `[GAP-MIGRASI]`
+**Prioritas:** **Kritis**
+**Ref:** `06_implementation/pos_margin_threshold/06c_IMPLEMENTATION_LOG.md` Fase E
+**Lokasi:** `pos_margin_threshold/static/src/store/models/models.js:3` (import lama)
+**Deskripsi:** `@point_of_sale/app/store/models` — path yang di-import modul ini untuk `Order`, `Orderline`, `Product` — **masih ada sebagai file, TAPI isinya kosong (0 byte)**, dikonfirmasi `ls -la` di container `odoo:18.0`. Odoo 18.0 memindahkan seluruh arsitektur data POS ke pola baru ("Base model" reactive record, `static/src/app/models/`), dengan nama kelas baru: `Order`→`PosOrder` (`@point_of_sale/app/models/pos_order`), `Orderline`→`PosOrderline` (`@point_of_sale/app/models/pos_order_line`), `Product`→`ProductProduct` (`@point_of_sale/app/models/product_product`). Import lama menghasilkan `undefined` untuk ketiga nama tersebut — `patch(Order.prototype, ...)` akan crash `TypeError: Cannot read properties of undefined (reading 'prototype')` begitu bundle JS modul ini benar-benar dievaluasi browser.
+**Dampak:** Kritis — seluruh modul JS (bukan cuma fitur payment) gagal total begitu POS session dibuka, kalau tidak diperbaiki.
+**Kabar baik yang mengurangi risiko:** method-level API (`get_unit_display_price()`, `get_orderlines()`, `get_full_product_name()`, dst) **byte-identik nama & signature-nya** di kelas baru — dikonfirmasi baca source `pos_order_line.js`/`pos_order.js` langsung. Migrasi jadi soal ganti nama kelas & path import, BUKAN menulis ulang logic dari nol.
+**Status:** ✅ **RESOLVED dan TERVERIFIKASI** — import diperbaiki di `models.js`, dikonfirmasi install (G1) DAN Tour test interaktif (G2, `MF-13`) sama-sama pass.
+**Keputusan pemilik modul:** Tidak perlu — perbaikan wajib kompatibilitas, API publik yang dipakai modul ini tidak berubah semantiknya.
+
+---
+
+### MF-16 — `Order.prototype.pay()` tidak lagi dipanggil tombol "Pay" — RESOLVED
+**Ditemukan di:** Step 6 Fase E (2026-08-24), sambungan investigasi `MF-15` — dicek langsung "apa yang benar-benar dipanggil tombol Pay" di source `product_screen.xml`/`pos_store.js` container `odoo:18.0`
+**Tag:** `[GAP-MIGRASI]`
+**Prioritas:** **Kritis**
+**Ref:** `06_implementation/pos_margin_threshold/06c_IMPLEMENTATION_LOG.md` Fase E
+**Lokasi:** `pos_margin_threshold/static/src/store/models/models.js` (patch lama `Order.prototype.pay`), `pos_margin_threshold/static/src/store/pos_store.js` (lokasi baru)
+**Deskripsi:** Di 17.0, tombol "Pay" memanggil `Order.prototype.pay()` langsung — modul ini menaruh cek blocking-payment di situ. Di 18.0, tombol "Pay" (`product_screen.xml`) memanggil `this.pos.pay()` yaitu `PosStore.prototype.pay()` — method BARU yang tidak pernah memanggil `Order`/`PosOrder.pay()` sama sekali (method itu bahkan tidak ada lagi di kelas order). `PosStore.pay()` langsung menangani cek lot/serial number lalu navigasi ke Payment Screen.
+**Dampak:** Kritis — kalaupun `MF-15` (import) diperbaiki tapi patch tetap ditaruh di `Order.prototype`, method itu TIDAK PERNAH terpanggil oleh UI — fitur blocking-payment modul ini mati total secara silent (tidak ada error, cuma tidak pernah jalan).
+**Status:** ✅ **RESOLVED dan TERVERIFIKASI** — logic blocking (cek orderline di bawah minimum, dialog confirm/alert) dipindah jadi patch `PosStore.prototype.pay()` di `pos_store.js`, memanggil `super.pay(...arguments)` di akhir supaya lot-check dan navigasi payment screen bawaan core tetap jalan. Dikonfirmasi Tour test nyata (lihat `MF-13`).
+**Keputusan pemilik modul:** Tidak perlu — relokasi wajib mengikuti perubahan entry point core, behavior akhir identik 17.0.
+
+---
+
+### MF-17 — `PosStore.prototype._loadProductProduct()` hook sudah tidak ada — RESOLVED
+**Ditemukan di:** Step 6 Fase E (2026-08-24), audit source proaktif lanjutan
+**Tag:** `[GAP-MIGRASI]`
+**Prioritas:** Rendah (dead code, tidak crash apapun)
+**Lokasi:** `pos_margin_threshold/static/src/store/pos_store.js` (patch lama)
+**Deskripsi:** `_loadProductProduct()` — method yang di-patch modul ini untuk fallback `minimum_sale_price`/`minimum_sale_price_with_tax` ke `0` kalau falsy — **tidak ada lagi** di `PosStore` 18.0 (arsitektur loading data pindah total ke pola `_load_pos_data_fields`, lihat `MF-18`). Patch ke method yang tidak ada di prototype tidak error (`patch()` cuma menambah method baru yang tidak pernah dipanggil siapapun) — jadi ini silent dead code, bukan crash.
+**Dampak:** Rendah — fallback-nya juga sudah tidak relevan (field `fields.Float()` Odoo core selalu default `0.0`, bukan `null`/`undefined`, di hasil `read()`/`search_read()`).
+**Status:** ✅ **RESOLVED** — patch dihapus dari `pos_store.js` (bukan diperbaiki, karena tujuannya sudah tidak relevan).
+**Keputusan pemilik modul:** Tidak perlu — pembersihan dead code yang memang sudah tidak berfungsi apapun.
+
+---
+
+### MF-18 — `pos.session._loader_params_product_product()` diganti `_load_pos_data_fields()` — RESOLVED
+**Ditemukan di:** Step 6 Fase E (2026-08-24), sambungan investigasi `MF-15`/`MF-17` — dicek `grep` hook lama di `pos_session.py`/`product.py` core container `odoo:18.0`
+**Tag:** `[GAP-MIGRASI]`
+**Prioritas:** **Tinggi**
+**Ref:** `DIFF-05` (`02_diff/pos_margin_threshold/02_DIFF_ANALYSIS.md`)
+**Lokasi:** `pos_margin_threshold/models/pos_session.py` (override lama, dihapus), `pos_margin_threshold/models/product.py` (lokasi baru)
+**Deskripsi:** Mekanisme loading field custom ke frontend POS berubah total: dari `pos.session._loader_params_<model>()` (mutasi dict `params['search_params']['fields']`) jadi `<model>._load_pos_data_fields(self, config_id)` (`@api.model`, return list field, didefinisikan LANGSUNG di model yang datanya di-load — di sini `product.product`, bukan lagi di `pos.session`). Hook lama TIDAK ADA lagi di `pos.session`, jadi override modul ini jadi dead code (tidak pernah terpanggil) — konsisten pola `MF-17`.
+**Dampak:** Tinggi — field `minimum_sale_price`/`minimum_sale_price_with_tax` TIDAK AKAN PERNAH terkirim ke frontend POS tanpa fix ini, silent (tidak ada error apapun, popup/highlight cuma tidak pernah ter-trigger karena data-nya kosong/default).
+**Status:** ✅ **RESOLVED dan TERVERIFIKASI** — override lama di `pos_session.py` dihapus total (dengan catatan penjelasan di file), diganti override baru `ProductProduct._load_pos_data_fields()` di `models/product.py` (`super()._load_pos_data_fields(config_id)` + tambah 2 field). Dikonfirmasi Tour test nyata membuktikan data ini benar-benar sampai ke frontend (dialog below-minimum muncul dengan benar, artinya field ter-load dan ter-hitung).
+**Keputusan pemilik modul:** Tidak perlu — relokasi wajib mengikuti API baru, field yang di-expose identik.
+
+---
+
+### MF-19 — Owl `Orderline` component validasi ketat `props.line` shape — RESOLVED
+**Ditemukan di:** Step 6 Fase F (2026-08-24), lewat Tour test nyata (Mode D) — `OwlError: Invalid props for component 'Orderline': 'line' doesn't have the correct shape (unknown key 'minimumSalePrice', ...)`
+**Tag:** `[GAP-MIGRASI]`
+**Prioritas:** Tinggi (crash render kalau tidak diperbaiki — TIDAK terdeteksi G1, cuma dari render browser nyata)
+**Lokasi:** `pos_margin_threshold/static/src/store/models/models.js` (patch `getDisplayData()`)
+**Deskripsi:** Komponen Owl `Orderline` (`@point_of_sale/app/generic_components/orderline/orderline.js`) mendeklarasikan `static props = { line: { type: Object, shape: {...} } }` — Owl 18.0 validasi STRICT terhadap shape ini, key APAPUN yang tidak dideklarasikan di `shape` di-reject sebagai error fatal (bukan cuma warning). Field custom (`minimumSalePrice`, `minimumSalePriceWithTax`, `isLessMinimumSalePrice`) yang ditambahkan `getDisplayData()` modul ini tidak terdaftar di shape itu.
+**Dampak:** Fatal — begitu ada orderline yang datanya lewat `getDisplayData()` yang sudah dimodifikasi, SELURUH component tree Owl di titik itu crash (`[Owl] Unhandled error. Destroying the root component`), order screen tidak bisa dipakai.
+**Status:** ✅ **RESOLVED dan TERVERIFIKASI** — `patch(Orderline.props.line.shape, {minimumSalePrice: {type: String, optional: true}, minimumSalePriceWithTax: {...}, isLessMinimumSalePrice: {type: Boolean, optional: true}})` ditambahkan di `models.js`. Dikonfirmasi Tour test lanjut normal setelah fix ini.
+**Keputusan pemilik modul:** Tidak perlu — perbaikan wajib kompatibilitas, bagian tak terpisahkan dari mengekspos field baru lewat `getDisplayData()`.
+
+---
+
+### MF-20 — `orderline.xml` xpath direct-child tidak match wrapper baru — RESOLVED
+**Ditemukan di:** Step 6 Fase F (2026-08-24), lewat Tour test nyata — `Element '<xpath expr="...">' cannot be located in element tree`
+**Tag:** `[GAP-MIGRASI]`
+**Prioritas:** Tinggi (crash render QWeb — juga TIDAK terdeteksi G1)
+**Lokasi:** `pos_margin_threshold/static/src/store/orderline.xml`
+**Deskripsi:** Xpath `//li[contains(@class,'orderline')]/ul[hasclass('info-list')]/t[@t-slot='default']` mengasumsikan `<ul class="info-list">` adalah ANAK LANGSUNG dari `<li class="orderline">`. Core 18.0 menambah `<div class="d-flex flex-column w-100 gap-1">` sebagai wrapper di antaranya (dikonfirmasi baca `orderline.xml` core container) — xpath direct-child (`/ul`) tidak lagi match struktur baru.
+**Dampak:** Fatal untuk bagian ini — highlight teks peringatan "harga di bawah minimum" tidak akan pernah muncul, DAN karena xpath gagal resolve total, seluruh `t-inherit` ini bisa gagal (`ParseError`/`OwlError` di titik itu).
+**Status:** ✅ **RESOLVED dan TERVERIFIKASI** — xpath diubah ke descendant (`//ul[hasclass('info-list')]`, dua slash) supaya tetap match terlepas dari wrapper baru. Dikonfirmasi Tour test render bersih setelah fix.
+**Keputusan pemilik modul:** Tidak perlu — perbaikan wajib kompatibilitas, tidak mengubah maksud/isi kustomisasi asli.
+
+---
+
+### MF-21 — `Environment.lang` (18.0) validasi ketat bahasa terinstall — CATATAN DEPLOYMENT
+**Ditemukan di:** Step 6 (2026-08-24), lewat run test suite penuh (`--test-enable`) pertama kali di 18.0 — `sale_margin_threshold/tests/test_action_confirm.py::test_action_confirm_wizard_path_when_not_blocking` gagal `UserError: Invalid language code: fr_FR`
+**Tag:** `[CATATAN-DEPLOYMENT]` (bukan `[GAP-MIGRASI]` — lihat alasan di Deskripsi)
+**Prioritas:** Sedang
+**Lokasi:** `sale_margin_threshold/models/sale_order.py:42` (`wizard.with_context(lang='fr_FR').write(...)`)
+**Deskripsi:** Odoo 18.0 `Environment.lang` (`odoo/api.py`) sekarang me-raise `UserError` eksplisit kalau context `lang` bukan `en_US` DAN bukan bahasa yang benar-benar terinstall (`res.lang._get_data`). Test database sesi ini TIDAK punya bahasa Prancis terinstall (sama seperti environment test backfill 17.0 — dikonfirmasi `docker-compose.yml` 17.0 juga tidak install bahasa apapun secara eksplisit), tapi test yang SAMA PERSIS lolos 0 error di 17.0 dan baru gagal di 18.0 — **dikonfirmasi ini genuinely validasi BARU 18.0**, bukan config test yang berubah.
+**Verifikasi:** Menambahkan `--load-language=fr_FR` ke command Docker membuat SEMUA 17 test (termasuk yang ini) pass `0 failed, 0 error(s)` — membuktikan ini BUKAN bug kode `sale_order.py`, teknik `with_context(lang=...).write(...)` untuk field bilingual tetap valid selama bahasa targetnya benar-benar terinstall.
+**Dampak:** Kalau environment PRODUCTION modul ini nanti dijalankan TANPA bahasa Prancis terinstall, `action_confirm()` akan crash `UserError` setiap kali cabang `blocking_transaction_order=False` (wizard konfirmasi) dieksekusi — meng-crash alur core (confirm quotation), bukan cuma gagal senyap.
+**Status:** ✅ Dikonfirmasi bukan bug kode — **butuh keputusan/konfirmasi dev**: pastikan bahasa Prancis terinstall di environment production sebelum go-live 18.0 (kemungkinan besar SUDAH terinstall kalau modul ini memang dipakai user berbahasa Prancis, tapi wajib dikonfirmasi eksplisit, jangan diasumsikan).
+**Keputusan pemilik modul:** *(kosong — perlu konfirmasi eksplisit dev: bahasa Prancis terinstall di production?)*
 
 ---
 

@@ -1,13 +1,22 @@
 /** @odoo-module **/
 
-import { Orderline, Product, Order } from "@point_of_sale/app/store/models";
+import { ProductProduct } from "@point_of_sale/app/models/product_product";
+import { PosOrderline } from "@point_of_sale/app/models/pos_order_line";
+import { Orderline } from "@point_of_sale/app/generic_components/orderline/orderline";
 import { patch } from "@web/core/utils/patch";
-import { _t } from "@web/core/l10n/translation";
-import { ask } from "@point_of_sale/app/store/make_awaitable_dialog";
-import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
+import { formatCurrency } from "@point_of_sale/app/models/utils/currency";
+
+// The Orderline OWL component validates `line` against a strict props shape (Odoo 18.0) —
+// extra keys returned by getDisplayData() below must be declared here or Owl raises
+// "Invalid props for component 'Orderline'".
+patch(Orderline.props.line.shape, {
+    minimumSalePrice: { type: String, optional: true },
+    minimumSalePriceWithTax: { type: String, optional: true },
+    isLessMinimumSalePrice: { type: Boolean, optional: true },
+});
 
 
-patch(Product.prototype, {
+patch(ProductProduct.prototype, {
     get_minimum_sale_price() {
         return this.minimum_sale_price;
     },
@@ -18,63 +27,19 @@ patch(Product.prototype, {
 })
 
 
-patch(Orderline.prototype, {
+patch(PosOrderline.prototype, {
     set_unit_price(price) {
         super.set_unit_price(price);
     },
 
     getDisplayData() {
+        const product = this.get_product();
         return {
-            productName: this.get_full_product_name(),
-            price: this.getPriceString(),
-            qty: this.get_quantity_str(),
-            unit: this.get_unit().name,
-            unitPrice: this.env.utils.formatCurrency(this.get_unit_display_price()),
-            unitPriceInt: this.get_unit_display_price(),
-            oldUnitPrice: this.env.utils.formatCurrency(this.get_old_unit_display_price()),
-            discount: this.get_discount_str(),
-            customerNote: this.get_customer_note(),
-            internalNote: this.getNote(),
-            comboParent: this.comboParent?.get_full_product_name(),
-            pack_lot_lines: this.get_lot_lines(),
-            price_without_discount: this.env.utils.formatCurrency(
-                this.getUnitDisplayPriceBeforeDiscount()
-            ),
-            attributes: this.attribute_value_ids
-                ? this.findAttribute(this.attribute_value_ids, this.custom_attribute_value_ids)
-                : [],
-            minimumSalePrice: this.env.utils.formatCurrency(this.product.get_minimum_sale_price()), // Added minimum_sale_price
-            minimumSalePriceWithTax:  this.env.utils.formatCurrency(this.product.get_minimum_sale_price_with_tax()),
-            isLessMinimumSalePrice: this.get_unit_display_price() < this.product.get_minimum_sale_price_with_tax()
+            ...super.getDisplayData(),
+            minimumSalePrice: formatCurrency(product.get_minimum_sale_price(), this.currency), // Added minimum_sale_price
+            minimumSalePriceWithTax: formatCurrency(product.get_minimum_sale_price_with_tax(), this.currency),
+            isLessMinimumSalePrice: this.get_unit_display_price() < product.get_minimum_sale_price_with_tax()
         };
     }
 
-});
-
-patch(Order.prototype, {
-    async pay() {
-        const orderLines = this.get_orderlines();
-        const lines = orderLines.filter(line => line.get_unit_display_price() < line.product.get_minimum_sale_price_with_tax());
-        const blocked = this.pos.config.is_blocked_warning
-        if (lines.length > 0) {
-            // Display the confirmation popup with the constructed message
-            if (!blocked) {
-                const confirmed = await ask(this.env.services.dialog, {
-                    title: _t("Price unit less than minimum price"),
-                    body: _t("Some products are below the minimum price. Proceed to payment?")
-                });
-                if (!confirmed) {
-                    return;
-                }
-            } else {
-                this.env.services.dialog.add(AlertDialog, {
-                    title: _t("Price unit less than minimum price"),
-                    body: _t("Some products are below the minimum price. Please check !")
-                });
-                return;
-            }
-        }
-   
-        return super.pay(...arguments);
-    }
 });

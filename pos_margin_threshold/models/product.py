@@ -99,3 +99,9 @@ class ProductProduct(models.Model):
             'target': 'new',
             'res_id': wizard.id,
         }
+
+    @api.model
+    def _load_pos_data_fields(self, config_id):
+        params = super()._load_pos_data_fields(config_id)
+        params += ['minimum_sale_price', 'minimum_sale_price_with_tax']
+        return params

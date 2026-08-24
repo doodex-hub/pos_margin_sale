@@ -18,7 +18,8 @@ services:
       - db-data:/var/lib/postgresql/data
 
   odoo:
-    image: odoo:18.0
+    build: .
+    shm_size: '2gb'  # Chrome sering crash di /dev/shm default Docker yang cuma 64MB
     depends_on:
       - db
     environment:
@@ -30,19 +31,29 @@ services:
     volumes:
       - ../:/mnt/extra-addons
       - ./logs:/var/log/odoo
-    # Mode G1 (install test) -- Step 6 Fase A checkpoint, dikomentari di bawah setelah G1 pass.
-    # Mode G2 aktif sekarang (server tetap hidup untuk cek manual/browser).
+    # Mode D (Tour test headless Chrome asli, Step 6/9) -- aktif sekarang.
+    # Mode G1 (install test polos) dan Mode G2 (server tetap hidup) di bawah,
+    # tinggal uncomment salah satu kalau perlu ganti mode lagi.
+    command: >
+      odoo -d pos_margin_sale_migration_18_test
+      -i pos_margin_threshold,sale_margin_threshold,pin_message
+      --load-language=fr_FR
+      --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons
+      --test-enable
+      --test-tags=/pos_margin_threshold,/sale_margin_threshold,/pin_message
+      --stop-after-init
+      --logfile=/var/log/odoo/odoo.log
     # command: >
     #   odoo -d pos_margin_sale_migration_18_test
     #   -i pos_margin_threshold,sale_margin_threshold,pin_message
     #   --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons
     #   --stop-after-init
     #   --logfile=/var/log/odoo/odoo.log
-    command: >
-      odoo -d pos_margin_sale_migration_18_test
-      -u pos_margin_threshold,sale_margin_threshold,pin_message
-      --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons
-      --logfile=/var/log/odoo/odoo.log
+    # command: >
+    #   odoo -d pos_margin_sale_migration_18_test
+    #   -u pos_margin_threshold,sale_margin_threshold,pin_message
+    #   --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons
+    #   --logfile=/var/log/odoo/odoo.log
 
 volumes:
   db-data:

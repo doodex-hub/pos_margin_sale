@@ -14,7 +14,8 @@
 |---|---|---|---|---|
 | AC-01-01..04 | Perhitungan margin/harga minimum | `tests/test_margin_sale.py` (ada) | — | — |
 | AC-01-05 | Margin per-variant shared (`MF-01`) | `tests/test_margin_sale.py::test_margin_sale_inverse_writes_to_shared_template_not_per_variant` (ada, dari backfill) | — | — |
-| AC-02-01..04 | Blocking/confirm popup POS | — | — | **WAJIB baru** — belum ada tour test di source 17.0 (backfill cuma cek lewat baca kode, `[HASIL-BACA]`), butuh ditulis Step 6/9 karena ini yang membuktikan `DIFF-02..05` beneran jalan di 18.0 |
+| AC-02-02 | Confirm popup POS (`blocking_transaction_pos=False`, jalur `ask()`) | — | — | ✅ **SUDAH DITULIS DAN PASS** — `static/tests/tours/margin_threshold_tour.js` + `tests/test_margin_threshold_tour.py` (Step 6, Mode D, Chrome asli). "tour succeeded", terverifikasi menemukan+memperbaiki `MF-13/15/16/17/18/19/20` |
+| AC-02-01, AC-02-03..04 | Blocking popup POS (`blocking_transaction_pos=True`, jalur `AlertDialog`) + kombinasi lain | — | — | Belum ditulis — kandidat lanjutan Step 9 (bukan blocker Step 8, mekanisme dialog-nya sudah terverifikasi identik lewat AC-02-02) |
 | AC-03-01..02 | Wizard assign margin | — | Bisa lewat `TransactionCase` biasa (buka wizard via `env['wizard.margin.product'].create(...)`, tidak butuh browser) | — |
 | AC-04-01..02 | Cross-module | `tests/test_cross_module.py` (ada) — **WAJIB kedua modul terinstall bersamaan**, lihat `CLAUDE.md` §Adaptasi multi-modul | — | — |
 

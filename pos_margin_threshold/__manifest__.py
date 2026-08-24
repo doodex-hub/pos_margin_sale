@@ -32,8 +32,11 @@
 
     'assets': {
         'point_of_sale._assets_pos': [
-            'pos_margin_threshold/static/src/**/*', 
-        ]
+            'pos_margin_threshold/static/src/**/*',
+        ],
+        'web.assets_tests': [
+            'pos_margin_threshold/static/tests/tours/**/*',
+        ],
     },
 
     'demo': [
