@@ -2,3 +2,9 @@
 .idea/
 *.pyc
 .venv
+# --- ditambahkan otomatis dari migration-tool/templates/cli-config/gitignore.template ---
+__pycache__/
+*.pyo
+docker-env/logs/
+.claude/migration-tool-command-log.jsonl
+.claude/settings.local.json
