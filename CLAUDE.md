@@ -234,18 +234,30 @@ DAN `sale_margin_threshold` sama-sama melewatkan seluruh folder `wizard/` (pola 
 diperbaiki sebelum gate dinyatakan lulus. `pin_message` lulus tanpa gap (struktur modul lebih
 sederhana).
 
-**Step 5 (Acceptance Criteria & Test Plan) selesai draft ketiga modul.** AC diturunkan dari
-`01b_BASELINE_SPEC.md` (BSL-NNN), bukan dari migration spec. **Tour test BARU yang wajib ditulis
-Step 6/9:** `pos_margin_threshold` 1 (blocking/confirm popup POS), `pin_message` 3 (duplikasi
-tombol, pin Discuss channel — prioritas tertinggi, section Pinned Messages). `sale_margin_threshold`
-tidak butuh tour sama sekali (tidak ada Owl/JS).
+**Step 6 (Code Migration) SEDANG BERJALAN (2026-08-24) — sudah menghasilkan bukti nyata, bukan cuma
+draft.** Docker `docker-env/docker-compose.yml` diupdate ke `odoo:18.0` (project name
+`pos_margin_sale_migration_18`). **G1 (install test) dijalankan sungguhan lewat Bash — PASS untuk
+ketiga modul** (exit code 0, 67/67 modules loaded) setelah 2 fix: manifest version bump ketiganya,
+dan `<tree>`→`<list>` di `sale_margin_threshold/views/sale_order.xml` (`DIFF-01`, install-blocking
+terkonfirmasi). **G2 (browser nyata) juga dijalankan** lewat Claude Browser tool + `docker exec`
+cross-check ke source Odoo 18.0 sungguhan (bukan dugaan) — menemukan DAN memperbaiki **3 breaking
+change nyata**:
+- `MF-12` — `pin_message/static/src/js/chatter.js`: import `@mail/core/web/chatter` (path 17.0)
+  sudah tidak ada di 18.0 → diganti `@mail/chatter/web_portal/chatter`. **RESOLVED.**
+- `MF-13` — `pos_margin_threshold/static/src/store/models/models.js`: `ConfirmPopup`/`ErrorPopup`
+  + service `popup` **dihapus total** di 18.0 (fitur inti blocking-payment modul ini) → diganti
+  service `dialog` + `ConfirmationDialog`/`AlertDialog`/`ask()`. **RESOLVED**, prioritas Tinggi.
+- `MF-14` — `pin_message/static/src/xml/message_card_list.xml`: xpath `//button[...]` tidak match
+  elemen core yang berubah jadi `<a role="button">` → diperbaiki jadi `//a[...]`. **RESOLVED.**
 
-**Field terbuka:** tidak ada untuk checklist Step 1. Untuk Step 6, kandidat entry baru ke
-`migration-tool/knowledge/dependency-compat/` (mail, point_of_sale, sale — lihat §3 tiap
-`02_DIFF_ANALYSIS.md`) menunggu verifikasi instalasi nyata sebelum ditulis ke `migration-records/`.
-**Belum dikerjakan:** Step 6-11 untuk ketiga modul — Step 6 (Code Migration) adalah step pertama
-yang benar-benar menulis kode 18.0, per-fase A1→G2, satu fase per giliran (disiplin wajib, beda
-dari Step 1-5 yang boleh sekaligus lintas modul).
+**Batasan JUJUR sesi ini:** interaksi klik nyata (toggle pin, jual produk di bawah minimum, buka
+dialog) BELUM bisa dilakukan — tool browser sesi ini kena isu Service Worker (`/bus/websocket_worker_bundle`)
+yang mencegah webclient mounting penuh, dikonfirmasi TIDAK terkait kode project (juga muncul di
+sesi sebelum modul manapun diinstall). **Dev WAJIB klik-test manual di browser desktop biasa**
+sebelum Step 8 dianggap final — checklist di `05b_TEST_PLAN_MIGRATION.md` tiap modul.
+
+**Belum dikerjakan:** sisa Fase Step 6 untuk `sale_margin_threshold` (E/F N/A, tapi B1/C1 belum
+dicatat detail), klik-test G2 manual dev, lalu Step 7 (N/A) → 8-11.
 
 > AI: update bagian ini sendiri di akhir tiap sesi kerja, supaya sesi berikutnya tahu persis harus
 > lanjut dari mana tanpa tanya ulang ke user.
@@ -259,7 +271,7 @@ dari Step 1-5 yang boleh sekaligus lintas modul).
 | 3 | Migration Spec | ✅ Draft selesai (2026-08-24) | ✅ Draft selesai (2026-08-24) | ✅ Draft selesai (2026-08-24) |
 | 4 | Spec Completeness Review | ✔️ Gate lulus (2026-08-24) | ✔️ Gate lulus (2026-08-24) | ✔️ Gate lulus (2026-08-24) |
 | 5 | Acceptance Criteria & Test Plan | ✅ Draft selesai (2026-08-24) | ✅ Draft selesai (2026-08-24) | ✅ Draft selesai (2026-08-24) |
-| 6 | Code Migration | ⬜ | ⬜ | ⬜ |
+| 6 | Code Migration | 🔄 Fase A-F draft, 1 fix wajib | 🔄 Fase A-C, 1 fix wajib (DIFF-01) | 🔄 Fase A-F draft, 2 fix wajib |
 | 7 | Data Migration Scripts | — (N/A, port kode saja) | — | — |
 | 8 | Code Review | ⬜ | ⬜ | ⬜ |
 | 9 | Dev Testing | ⬜ | ⬜ | ⬜ |

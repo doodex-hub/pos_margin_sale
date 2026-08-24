@@ -11,13 +11,13 @@
                 <field name="is_rental_order_installed_true" invisible="1"/>
             </xpath>
             
-            <!-- Add 'minimum_sale_price' field to the tree view for order lines -->
-            <xpath expr="//page[@name='order_lines']/field[@name='order_line']/tree" position="inside">
+            <!-- Add 'minimum_sale_price' field to the list view for order lines -->
+            <xpath expr="//page[@name='order_lines']/field[@name='order_line']/list" position="inside">
                 <field name="minimum_sale_price" column_invisible="1"/>
             </xpath>
 
             <!-- Add conditional decoration based on 'minimum_sale_price' and 'is_rental_order_installed_true' -->
-            <xpath expr="//page[@name='order_lines']/field[@name='order_line']/tree/field[@name='price_unit']" position="attributes">
+            <xpath expr="//page[@name='order_lines']/field[@name='order_line']/list/field[@name='price_unit']" position="attributes">
                 <!-- Only apply red color if the order is not a rental order -->
                 <attribute name="decoration-danger">minimum_sale_price &gt; price_unit and not parent.is_rental_order_installed_true</attribute>
             </xpath>

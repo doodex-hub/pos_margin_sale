@@ -49,6 +49,9 @@ backfill, buat `MF-NNN` yang mereferensikan `F-NNN` aslinya secara eksplisit (ta
 | MF-09 | `onClickPin` JS menimpa total (bukan extend) patch core `discuss/message_pin` | pin_message | 1 | `[DIWARISI-SOURCE]` `[PERLU-KEPUTUSAN]` | Sedang | Terbuka |
 | MF-10 | `console.log` debug tertinggal di `pinMessage.js` | pin_message | 1 | `[DIWARISI-SOURCE]` | Rendah | Terbuka |
 | MF-11 | `Orderline.getDisplayData()` full-override (bukan extend `super()`) — pola risiko sama seperti MF-09 | pos_margin_threshold | 2 | `[DIWARISI-SOURCE]` `[PERLU-KEPUTUSAN]` | Sedang-Tinggi | Terbuka — baru ditemukan saat diff analysis |
+| MF-12 | `chatter.js` import `@mail/core/web/chatter` — path SUDAH TIDAK ADA di 18.0 | pin_message | 6 | `[GAP-MIGRASI]` | Tinggi | ✅ **RESOLVED** (2026-08-24) — diperbaiki jadi `@mail/chatter/web_portal/chatter`, dikonfirmasi via G2 browser + cross-check source container `odoo:18.0` |
+| MF-13 | `ConfirmPopup`/`ErrorPopup` (`@point_of_sale/app/utils/confirm_popup/*`, `@point_of_sale/app/errors/popups/*`) — komponen & service `popup` DIHAPUS TOTAL di 18.0 | pos_margin_threshold | 6 | `[GAP-MIGRASI]` | **Tinggi** | ✅ **RESOLVED** (2026-08-24) — diganti `dialog` service + `ConfirmationDialog`/`AlertDialog`/`ask()` dari `@web/core/confirmation_dialog/confirmation_dialog` + `@point_of_sale/app/store/make_awaitable_dialog`, dikonfirmasi cross-check source container `odoo:18.0` (pola dipakai core POS sendiri) |
+| MF-14 | `message_card_list.xml` xpath `//button[...]` — elemen core berubah jadi `<a role="button">` di 18.0, tag selector tidak match | pin_message | 6 | `[GAP-MIGRASI]` | Sedang | ✅ **RESOLVED** (2026-08-24) — xpath diubah jadi `//a[...]`, dikonfirmasi cross-check source container |
 
 ---
 
@@ -186,6 +189,43 @@ backfill, buat `MF-NNN` yang mereferensikan `F-NNN` aslinya secara eksplisit (ta
 **Dampak di 18.0:** Sedang-Tinggi — silent, tidak crash, cuma field baru core (kalau ada) yang hilang dari tampilan orderline. Wajib dicek Step 2 lanjutan/Step 6: apakah `getDisplayData()` core 18.0 menambah field dibanding 17.0.
 **Rekomendasi:** Idealnya diubah jadi extend (`return {...super.getDisplayData(), minimumSalePrice: ..., ...}`) untuk robustness — itu **perubahan struktural**, di luar "port kode saja" murni kecuali disetujui eksplisit ATAU terbukti wajib demi kompatibilitas (field core baru yang genuinely dibutuhkan hilang).
 **Keputusan pemilik modul:** *(kosong — diisi manusia)*
+
+---
+
+### MF-12 — `chatter.js` import `@mail/core/web/chatter` path sudah tidak ada di 18.0 — RESOLVED
+**Ditemukan di:** Step 6 Fase E (2026-08-24), lewat G2 browser nyata (Docker `odoo:18.0` + Claude Browser tool) — bukan analisis statis
+**Tag:** `[GAP-MIGRASI]`
+**Ref:** `DIFF-04` (`02_diff/pin_message/02_DIFF_ANALYSIS.md`), `06_implementation/pin_message/06c_IMPLEMENTATION_LOG.md` Fase E
+**Lokasi:** `pin_message/static/src/js/chatter.js:4`
+**Deskripsi:** Console browser menunjukkan `@mail/core/web/chatter` "needed but not defined" dan `@pin_message/js/chatter` gagal load karena dependency itu. Dikonfirmasi via `docker exec ... find` di container `odoo:18.0`: file benar-benar pindah ke `mail/static/src/chatter/web_portal/chatter.js`.
+**Dampak:** Tanpa fix, SELURUH fitur pin_message (bukan cuma chatter) gagal load di browser — modul terpasang tapi non-fungsional total di sisi frontend.
+**Status:** ✅ **RESOLVED 2026-08-24** — import diubah ke `@mail/chatter/web_portal/chatter`, dikonfirmasi tab browser baru tidak lagi menunjukkan error ini.
+**Keputusan pemilik modul:** Tidak perlu — ini perbaikan wajib kompatibilitas (API lama dihapus total), bukan pilihan desain.
+
+---
+
+### MF-13 — `ConfirmPopup`/`ErrorPopup` (POS) dihapus total di 18.0 — RESOLVED
+**Ditemukan di:** Step 6 Fase E (2026-08-24), lewat audit source proaktif (cross-check tiap import `pos_margin_threshold` ke source container `odoo:18.0`) — TIDAK lewat error konsol otomatis, karena jalur kode ini (`Order.pay()`) tidak tereksekusi cuma dari membuka POS
+**Tag:** `[GAP-MIGRASI]`
+**Prioritas:** **Tinggi**
+**Ref:** `DIFF-04` (`02_diff/pos_margin_threshold/02_DIFF_ANALYSIS.md`), `06_implementation/pos_margin_threshold/06c_IMPLEMENTATION_LOG.md` Fase E
+**Lokasi:** `pos_margin_threshold/static/src/store/models/models.js:4-5` (import), `:62,70` (pemakaian)
+**Deskripsi:** `@point_of_sale/app/utils/confirm_popup/confirm_popup` dan `@point_of_sale/app/errors/popups/error_popup`, plus service `this.env.services.popup` itu sendiri, **dihapus total** di Odoo 18.0 — diganti mekanisme `dialog` service + `ConfirmationDialog`/`AlertDialog` (`@web/core/confirmation_dialog/confirmation_dialog`) + helper `ask()` (`@point_of_sale/app/store/make_awaitable_dialog`), dikonfirmasi ini pola yang dipakai core POS 18.0 sendiri (`pos_store.js`).
+**Dampak:** Ini FITUR INTI modul (blocking/warning saat bayar produk di bawah minimum) — tanpa fix, `Order.pay()` akan crash (`popup` service undefined) SETIAP KALI kasir mencoba bayar order dengan produk di bawah minimum, walau modul "terinstall" sukses.
+**Status:** ✅ **RESOLVED 2026-08-24** — diganti ke `ask(this.env.services.dialog, {...})` (cabang confirm) dan `this.env.services.dialog.add(AlertDialog, {...})` (cabang block), pesan title/body tidak diubah. Dikonfirmasi import valid dari source container. **BELUM dikonfirmasi lewat klik interaktif nyata** (keterbatasan tool browser sesi ini) — dev WAJIB klik-test manual sebelum Step 8 final.
+**Keputusan pemilik modul:** Tidak perlu — perbaikan wajib kompatibilitas.
+
+---
+
+### MF-14 — `message_card_list.xml` xpath tag selector tidak match elemen core baru — RESOLVED
+**Ditemukan di:** Step 6 Fase F (2026-08-24), lewat audit source proaktif (cross-check ke source container `odoo:18.0` setelah menemukan MF-12, sebagai due-diligence tambahan)
+**Tag:** `[GAP-MIGRASI]`
+**Ref:** `DIFF-03`, `06_implementation/pin_message/06c_IMPLEMENTATION_LOG.md` Fase F
+**Lokasi:** `pin_message/static/src/xml/message_card_list.xml` (xpath expression)
+**Deskripsi:** Xpath `//button[contains(@class, 'o-mail-MessageCard-jump')]` menarget tag `<button>` — tapi core `mail.MessageCardList` 18.0 mengubah elemen ini jadi `<a role="button" class="...">`. Xpath tag-selector `button` tidak akan pernah match tag `a`.
+**Dampak:** Kustomisasi tombol "See" (mengganti label "Jump") tidak akan pernah aktif — bukan install-blocking (QWeb JS template tidak divalidasi saat install, cuma saat asset bundle compile/dipakai), silent-gagal.
+**Status:** ✅ **RESOLVED 2026-08-24** — xpath diubah ke `//a[contains(@class, 'o-mail-MessageCard-jump')]`.
+**Keputusan pemilik modul:** Tidak perlu — perbaikan wajib kompatibilitas (bukan perubahan tampilan yang disengaja).
 
 ---
 

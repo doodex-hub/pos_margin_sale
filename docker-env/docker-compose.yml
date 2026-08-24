@@ -1,8 +1,11 @@
-# Instantiated from doc-dev-backfill/templates/docker-compose.yml.template
+# Instantiated from migration-tool/templates/docker-compose.yml.template
 # Adaptasi multi-modul: SATU instance untuk 3 addon (pos_margin_threshold, sale_margin_threshold,
 # pin_message) — mount seluruh repo (bukan satu folder addon) supaya addons-path menemukan
 # ketiganya sekaligus; Odoo mengabaikan sub-folder tanpa __manifest__.py (docker-env/, doc-dev/).
-name: pos_margin_sale_backfill
+# Target migrasi 18.0 (beda dari docker-env/ backfill yang masih 17.0, lihat CLAUDE.md di
+# branch backfill/17.0) — project name/db name diberi suffix _18 supaya tidak bentrok volume
+# dengan instance backfill kalau keduanya pernah dijalankan di mesin yang sama.
+name: pos_margin_sale_migration_18
 
 services:
   db:
@@ -15,7 +18,7 @@ services:
       - db-data:/var/lib/postgresql/data
 
   odoo:
-    image: odoo:17.0
+    image: odoo:18.0
     depends_on:
       - db
     environment:
@@ -23,25 +26,23 @@ services:
       USER: odoo
       PASSWORD: odoo
     ports:
-      - "8079:8069"
+      - "8078:8069"
     volumes:
       - ../:/mnt/extra-addons
       - ./logs:/var/log/odoo
-    # Mode G2 (server tetap hidup untuk cek manual/browser) -- Step 07 QA. G1 (--test-enable dst,
-    # dipakai Step 04) dikomentari di bawah, tinggal uncomment kalau perlu jalankan test lagi.
+    # Mode G1 (install test) -- Step 6 Fase A checkpoint, dikomentari di bawah setelah G1 pass.
+    # Mode G2 aktif sekarang (server tetap hidup untuk cek manual/browser).
+    # command: >
+    #   odoo -d pos_margin_sale_migration_18_test
+    #   -i pos_margin_threshold,sale_margin_threshold,pin_message
+    #   --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons
+    #   --stop-after-init
+    #   --logfile=/var/log/odoo/odoo.log
     command: >
-      odoo -d pos_margin_sale_test
+      odoo -d pos_margin_sale_migration_18_test
       -u pos_margin_threshold,sale_margin_threshold,pin_message
       --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons
       --logfile=/var/log/odoo/odoo.log
-    # command: >
-    #   odoo -d pos_margin_sale_test
-    #   -i pos_margin_threshold,sale_margin_threshold,pin_message
-    #   --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons
-    #   --test-enable
-    #   --test-tags=/pos_margin_threshold,/sale_margin_threshold,/pin_message
-    #   --stop-after-init
-    #   --logfile=/var/log/odoo/odoo.log
 
 volumes:
   db-data:

@@ -30,6 +30,7 @@ kolom modul ditambahkan di tabel supaya tetap bisa dipilah.
 | 3 — Migration Spec | pos_margin_threshold, sale_margin_threshold, pin_message | 1 | 0 | Sama prompt ("lanjut") lanjut tanpa jeda ke Step 3 ketiga modul — strategi per-file + Critical Migration Blockers + urutan testing, berdasar Step 1/2. Tidak ada tool-fix |
 | 4 — Spec Completeness Review | pos_margin_threshold, sale_margin_threshold, pin_message | 1 | 0 | Prompt ("LANJUUT, kenapa sering berhenti...") — feedback: hanya berhenti di gate/keputusan asli. Step 4 menemukan gap nyata (folder `wizard/` hilang dari draft Step 3 di 2 modul), diperbaiki sebelum gate dinyatakan lulus |
 | 5 — Acceptance Criteria & Test Plan | pos_margin_threshold, sale_margin_threshold, pin_message | 1 | 0 | Lanjut otomatis tanpa prompt baru (mengikuti feedback "jangan berhenti") — AC diturunkan dari BSL-NNN, test plan mengidentifikasi 4 tour test baru yang wajib ditulis (1 pos_margin_threshold, 3 pin_message) |
+| 6 — Code Migration (semua fase A-G2) | pos_margin_threshold, sale_margin_threshold, pin_message | 1 | 0 | Prompt ("commit saja dulu" lalu "status apa?" lalu commit) — Fase A dikerjakan ketiganya + G1 Docker nyata (pass) + G2 browser nyata via Claude Browser tool + `docker exec` cross-check source 18.0. Menemukan & memperbaiki 3 breaking change nyata (MF-12/13/14) yang TIDAK mungkin ketemu dari analisis statis Step 2 saja — validasi kuat metodologi G1≠G2≠review statis |
 | 2 — Diff & Compatibility Analysis | | | | |
 | 3 — Migration Spec | | | | |
 | 4 — Spec Completeness Review | | | | |

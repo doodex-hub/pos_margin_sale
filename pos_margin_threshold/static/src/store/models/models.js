@@ -3,8 +3,8 @@
 import { Orderline, Product, Order } from "@point_of_sale/app/store/models";
 import { patch } from "@web/core/utils/patch";
 import { _t } from "@web/core/l10n/translation";
-import { ConfirmPopup } from "@point_of_sale/app/utils/confirm_popup/confirm_popup";
-import { ErrorPopup } from "@point_of_sale/app/errors/popups/error_popup";
+import { ask } from "@point_of_sale/app/store/make_awaitable_dialog";
+import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 
 
 patch(Product.prototype, {
@@ -59,7 +59,7 @@ patch(Order.prototype, {
         if (lines.length > 0) {
             // Display the confirmation popup with the constructed message
             if (!blocked) {
-                const  {confirmed } = await this.env.services.popup.add(ConfirmPopup, {
+                const confirmed = await ask(this.env.services.dialog, {
                     title: _t("Price unit less than minimum price"),
                     body: _t("Some products are below the minimum price. Proceed to payment?")
                 });
@@ -67,7 +67,7 @@ patch(Order.prototype, {
                     return;
                 }
             } else {
-                await this.env.services.popup.add(ErrorPopup, {
+                this.env.services.dialog.add(AlertDialog, {
                     title: _t("Price unit less than minimum price"),
                     body: _t("Some products are below the minimum price. Please check !")
                 });

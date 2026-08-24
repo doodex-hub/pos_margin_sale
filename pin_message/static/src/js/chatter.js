@@ -1,7 +1,7 @@
 /** @odoo-module **/
 
 import { useService } from "@web/core/utils/hooks";
-import { Chatter } from "@mail/core/web/chatter";
+import { Chatter } from "@mail/chatter/web_portal/chatter";
 import { onMounted, onWillUpdateProps } from "@odoo/owl";
 import { patch } from "@web/core/utils/patch";
 import { MessageCardList } from "@mail/core/common/message_card_list";
