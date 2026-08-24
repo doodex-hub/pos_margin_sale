@@ -8,7 +8,7 @@
 **Modul:** `pos_margin_threshold`, `sale_margin_threshold`, `pin_message` (satu file, prefix modul di
 tiap judul finding)
 **Migrasi:** 17.0 → 18.0
-**Terakhir update:** 2026-08-24 (Step 1 `pos_margin_threshold` — 3 finding diwarisi dari backfill + 1 temuan baru)
+**Terakhir update:** 2026-08-24 (Step 1 `pos_margin_threshold` + `sale_margin_threshold` — 7 finding diwarisi dari backfill, 2 temuan baru)
 
 ---
 
@@ -42,6 +42,10 @@ backfill, buat `MF-NNN` yang mereferensikan `F-NNN` aslinya secara eksplisit (ta
 | MF-02 | `blocking_transaction_order` dideklarasikan tapi tidak berefek sendirian | pos_margin_threshold | 1 | `[DIWARISI-SOURCE]` `[PERLU-KEPUTUSAN]` | Rendah | Terbuka |
 | MF-03 | Model `wizard.margin.product`: kelas `pos_margin_threshold` hilang total dari MRO saat 2 modul terinstall | pos_margin_threshold + sale_margin_threshold | 1 | `[DIWARISI-SOURCE]` `[PERLU-KEPUTUSAN]` | Sedang | Terbuka |
 | MF-04 | `views/product_template_views.xml` dead file, duplikat XML-ID dengan `views/products.xml` | pos_margin_threshold | 1 | `[DIWARISI-SOURCE]` | Rendah | Terbuka — baru ditemukan, belum ada di backfill |
+| MF-05 | `_register_hook` memutasi membership `group_sale_margin_action` tiap registry reload | sale_margin_threshold (interaksi dgn pos_margin_threshold) | 1 | `[DIWARISI-SOURCE]` `[PERLU-KEPUTUSAN]` | Sedang | Terbuka |
+| MF-06 | `action_confirm` override asumsi singleton — memecah batch-confirm Odoo core | sale_margin_threshold | 1 | `[DIWARISI-SOURCE]` `[PERLU-KEPUTUSAN]` | **Tinggi** | Terbuka |
+| MF-07 | Duplikasi XML-ID `product_template_inherit_sale_margin_threshold` — KEDUA file dimuat, yang kedua menimpa total yang pertama | sale_margin_threshold | 1 | `[DIWARISI-SOURCE]` | Sedang | Terbuka — baru ditemukan, lebih serius dari MF-04 (di sini file aktif dimuat, bukan dead) |
+| MF-08 | Manifest declare `assets._assets_sale` menunjuk folder `static/src/` yang tidak eksis | sale_margin_threshold | 1 | `[DIWARISI-SOURCE]` | Rendah | Terbuka — baru ditemukan |
 
 ---
 
@@ -92,6 +96,56 @@ backfill, buat `MF-NNN` yang mereferensikan `F-NNN` aslinya secara eksplisit (ta
 **Dampak di 18.0:** Rendah selama tetap dead file. **Risiko kalau ditambahkan ke manifest tanpa disadari** (mis. saat migrasi seseorang "membersihkan" dan tidak sadar file ini sengaja tidak dimuat) — akan clash XML-ID langsung dengan `products.xml` saat modul di-install, kemungkinan besar error saat load data atau salah satu record menimpa yang lain tergantung urutan load.
 **Rekomendasi:** Pertahankan sebagai dead file yang sama persis di 18.0 (JANGAN didaftarkan ke manifest sebagai bagian dari migrasi — itu perubahan fungsional yang butuh persetujuan eksplisit, di luar "port kode saja").
 **Keputusan pemilik modul:** *(kosong — diisi manusia)*
+
+---
+
+### MF-05 — `_register_hook` memutasi membership `group_sale_margin_action` tiap registry reload
+**Ditemukan di:** Step 1 (2026-08-24) — diwarisi dari `doc-dev/backfill/FINDINGS.md` **F-04** (terkonfirmasi eksekusi Docker, arah "kedua modul terinstall")
+**Tag:** `[DIWARISI-SOURCE]` `[PERLU-KEPUTUSAN]`
+**Ref:** `BSL-006` (`01_intake/sale_margin_threshold/01b_BASELINE_SPEC.md`), backfill `F-04`
+**Lokasi:** `sale_margin_threshold/models/product.py:115-131` (`ProductProduct._register_hook`)
+**Deskripsi:** Dipanggil Odoo TIAP registry dibangun ulang (bukan cuma install) — menghapus semua user dari `group_sale_margin_action` kalau `pos_margin_threshold` terinstall, atau menambah semua internal user kalau tidak. Mutasi state, bukan kondisi deklaratif.
+**Dampak di 18.0:** Kalau admin manual ubah membership group ini saat `pos_margin_threshold` terinstall, kemungkinan ter-revert diam-diam di reload berikutnya. Mekanisme hook Odoo (`_register_hook`) sendiri tidak berubah antar versi mayor — risiko migrasi rendah untuk MEKANISME-nya, tapi perilakunya (mutasi silent) tetap harus dipertahankan identik.
+**Rekomendasi:** Sama seperti backfill — pertimbangkan ganti ke kondisi deklaratif (domain/groups at-read-time). Di luar scope migrasi port-kode-saja kecuali disetujui eksplisit.
+**Keputusan pemilik modul:** *(kosong)*
+
+---
+
+### MF-06 — `action_confirm` override asumsi singleton, memecah batch-confirm Odoo core
+**Ditemukan di:** Step 1 (2026-08-24) — diwarisi dari `doc-dev/backfill/FINDINGS.md` **F-05** (prioritas Tinggi, dieksekusi 2× Docker — test sendiri + demo data core `sale_stock` ikut crash)
+**Tag:** `[DIWARISI-SOURCE]` `[PERLU-KEPUTUSAN]`
+**Prioritas:** **Tinggi**
+**Ref:** `BSL-002` (`01_intake/sale_margin_threshold/01b_BASELINE_SPEC.md`), backfill `F-05`
+**Lokasi:** `sale_margin_threshold/models/sale_order.py:19-27` (`SaleOrder.action_confirm`)
+**Deskripsi:** `action_confirm()` membaca `self.is_rental_order_installed_true`/`self.order_line` sebagai singleton tanpa `for order in self:` — batch-confirm >1 sale order dari list view (didukung native Odoo core) crash `ValueError: Expected singleton`.
+**Dampak di 18.0:** WAJIB dicek ulang di Step 2 — kalau mekanisme batch action list view Odoo 18.0 berubah caranya memanggil method aksi (mis. selalu iterasi eksplisit vs kirim recordset multi-id), gejala crash yang identik ini bisa muncul di titik berbeda atau malah "sembuh sendiri" secara tidak sengaja — bukan sesuatu yang boleh diasumsikan otomatis sama tanpa verifikasi.
+**Rekomendasi:** Backfill merekomendasikan fix (`for order in self:` loop) tapi itu **memperbaiki bug** — di luar scope migrasi "port kode saja" kecuali pemilik modul menyetujui eksplisit sebagai perubahan yang disengaja (lihat `CLAUDE.md` §Forbidden Actions: "Memperbaiki bug yang sudah ada di 17.0" dilarang kecuali disetujui).
+**Keputusan pemilik modul:** *(kosong — diisi manusia)*
+
+---
+
+### MF-07 — Duplikasi XML-ID `product_template_inherit_sale_margin_threshold` — kedua file dimuat, yang kedua menimpa total yang pertama
+**Ditemukan di:** Step 1 (2026-08-24) — **BARU**, tidak ada di backfill
+**Tag:** `[DIWARISI-SOURCE]`
+**Ref:** `BSL-008` (`01_intake/sale_margin_threshold/01b_BASELINE_SPEC.md`)
+**Lokasi:** `sale_margin_threshold/views/product_template_views.xml` (loaded pertama, `inherit_id=product.product_template_only_form_view`) vs `sale_margin_threshold/views/products.xml` (loaded kedua, `inherit_id=product.product_template_form_view`)
+**Deskripsi:** Manifest memuat KEDUA file (beda dari kasus serupa `MF-04` di `pos_margin_threshold`, di mana salah satu file dead/tidak dimuat). Karena XML-ID sama persis dan berada di modul yang sama, record kedua (`products.xml`) menimpa SELURUH field record pertama saat load — termasuk `inherit_id` dan `arch`. Kustomisasi yang dimaksud untuk `product_template_only_form_view` tidak pernah benar-benar aktif.
+**Dampak di 18.0:** Sedang — perilaku ini (satu dari dua kustomisasi silently discarded) harus dipertahankan identik. Risiko migrasi: kalau Odoo 18.0 mengubah urutan/cara load `data:` manifest (kemungkinan sangat kecil, ini mekanisme ORM dasar), efek "menimpa" ini bisa berubah jadi error alih-alih silent override.
+**Rekomendasi:** Pertahankan seperti apa adanya di 18.0 (efek akhirnya, bukan mekanismenya, yang harus identik) — kecuali dev memutuskan ini genuinely bug yang ingin diperbaiki (beri XML-ID berbeda ke masing-masing), itu keputusan eksplisit di luar "port kode saja".
+**Keputusan pemilik modul:** *(kosong — diisi manusia)*
+
+---
+
+### MF-08 — Manifest declare `assets._assets_sale` menunjuk folder `static/src/` yang tidak eksis
+**Ditemukan di:** Step 1 (2026-08-24) — **BARU**
+**Tag:** `[DIWARISI-SOURCE]`
+**Prioritas:** Rendah
+**Ref:** `BSL-009`
+**Lokasi:** `sale_margin_threshold/__manifest__.py` (`assets.sale_margin_threshold._assets_sale`)
+**Deskripsi:** Manifest mendeklarasikan glob asset ke `sale_margin_threshold/static/src/**/*`, tapi folder `static/src/` tidak ada sama sekali di modul ini. Tidak error (glob kosong), kemungkinan sisa boilerplate scaffold yang tidak dibersihkan.
+**Dampak di 18.0:** Sangat rendah — tidak ada perilaku yang bergantung padanya.
+**Rekomendasi:** Bisa dihapus sebagai bagian cleanup, TAPI itu perubahan (walau trivial) di luar "port kode saja" murni — cukup pertahankan apa adanya kecuali dev menyetujui pembersihan.
+**Keputusan pemilik modul:** *(kosong)*
 
 ---
 

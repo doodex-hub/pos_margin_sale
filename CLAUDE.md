@@ -203,21 +203,20 @@ wajib selesai penuh sebelum F (Template)**.
 
 ## Status saat ini
 
-**Step 1 `pos_margin_threshold` gate lulus (2026-08-24).** Bootstrap selesai (branch `migration/18.0`
-dari `backfill/17.0`, commit `9d55d23` + `26ab2be`). `01a_MIGRATION_INTAKE.md` + `01b_BASELINE_SPEC.md`
-untuk `pos_margin_threshold` sudah ditulis (leverage berat dari `doc-dev/backfill/spec/
-pos_margin_threshold/` yang sudah tervalidasi eksekusi Docker) — 4 finding dicatat ke `FINDINGS.md`
-(`MF-01`..`MF-03` diwarisi dari backfill F-01/F-02/F-03, `MF-04` temuan baru: `views/
-product_template_views.xml` dead file + duplikat XML-ID). Dikonfirmasi dev: tidak ada folder
-referensi (`native-target`/`native-target-enterprise`/`third-party-*`) yang tersedia — Step 2 modul
-ini akan dikerjakan tanpa itu (keterbatasan, bukan blocker). Source dibekukan (tidak ada
-`SYNC_POLICY.md`). **Belum dikerjakan:** Step 1 untuk `sale_margin_threshold` dan `pin_message`;
-Step 2+ untuk ketiga modul.
+**Step 1 `pos_margin_threshold` + `sale_margin_threshold` gate lulus (2026-08-24).** Bootstrap selesai
+(branch `migration/18.0` dari `backfill/17.0`, commit `9d55d23`/`26ab2be`). Kedua modul leverage berat
+dari `doc-dev/backfill/spec/` yang sudah tervalidasi eksekusi Docker — 8 finding tercatat di
+`FINDINGS.md` (`MF-01`/`MF-02`/`MF-03`/`MF-05`/`MF-06` diwarisi dari backfill F-01/F-02/F-03/F-04/F-05,
+`MF-04`/`MF-07`/`MF-08` temuan baru sesi ini — semuanya soal file view/asset mati atau XML-ID
+bentrok). **`MF-06` (batch-confirm crash di `sale_margin_threshold.action_confirm`) prioritas
+Tinggi** — wajib jadi perhatian utama Step 2. Folder referensi (`native-*`/`third-party-*`):
+dikonfirmasi dev tidak ada, Step 2 dikerjakan tanpa itu. Source dibekukan (tidak ada
+`SYNC_POLICY.md`). **Belum dikerjakan:** Step 1 untuk `pin_message`; Step 2+ untuk ketiga modul.
 
-**Field terbuka:** tidak ada lagi untuk `pos_margin_threshold` Step 1. Untuk 2 modul lain, checklist
-folder referensi/dokumen pelengkap/source-aktif di §0/§4a/§4b `01a_MIGRATION_INTAKE.md` masing-masing
-perlu ditanyakan ulang saat Step 1 modul itu dimulai (jawaban dev sesi ini kemungkinan sama, tapi
-tetap wajib dikonfirmasi per modul, bukan diwariskan otomatis).
+**Field terbuka:** tidak ada lagi untuk 2 modul yang sudah Step 1. Untuk `pin_message`, checklist
+folder referensi/dokumen pelengkap/source-aktif di §0/§4a/§4b `01a_MIGRATION_INTAKE.md` masih perlu
+ditanyakan ulang saat Step 1 modul itu dimulai (jawaban dev sesi ini kemungkinan sama — tidak ada
+folder referensi, tidak ada dokumen lain, source dibekukan — tapi tetap wajib dikonfirmasi per modul).
 
 > AI: update bagian ini sendiri di akhir tiap sesi kerja, supaya sesi berikutnya tahu persis harus
 > lanjut dari mana tanpa tanya ulang ke user.
@@ -226,7 +225,7 @@ tetap wajib dikonfirmasi per modul, bukan diwariskan otomatis).
 
 | # | Step | pos_margin_threshold | sale_margin_threshold | pin_message |
 |---|---|---|---|---|
-| 1 | Intake & Scope | ✔️ Gate lulus (2026-08-24) | ⬜ Belum mulai | ⬜ Belum mulai |
+| 1 | Intake & Scope | ✔️ Gate lulus (2026-08-24) | ✔️ Gate lulus (2026-08-24) | ⬜ Belum mulai |
 | 2 | Diff & Compatibility Analysis | ⬜ | ⬜ | ⬜ |
 | 3 | Migration Spec | ⬜ | ⬜ | ⬜ |
 | 4 | Spec Completeness Review | ⬜ | ⬜ | ⬜ |
