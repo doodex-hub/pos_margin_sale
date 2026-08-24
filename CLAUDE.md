@@ -203,21 +203,36 @@ wajib selesai penuh sebelum F (Template)**.
 
 ## Status saat ini
 
-**Step 1 SELESAI untuk KETIGA modul (2026-08-24).** Bootstrap selesai (branch `migration/18.0` dari
-`backfill/17.0`, commit `9d55d23`/`26ab2be`). Ketiga modul leverage berat dari `doc-dev/backfill/spec/`
-yang sudah tervalidasi eksekusi Docker — 10 finding tercatat di `FINDINGS.md` (`MF-01`/`MF-02`/`MF-03`/
-`MF-05`/`MF-06`/`MF-09`/`MF-10` diwarisi dari backfill F-01/F-02/F-03/F-04/F-05/F-06/F-07, `MF-04`/
-`MF-07`/`MF-08` temuan baru sesi ini). **Prioritas risiko Step 2, urutan tertinggi ke terendah:**
-(1) `pin_message` — hampir seluruh logic patch JS/OWL ke komponen inti `mail`, area paling sering
-direstruktur antar versi Odoo, termasuk `MF-09` (full-override `onClickPin`, prioritas Sedang tapi
-risiko migrasi tertinggi); (2) `sale_margin_threshold` — `MF-06` (batch-confirm crash) prioritas
-Tinggi, wajib dicek ulang; (3) `pos_margin_threshold` — risiko lebih rendah, area JS POS store perlu
-dicek tapi lebih sempit scope-nya. Folder referensi (`native-*`/`third-party-*`): dikonfirmasi dev
-tidak ada untuk seluruh project, Step 2 ketiga modul dikerjakan tanpa itu. Source dibekukan (tidak
-ada `SYNC_POLICY.md`). **Belum dikerjakan:** Step 2-11 untuk ketiga modul.
+**Step 1 + Step 2 SELESAI untuk KETIGA modul (2026-08-24).** Bootstrap: branch `migration/18.0` dari
+`backfill/17.0` (commit `9d55d23`/`26ab2be`). Step 1 leverage berat `doc-dev/backfill/spec/` (tervalidasi
+Docker). Step 2 disusun TANPA akses `native-target` (dikonfirmasi dev tidak ada) — sebagian besar
+temuan Step 2 ditandai `[TIDAK TERVERIFIKASI]`, WAJIB dicek ulang empiris di Step 6 G1 (install)/G2
+(browser), bukan diperlakukan final. **11 finding total** di `FINDINGS.md`, termasuk 1 baru dari Step 2
+(`MF-11`, pola sama `MF-09`).
 
-**Field terbuka:** tidak ada — semua checklist §0/§4a/§4b Step 1 sudah dikonfirmasi dev dan berlaku
-project-wide (tidak perlu ditanya ulang per modul untuk step berikutnya, kecuali sesuatu berubah).
+**Temuan Step 2 PALING KRITIS:** `sale_margin_threshold` **DIFF-01** — 2 xpath di `views/sale_order.xml`
+menarget elemen `<tree>` di embedded order_line view core (`sale.view_order_form`). Odoo 18.0
+mengganti `<tree>`→`<list>` SECARA UNIVERSAL (**install-blocking, High Confidence dari PR resmi**,
+bukan dugaan) — kedua xpath ini **WAJIB diubah `/tree`→`/list`** di Step 3/6, atau modul gagal install
+total. Ini satu-satunya temuan Step 2 yang high-confidence/pasti (bukan `[TIDAK TERVERIFIKASI]`).
+
+**Prioritas risiko Step 2 (urutan penanganan Step 6), per modul:**
+1. `sale_margin_threshold` — DIFF-01 (fix wajib konkret di atas) + `MF-06` (batch-confirm, verifikasi ulang)
+2. `pin_message` — paling banyak unknown `[TIDAK TERVERIFIKASI]` (import path `@mail/core/*`, xpath ke class QWeb `mail.Chatter`/`mail.Message`, `this.messagePinService` implicit access) — TIDAK ADA fix konkret yang bisa ditulis sekarang, semua butuh verifikasi G1/G2 nyata
+3. `pos_margin_threshold` — unknown serupa di area POS store (`@point_of_sale/app/store/*`), + `MF-11` baru (pola override total, sama seperti `MF-09`)
+
+Folder referensi (`native-*`/`third-party-*`): dikonfirmasi dev tidak ada, project-wide. Source
+dibekukan. **Step 3 (Migration Spec) juga selesai draft ketiga modul** — `03_MIGRATION_SPEC.md`
+tiap modul sudah berisi strategi per-file, Critical Migration Blockers, dan urutan testing. **Belum
+dikerjakan:** Step 4-11 untuk ketiga modul (Step 6 Code Migration BELUM dimulai — semua "strategi"
+di Step 3 masih rencana, belum ada kode 18.0 yang benar-benar ditulis).
+
+**Field terbuka:** tidak ada untuk checklist Step 1. Untuk Step 6, kandidat entry baru ke
+`migration-tool/knowledge/dependency-compat/` (mail, point_of_sale, sale — lihat §3 tiap
+`02_DIFF_ANALYSIS.md`) menunggu verifikasi instalasi nyata sebelum ditulis ke `migration-records/`.
+**Belum ada commit sejak Step 1 gate `pin_message` (`c32e597`)** — Step 2 & 3 (non-gate, 6 file baru
++ update `CLAUDE.md`/`FINDINGS.md`/`PROMPT_LOG.md`) menunggu commit manual dev sesuai prinsip
+"commit non-gate = aksi dev", lihat instruksi commit di akhir sesi/giliran ini.
 
 > AI: update bagian ini sendiri di akhir tiap sesi kerja, supaya sesi berikutnya tahu persis harus
 > lanjut dari mana tanpa tanya ulang ke user.
@@ -227,8 +242,8 @@ project-wide (tidak perlu ditanya ulang per modul untuk step berikutnya, kecuali
 | # | Step | pos_margin_threshold | sale_margin_threshold | pin_message |
 |---|---|---|---|---|
 | 1 | Intake & Scope | ✔️ Gate lulus (2026-08-24) | ✔️ Gate lulus (2026-08-24) | ✔️ Gate lulus (2026-08-24) |
-| 2 | Diff & Compatibility Analysis | ⬜ | ⬜ | ⬜ |
-| 3 | Migration Spec | ⬜ | ⬜ | ⬜ |
+| 2 | Diff & Compatibility Analysis | ✅ Draft selesai (2026-08-24) | ✅ Draft selesai (2026-08-24) | ✅ Draft selesai (2026-08-24) |
+| 3 | Migration Spec | ✅ Draft selesai (2026-08-24) | ✅ Draft selesai (2026-08-24) | ✅ Draft selesai (2026-08-24) |
 | 4 | Spec Completeness Review | ⬜ | ⬜ | ⬜ |
 | 5 | Acceptance Criteria & Test Plan | ⬜ | ⬜ | ⬜ |
 | 6 | Code Migration | ⬜ | ⬜ | ⬜ |

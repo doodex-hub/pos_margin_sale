@@ -8,7 +8,7 @@
 **Modul:** `pos_margin_threshold`, `sale_margin_threshold`, `pin_message` (satu file, prefix modul di
 tiap judul finding)
 **Migrasi:** 17.0 → 18.0
-**Terakhir update:** 2026-08-24 (Step 1 ketiga modul selesai — 9 finding diwarisi dari backfill, 3 temuan baru)
+**Terakhir update:** 2026-08-24 (Step 1 + Step 2 ketiga modul — 9 finding diwarisi dari backfill, 4 temuan baru)
 
 ---
 
@@ -48,6 +48,7 @@ backfill, buat `MF-NNN` yang mereferensikan `F-NNN` aslinya secara eksplisit (ta
 | MF-08 | Manifest declare `assets._assets_sale` menunjuk folder `static/src/` yang tidak eksis | sale_margin_threshold | 1 | `[DIWARISI-SOURCE]` | Rendah | Terbuka — baru ditemukan |
 | MF-09 | `onClickPin` JS menimpa total (bukan extend) patch core `discuss/message_pin` | pin_message | 1 | `[DIWARISI-SOURCE]` `[PERLU-KEPUTUSAN]` | Sedang | Terbuka |
 | MF-10 | `console.log` debug tertinggal di `pinMessage.js` | pin_message | 1 | `[DIWARISI-SOURCE]` | Rendah | Terbuka |
+| MF-11 | `Orderline.getDisplayData()` full-override (bukan extend `super()`) — pola risiko sama seperti MF-09 | pos_margin_threshold | 2 | `[DIWARISI-SOURCE]` `[PERLU-KEPUTUSAN]` | Sedang-Tinggi | Terbuka — baru ditemukan saat diff analysis |
 
 ---
 
@@ -173,6 +174,18 @@ backfill, buat `MF-NNN` yang mereferensikan `F-NNN` aslinya secara eksplisit (ta
 **Dampak di 18.0:** Sangat rendah — tidak ada risiko fungsional, cuma noise di browser console.
 **Rekomendasi:** Bisa dihapus sebagai cleanup trivial, tapi tetap di luar "port kode saja" murni kecuali disetujui eksplisit.
 **Keputusan pemilik modul:** *(kosong)*
+
+---
+
+### MF-11 — `Orderline.getDisplayData()` full-override (bukan extend `super()`)
+**Ditemukan di:** Step 2 (2026-08-24) — **BARU**, ditemukan saat diff analysis, tidak ada di backfill
+**Tag:** `[DIWARISI-SOURCE]` `[PERLU-KEPUTUSAN]`
+**Ref:** `DIFF-07` (`02_diff/pos_margin_threshold/02_DIFF_ANALYSIS.md`)
+**Lokasi:** `pos_margin_threshold/static/src/store/models/models.js:26-50` (patch `Orderline.prototype.getDisplayData`)
+**Deskripsi:** Method ini di-patch dengan MEREPLIKASI SELURUH field data tampilan orderline core (bukan cuma menambah 3 field baru terkait margin) — tidak pernah memanggil `super.getDisplayData()`. Pola sama persis dengan `MF-09` (`pin_message`, `onClickPin`): aman selama core tidak berubah, tapi kalau versi 18.0 menambah field baru ke data tampilan orderline (concept baru apapun), field itu tidak akan pernah muncul karena override total ini tidak pernah delegasi ke core untuk field-field yang tidak modul ini definisikan ulang.
+**Dampak di 18.0:** Sedang-Tinggi — silent, tidak crash, cuma field baru core (kalau ada) yang hilang dari tampilan orderline. Wajib dicek Step 2 lanjutan/Step 6: apakah `getDisplayData()` core 18.0 menambah field dibanding 17.0.
+**Rekomendasi:** Idealnya diubah jadi extend (`return {...super.getDisplayData(), minimumSalePrice: ..., ...}`) untuk robustness — itu **perubahan struktural**, di luar "port kode saja" murni kecuali disetujui eksplisit ATAU terbukti wajib demi kompatibilitas (field core baru yang genuinely dibutuhkan hilang).
+**Keputusan pemilik modul:** *(kosong — diisi manusia)*
 
 ---
 

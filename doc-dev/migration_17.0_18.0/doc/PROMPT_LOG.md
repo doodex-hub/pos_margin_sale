@@ -26,6 +26,8 @@ kolom modul ditambahkan di tabel supaya tetap bisa dipilah.
 | 1 — Intake & Baseline Spec | pos_margin_threshold | 1 | 0 | Satu prompt ("lanjut") menghasilkan `01a_MIGRATION_INTAKE.md` + `01b_BASELINE_SPEC.md` draft lengkap + 4 finding (`MF-01..04`) ke `FINDINGS.md` — sebagian besar leverage dokumen backfill (`01A_FUNCTIONAL_SPEC.md`/`01B_ACCEPTANCE_CRITERIA.md`) yang sudah tervalidasi eksekusi, bukan ditulis dari nol |
 | 1 — Intake & Baseline Spec | sale_margin_threshold | 1 | 0 | Satu prompt ("comit saja dan lanjut") menghasilkan Step 1 lengkap modul ini + 4 finding baru (`MF-05..08`), termasuk 1 temuan `[PERLU-KEPUTUSAN]` prioritas Tinggi (`MF-06`, batch-confirm crash) |
 | 1 — Intake & Baseline Spec | pin_message | 1 | 0 | Prompt ("kenapa harus berhenti, tidak lanjut saja") — feedback: lanjutkan tiap modul tanpa berhenti minta konfirmasi. Step 1 modul ini selesai + 2 finding (`MF-09..10`) dalam giliran yang sama tanpa jeda |
+| 2 — Diff & Compatibility Analysis | pos_margin_threshold, sale_margin_threshold, pin_message | 1 | 0 | Satu prompt ("lanjut") menghasilkan Step 2 ketiga modul sekaligus (tanpa native-target — sebagian besar ditandai `[TIDAK TERVERIFIKASI]`) + 1 finding baru (`MF-11`). Temuan kritis: `sale_margin_threshold` DIFF-01 (`<tree>`→`<list>` install-blocking, high confidence dari knowledge base) |
+| 3 — Migration Spec | pos_margin_threshold, sale_margin_threshold, pin_message | 1 | 0 | Sama prompt ("lanjut") lanjut tanpa jeda ke Step 3 ketiga modul — strategi per-file + Critical Migration Blockers + urutan testing, berdasar Step 1/2. Tidak ada tool-fix |
 | 2 — Diff & Compatibility Analysis | | | | |
 | 3 — Migration Spec | | | | |
 | 4 — Spec Completeness Review | | | | |
