@@ -21,6 +21,12 @@ Sisi Python + XML view modul ini relatif aman (tidak ada `<tree>`, tidak ada API
 | `models/pos_session.py` — `_loader_params_product_product` | DIFF-05 | Port apa adanya, WAJIB verifikasi G2 (bukan cukup G1) — test end-to-end jual produk di bawah minimum, pastikan field benar-benar sampai ke frontend | Tinggi, silent-failure kalau salah | `[BSL-006]` |
 | `views/*.xml` (inherit ke `product`/`stock_account`) | DIFF-06 | Port apa adanya, cek G1 | Sedang | `[BSL-010]` |
 | `static/src/store/models/models.js` — `getDisplayData()` full-override | DIFF-07, `MF-11` | Port apa adanya (JANGAN diubah jadi extend `super()` kecuali G2 membuktikan field core baru genuinely hilang) | Sedang-Tinggi | `[BSL-007]` |
+| `wizard/wizard_margin_product.py`, `wizard/wizard_margin_product.xml` | — (tidak ada DIFF spesifik — tidak ada API Odoo yang diketahui berubah untuk `TransientModel`/`ir.ui.view` form biasa) | Port apa adanya, termasuk typo `action_assing_margin` (`[BSL-002]`) dan `_name` ganda dengan `sale_margin_threshold` (`MF-03`) — JANGAN diubah | Sedang — `MF-03` (MRO collision) perlu diverifikasi ulang cross-module di Step 9/10 | `[BSL-002]`, `[BSL-013]` |
+| `security/ir.model.access.csv` | — | Port apa adanya (1 baris, akses wizard) | Rendah | — |
+| `demo/demo.xml` | — | Port apa adanya — belum dibaca isinya detail, cek saat Step 6 tidak ada reference ke field/model yang berubah | Rendah | — |
+| `i18n/*.po` (ar_001, es, fr, id, pt) | — | Port apa adanya — tidak ada perubahan format `.po` yang diketahui 17→18 | Rendah | — |
+| `tests/test_margin_sale.py`, `tests/test_cross_module.py` | — | Port apa adanya (dari backfill) — dipakai ULANG sebagai basis Step 9 (re-run pasca migrasi, bukan ditulis ulang). Method test Odoo (`TransactionCase`, dst) stabil, lihat `17-to-18.md` §1b soal `setUp`→`setUpClass` KALAU test ini pakai pola lama (perlu dicek isi file saat Step 6/9) | Rendah-Sedang | — |
+| `static/description/*`, `LICENSE`, `LISEZMOI.md`, `README.md`, `googleaeed8a7b9ec156e7.html` | — | Port apa adanya, tidak ada isi executable/behavior | N/A | — |
 | `__manifest__.py` | — | Bump `version` → `18.0.1.0` | Rendah | — |
 
 ## 2b. Risk Analysis Terstruktur

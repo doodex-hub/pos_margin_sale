@@ -24,6 +24,14 @@ Modul ini didominasi SATU Critical Migration Blocker konkret (`DIFF-01`, `<tree>
 | `views/res_config_settings.xml` (xpath `block[@name='quotation_order_setting_container']`) | DIFF-05 | Port apa adanya dulu, coba install — kalau `ParseError`, cari nama block baru di form Settings Sales 18.0 (butuh `native-target` ATAU baca error message + inspect DOM Settings 18.0 langsung di instance test) | Sedang — install-blocking kalau salah, tapi errornya eksplisit (ParseError), gampang dideteksi G1 | — |
 | `views/products.xml`, `views/product_template_views.xml` (inherit_id `product.*`) | DIFF-06 | Port apa adanya dulu, sama seperti DIFF-05 | Sedang | `[BSL-005]`, `[BSL-010]` |
 | `security/groups.xml`, `_register_hook()` | DIFF-07, `MF-05` | Port apa adanya | Rendah | `[BSL-006]` |
+| `models/product.py` (`module_pos_margin_threshold` compute + field margin standar, sama pola `pos_margin_threshold`) | DIFF-04 (terkait) | Port apa adanya | Rendah | `[BSL-005]`, `[BSL-011]` |
+| `wizard/sale_confirmation.py`, `wizard/sale_confirmation.xml` | — | Port apa adanya — `action_confirm()` di wizard ini memanggil ulang `sale.order.action_confirm()` (`[BSL-004]`), TIDAK ADA API TransientModel/tombol form yang diketahui berubah | Rendah | `[BSL-004]` |
+| `wizard/wizard_margin_product.py`, `wizard/wizard_margin_product.xml` | — | Port apa adanya, `_name` ganda dengan `pos_margin_threshold` (`MF-03`) — JANGAN diubah, harus tetap byte-identik dengan versi `pos_margin_threshold` pasca migrasi (lihat rekomendasi `MF-03`: migrasikan KEDUA wizard bersamaan) | Sedang — perlu koordinasi migrasi dengan `pos_margin_threshold` | `[BSL-007]` |
+| `security/ir.model.access.csv` | — | Port apa adanya (2 baris) | Rendah | — |
+| `demo/demo.xml` | — | Port apa adanya | Rendah | — |
+| `i18n/*.po` | — | Port apa adanya | Rendah | — |
+| `tests/test_action_confirm.py`, `tests/test_cross_module.py` | — | Port apa adanya, dipakai ulang Step 9 (termasuk `test_action_confirm_BATCH_MULTI_ORDER_F05` untuk re-verifikasi `MF-06`) | Rendah | — |
+| `static/description/*`, `LICENSE`, `LISEZMOI.md`, `googleaeed8a7b9ec156e7.html` | — | Port apa adanya | N/A | — |
 | `__manifest__.py` | — | Update `version: '17.0.1.0'` → `'18.0.1.0'` (WAJIB, konvensi versi manifest Odoo) | Rendah | — |
 
 ## 2b. Risk Analysis Terstruktur

@@ -23,6 +23,8 @@ Modul dengan risiko tertinggi di project ini — hampir seluruh logic patch JS/O
 | `static/src/js/message.js` — `this.messagePinService` | DIFF-06 | Port apa adanya, **WAJIB test G2**: klik pin di pesan Discuss channel (`is_discussion=True`) — kalau `TypeError`, service ini perlu di-inject eksplisit lewat `useService` (perubahan struktural, minta persetujuan) | **Tertinggi di modul ini** — review statis tidak akan menangkap ini | `[BSL-002]` |
 | `static/src/js/{chatter,message}.js` — `useService("orm")` | DIFF-07 | Port apa adanya | Rendah | — |
 | `static/src/css/style.css` | DIFF-11 | Port apa adanya, verifikasi visual G2 (warna section pinned messages) | Rendah | — |
+| `tests/test_pin_message.py` | — | Port apa adanya, dipakai ulang Step 9 | Rendah | — |
+| `static/description/*`, `LICENSE.txt`, `README.md` | — | Port apa adanya | N/A | — |
 | `__manifest__.py` | — | Bump `version` → `18.0.1.0` | Rendah | — |
 
 ## 2b. Risk Analysis Terstruktur

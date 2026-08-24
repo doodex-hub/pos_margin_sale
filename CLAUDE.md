@@ -227,12 +227,17 @@ tiap modul sudah berisi strategi per-file, Critical Migration Blockers, dan urut
 dikerjakan:** Step 4-11 untuk ketiga modul (Step 6 Code Migration BELUM dimulai — semua "strategi"
 di Step 3 masih rencana, belum ada kode 18.0 yang benar-benar ditulis).
 
+**Step 4 (Spec Completeness Review) gate lulus ketiga modul (2026-08-24)** — commit `45848a7`
+(Step 2+3). Gate ini menangkap **gap nyata**: draft `03_MIGRATION_SPEC.md` `pos_margin_threshold`
+DAN `sale_margin_threshold` sama-sama melewatkan seluruh folder `wizard/` (pola berulang, dicatat di
+`04_completeness/sale_margin_threshold/04_SPEC_COMPLETENESS_REVIEW.md` sebagai lesson) — sudah
+diperbaiki sebelum gate dinyatakan lulus. `pin_message` lulus tanpa gap (struktur modul lebih
+sederhana).
+
 **Field terbuka:** tidak ada untuk checklist Step 1. Untuk Step 6, kandidat entry baru ke
 `migration-tool/knowledge/dependency-compat/` (mail, point_of_sale, sale — lihat §3 tiap
 `02_DIFF_ANALYSIS.md`) menunggu verifikasi instalasi nyata sebelum ditulis ke `migration-records/`.
-**Belum ada commit sejak Step 1 gate `pin_message` (`c32e597`)** — Step 2 & 3 (non-gate, 6 file baru
-+ update `CLAUDE.md`/`FINDINGS.md`/`PROMPT_LOG.md`) menunggu commit manual dev sesuai prinsip
-"commit non-gate = aksi dev", lihat instruksi commit di akhir sesi/giliran ini.
+**Belum dikerjakan:** Step 5-11 untuk ketiga modul.
 
 > AI: update bagian ini sendiri di akhir tiap sesi kerja, supaya sesi berikutnya tahu persis harus
 > lanjut dari mana tanpa tanya ulang ke user.
@@ -244,7 +249,7 @@ di Step 3 masih rencana, belum ada kode 18.0 yang benar-benar ditulis).
 | 1 | Intake & Scope | ✔️ Gate lulus (2026-08-24) | ✔️ Gate lulus (2026-08-24) | ✔️ Gate lulus (2026-08-24) |
 | 2 | Diff & Compatibility Analysis | ✅ Draft selesai (2026-08-24) | ✅ Draft selesai (2026-08-24) | ✅ Draft selesai (2026-08-24) |
 | 3 | Migration Spec | ✅ Draft selesai (2026-08-24) | ✅ Draft selesai (2026-08-24) | ✅ Draft selesai (2026-08-24) |
-| 4 | Spec Completeness Review | ⬜ | ⬜ | ⬜ |
+| 4 | Spec Completeness Review | ✔️ Gate lulus (2026-08-24) | ✔️ Gate lulus (2026-08-24) | ✔️ Gate lulus (2026-08-24) |
 | 5 | Acceptance Criteria & Test Plan | ⬜ | ⬜ | ⬜ |
 | 6 | Code Migration | ⬜ | ⬜ | ⬜ |
 | 7 | Data Migration Scripts | — (N/A, port kode saja) | — | — |
