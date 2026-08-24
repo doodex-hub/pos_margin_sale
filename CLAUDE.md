@@ -203,10 +203,35 @@ wajib selesai penuh sebelum F (Template)**.
 
 ## Status saat ini
 
-**Ringkasan cepat (2026-08-24):** Step 1-5 selesai ketiga modul. Step 6 (Code Migration) **selesai
-penuh untuk ketiga modul** — `pos_margin_threshold` DAN `pin_message` masing-masing punya Tour test
-interaktif nyata yang PASS (jalur utama), `sale_margin_threshold` selesai lewat G1/G2 + `MF-21`
-dikonfirmasi sebagai catatan deployment (bukan bug). Step 7 N/A. **Belum dikerjakan: Step 8-11.**
+**Ringkasan cepat (2026-08-24):** Step 1-6 selesai ketiga modul (lihat detail Tour test di bawah).
+Step 7 N/A. **Step 8 (Code Review) LULUS GATE untuk ketiga modul** — lihat ringkasan di bawah.
+**Belum dikerjakan: Step 9-11.**
+
+**Step 8 — Code Review (gate, LULUS ketiganya, 2026-08-24):** dikerjakan lewat 3 agent paralel
+(gather diff+gap-analysis+core-collision-check per modul, real `git diff backfill/17.0 HEAD`, cross-
+check langsung terhadap source Odoo 17.0/18.0 di image `pos_margin_sale_migration_18-odoo:latest`),
+lalu sintesis manual jadi `08_review/<modul>/08_CODE_REVIEW.md`.
+- **`pos_margin_threshold`:** 0 issue baru, diff 100% terjustifikasi ke `MF-NN` yang sudah ada. Gap
+  terbuka (bukan bug, cuma belum ada test): AC-02-01 (jalur blocking `AlertDialog`), AC-02-03/04,
+  AC-03-01/02 (wizard) — sudah didokumentasikan sejak Step 6, ditegaskan lagi sebagai kandidat Step 9.
+- **`sale_margin_threshold`:** 0 issue baru, diff cuma 2 baris dari 17.0 (version bump + `<tree>`→
+  `<list>`). Nuansa baru soal `MF-21`: kemungkinan mekanisme bilingual EN/FR modul ini SUDAH silently
+  broken di 17.0 kalau Prancis tidak pernah terinstall (18.0 mengubah silent-fail jadi crash eksplisit,
+  bukan bug baru) — ditambahkan ke rekomendasi konfirmasi dev. Gap test terbuka: AC-01-04 (rental,
+  tidak bisa dites di environment Community), AC-03-02, AC-04-02, AC-04-03.
+- **`pin_message`:** **1 bug fungsional nyata ditemukan DAN DIPERBAIKI dalam review ini sendiri**
+  (`MF-24`) — `pinMessage.js`'s `condition` action-menu "Pin" memanggil `component.canAddReaction`
+  (getter 17.0 di component `Message`), yang di 18.0 dipindah jadi method di message MODEL
+  (`message.canAddReaction(thread)`) — selalu `undefined` di 18.0, `condition` selalu `false`, entry
+  menu "Pin" TIDAK PERNAH render, sejak awal migrasi, tanpa error apapun (Tour test lolos karena
+  sengaja pakai tombol inline `pinnedMessages.xml`, bukan jalur ini). **Diperbaiki** (`component.message.canAddReaction(component.props.thread)`,
+  idiom sama seperti core sendiri) **dan diverifikasi ulang** — re-run `docker compose down -v` +
+  test suite penuh, kedua Tour test tetap "tour succeeded". Juga: `MF-09` (Discuss-channel
+  `onClickPin`/`messagePinService`) dikonfirmasi **harmless** lewat cross-check source 17.0/18.0
+  langsung — cabang ini jadi dead code di 18.0 tapi Discuss-channel pinning tetap berfungsi penuh
+  lewat mekanisme native 18.0, tidak ada fitur hilang untuk end-user.
+- **Tidak ada tabrakan nama method/field dengan Odoo core** di ketiga modul (dicek 2 arah, langsung
+  terhadap source real, bukan asumsi).
 
 **Milestone terbesar sesi ini — Mode D (Chrome asli di Docker) berhasil dipasang dan dipakai untuk
 verifikasi interaktif nyata**, bukan cuma install test. `docker-env/Dockerfile` diinstansiasi
@@ -255,8 +280,11 @@ keduanya — baru ketahuan dari Tour test:
 (ditulis sebelum `MF-22`/`MF-23` ditemukan — dev sudah commit manual sekali, mungkin perlu entry
 tambahan untuk `MF-22`/`MF-23`, belum diminta eksplisit oleh dev).
 
-**Belum dikerjakan:** Step 8 (Code Review, gate) → 9 (Dev Testing, gate, termasuk Tour test jalur
-Discuss channel `pin_message` yang masih kosong) → 10 (QA, gate) → 11 (UAT, gate) untuk ketiga modul.
+**Belum dikerjakan:** Step 9 (Dev Testing, gate — termasuk kandidat baru dari review Step 8: Tour/
+klik-manual action-menu "Pin" `pin_message` untuk membuktikan `MF-24` fix end-to-end di UI, Tour
+jalur blocking `pos_margin_threshold`, test MRO reverse-order `sale_margin_threshold`) → 10 (QA,
+gate) → 11 (UAT, gate) untuk ketiga modul. Sebelum Step 10/11: `MF-21` WAJIB dikonfirmasi ke dev
+(bahasa Prancis terinstall di environment production `sale_margin_threshold`?).
 
 > AI: update bagian ini sendiri di akhir tiap sesi kerja, supaya sesi berikutnya tahu persis harus
 > lanjut dari mana tanpa tanya ulang ke user.
@@ -272,7 +300,7 @@ Discuss channel `pin_message` yang masih kosong) → 10 (QA, gate) → 11 (UAT, 
 | 5 | Acceptance Criteria & Test Plan | ✅ Draft selesai (2026-08-24) | ✅ Draft selesai (2026-08-24) | ✅ Draft selesai (2026-08-24) |
 | 6 | Code Migration | ✅ Selesai, Tour test PASS | ✅ Selesai (G1/G2 + `MF-21` dikonfirmasi) | ✅ Selesai, Tour test PASS (jalur log note; Discuss channel belum) |
 | 7 | Data Migration Scripts | — (N/A, port kode saja) | — | — |
-| 8 | Code Review | ⬜ | ⬜ | ⬜ |
+| 8 | Code Review | ✔️ Gate lulus (2026-08-24) | ✔️ Gate lulus (2026-08-24) | ✔️ Gate lulus (2026-08-24) — 1 bug baru (`MF-24`) ditemukan+diperbaiki+diverifikasi dalam review |
 | 9 | Dev Testing | ⬜ | ⬜ | ⬜ |
 | 10 | QA Testing | ⬜ | ⬜ | ⬜ |
 | 11 | UAT Sign-off | ⬜ | ⬜ | ⬜ |

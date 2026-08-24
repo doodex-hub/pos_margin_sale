@@ -8,8 +8,9 @@
 **Modul:** `pos_margin_threshold`, `sale_margin_threshold`, `pin_message` (satu file, prefix modul di
 tiap judul finding)
 **Migrasi:** 17.0 → 18.0
-**Terakhir update:** 2026-08-24 (Step 6, Mode D — Tour test `pos_margin_threshold` DAN `pin_message`
-kedua-duanya "tour succeeded" di database bersih; total 23 finding, 9 diwarisi backfill)
+**Terakhir update:** 2026-08-24 (Step 8, Code Review — `MF-24` ditemukan+diperbaiki+diverifikasi
+[action-menu "Pin" 18.0 silently dead karena `canAddReaction` getter→method], `MF-09` dikonfirmasi
+harmless via cross-check source 17.0/18.0; total 24 finding, 9 diwarisi backfill)
 
 ---
 
@@ -47,7 +48,7 @@ backfill, buat `MF-NNN` yang mereferensikan `F-NNN` aslinya secara eksplisit (ta
 | MF-06 | `action_confirm` override asumsi singleton — memecah batch-confirm Odoo core | sale_margin_threshold | 1 | `[DIWARISI-SOURCE]` `[PERLU-KEPUTUSAN]` | **Tinggi** | Terbuka |
 | MF-07 | Duplikasi XML-ID `product_template_inherit_sale_margin_threshold` — KEDUA file dimuat, yang kedua menimpa total yang pertama | sale_margin_threshold | 1 | `[DIWARISI-SOURCE]` | Sedang | Terbuka — baru ditemukan, lebih serius dari MF-04 (di sini file aktif dimuat, bukan dead) |
 | MF-08 | Manifest declare `assets._assets_sale` menunjuk folder `static/src/` yang tidak eksis | sale_margin_threshold | 1 | `[DIWARISI-SOURCE]` | Rendah | Terbuka — baru ditemukan |
-| MF-09 | `onClickPin` JS menimpa total (bukan extend) patch core `discuss/message_pin` | pin_message | 1 | `[DIWARISI-SOURCE]` `[PERLU-KEPUTUSAN]` | Sedang | Terbuka |
+| MF-09 | `onClickPin` JS menimpa total (bukan extend) patch core `discuss/message_pin` | pin_message | 1 | `[DIWARISI-SOURCE]` | Sedang | ✅ **CONFIRMED** (Step 8, 2026-08-24) — dicek langsung terhadap source 17.0/18.0: cabang `is_discussion` jadi dead code di 18.0 tapi TIDAK ADA kehilangan fitur (Discuss pin tetap jalan penuh lewat mekanisme native 18.0). Dibiarkan apa adanya. |
 | MF-10 | `console.log` debug tertinggal di `pinMessage.js` | pin_message | 1 | `[DIWARISI-SOURCE]` | Rendah | Terbuka |
 | MF-11 | `Orderline.getDisplayData()` full-override (bukan extend `super()`) — pola risiko sama seperti MF-09 | pos_margin_threshold | 2 | `[DIWARISI-SOURCE]` `[PERLU-KEPUTUSAN]` | Sedang-Tinggi | Terbuka — baru ditemukan saat diff analysis |
 | MF-12 | `chatter.js` import `@mail/core/web/chatter` — path SUDAH TIDAK ADA di 18.0 | pin_message | 6 | `[GAP-MIGRASI]` | Tinggi | ✅ **RESOLVED** (2026-08-24) — diperbaiki jadi `@mail/chatter/web_portal/chatter`, dikonfirmasi via G2 browser + cross-check source container `odoo:18.0` |
@@ -62,6 +63,7 @@ backfill, buat `MF-NNN` yang mereferensikan `F-NNN` aslinya secara eksplisit (ta
 | MF-21 | `Environment.lang` (18.0) validasi ketat — `UserError` kalau context `lang=fr_FR` tapi bahasa Prancis tidak diinstall di database | sale_margin_threshold | 6 | `[CATATAN-DEPLOYMENT]` | Sedang | ✅ Bukan bug kode — dikonfirmasi test pass 0 error setelah bahasa Prancis diinstall (`--load-language=fr_FR`). **Perlu dikonfirmasi ke dev:** environment production harus punya bahasa Prancis terinstall, atau `action_confirm()` bilingual EN/FR modul ini akan crash di 18.0 (TIDAK crash di 17.0 — lihat detail) |
 | MF-22 | `pin_message/chatter.js` — `load()` full-override memanggil `this.threadService.fetchData(thread, requestList, options)`, service+signature ini sudah tidak ada di 18.0 | pin_message | 6 | `[GAP-MIGRASI]` | **Tinggi** — crash total begitu chatter mount | ✅ **RESOLVED** — override dihapus (extend, bukan replace), terkonfirmasi Tour test nyata "tour succeeded" |
 | MF-23 | `is_pinned` tidak lagi bisa "diminta" lewat field-list custom di `Chatter.load()` — field kustom ke frontend mail sekarang lewat `mail.message._to_store()` (per-model, seperti pola POS `_load_pos_data_fields`, `MF-18`) | pin_message | 6 | `[GAP-MIGRASI]` | Tinggi (silent, field tidak pernah sampai ke frontend tanpa fix) | ✅ **RESOLVED** — `mail.message._to_store()` di-extend, tambah `store.add(message, {'is_pinned': ...})`, terkonfirmasi Tour test |
+| MF-24 | `pinMessage.js` — `component.canAddReaction` (getter component 17.0) dipindah jadi method `message.canAddReaction(thread)` di 18.0 — `condition` action "pins" selalu `false`, entry menu Pin tidak pernah render | pin_message | 8 | `[GAP-MIGRASI]` | **Tinggi** (silent, action-menu "Pin" tidak pernah muncul, sejak awal migrasi tanpa disadari) | ✅ **RESOLVED** — `condition` diubah jadi `component.message.canAddReaction(component.props.thread)`, terkonfirmasi re-run test suite penuh (kedua Tour test tetap "tour succeeded") |
 
 ---
 
@@ -167,13 +169,20 @@ backfill, buat `MF-NNN` yang mereferensikan `F-NNN` aslinya secara eksplisit (ta
 
 ### MF-09 — `onClickPin` JS menimpa total (bukan extend) patch core `discuss/message_pin`
 **Ditemukan di:** Step 1 (2026-08-24) — diwarisi dari `doc-dev/backfill/FINDINGS.md` **F-06**
-**Tag:** `[DIWARISI-SOURCE]` `[PERLU-KEPUTUSAN]`
+**Tag:** `[DIWARISI-SOURCE]` `[PERLU-KEPUTUSAN]` → **lihat update Step 8 di bawah, sudah dikonfirmasi teknis**
 **Ref:** `BSL-002` (`01_intake/pin_message/01b_BASELINE_SPEC.md`), backfill `F-06`
 **Lokasi:** `pin_message/static/src/js/message.js:11-27` (`Message.prototype.onClickPin`)
 **Deskripsi:** Patch `onClickPin` MENIMPA TOTAL (tidak pernah panggil `super.onClickPin()`) method dengan nama sama di patch core `discuss/message_pin/common/message_patch.js`. Perilaku SAAT INI identik dengan core (dikonfirmasi baca source core saat backfill), tapi pola override total ini berisiko silent-diverge kalau core berubah.
-**Dampak di 18.0:** **Risiko migrasi PALING TINGGI di modul `pin_message`** — kalau Odoo 18.0 mengubah behavior `onClickPin` di core (bukan cuma lokasi/nama file), full-override modul ini TIDAK akan otomatis ikut berubah karena tidak pernah delegasi ke `super()`. WAJIB dicek ulang line-by-line terhadap source core `message_patch.js` versi 18.0 di Step 2 — tidak cukup diasumsikan sama dari kecocokan di 17.0.
-**Rekomendasi:** Backfill merekomendasikan ganti jadi `super.onClickPin()` untuk robustness — itu **perubahan struktural** (bukan cuma port), di luar scope "port kode saja" kecuali disetujui eksplisit sebagai bagian migrasi (bisa dipertimbangkan KHUSUS kalau Step 2 menemukan core 18.0 sudah berubah dan override total ini pasti pecah — di titik itu "mengikuti pola `super()`" jadi WAJIB demi kompatibilitas, bukan lagi opsional).
-**Keputusan pemilik modul:** *(kosong — diisi manusia)*
+**Dampak di 18.0 (perkiraan awal, Step 1):** **Risiko migrasi PALING TINGGI di modul `pin_message`** — kalau Odoo 18.0 mengubah behavior `onClickPin` di core (bukan cuma lokasi/nama file), full-override modul ini TIDAK akan otomatis ikut berubah karena tidak pernah delegasi ke `super()`. WAJIB dicek ulang line-by-line terhadap source core `message_patch.js` versi 18.0 di Step 2 — tidak cukup diasumsikan sama dari kecocokan di 17.0.
+**Rekomendasi (Step 1):** Backfill merekomendasikan ganti jadi `super.onClickPin()` untuk robustness — itu **perubahan struktural** (bukan cuma port), di luar scope "port kode saja" kecuali disetujui eksplisit sebagai bagian migrasi.
+
+**Update Step 8 (2026-08-24) — dicek langsung terhadap source 18.0, DIKONFIRMASI HARMLESS, bukan lagi `[PERLU-KEPUTUSAN]` murni:**
+Dicek `docker run --rm odoo:17.0`/`odoo:18.0` grep langsung `mail/static/src/discuss/message_pin/`:
+- **17.0:** `messagePinService` yang dipakai method ini (`this.messagePinService`) BUKAN sesuatu yang `pin_message` definisikan sendiri — itu service Odoo CORE 17.0 asli (`registry.category("services").add("discuss.message.pin", messagePinService)`), di-inject ke `Message` component oleh core-nya sendiri lewat `message_patch.js` (`useState(useService("discuss.message.pin"))`), dan core 17.0 SENDIRI juga punya `onClickPin()` dengan logika identik (branch `is_discussion`, panggil `getPinnedAt`/`pin`/`unpin`). Jadi cabang `is_discussion` di modul ini bukan business logic custom — itu DUPLIKASI method core 17.0 apa adanya (kemungkinan besar supaya bisa gabung dengan cabang `else` custom log-note dalam satu method, karena Owl patch tidak trivial untuk "sisipkan di tengah" tanpa override total).
+- **18.0:** grep `messagePinService` di seluruh addon `mail` 18.0 = 0 match — service ini dihapus total. Core 18.0 juga tidak lagi memanggil `onClickPin()` untuk aksi native pin di Discuss channel (grep `onClickPin` di addon `mail` 18.0 = 0 match) — native pin action sekarang panggil `message.pin()` langsung di message MODEL (`discuss/message_pin/common/message_model_patch.js`), yang membuka `MessageConfirmDialog` lalu ORM `discuss.channel.set_message_pin`.
+- **Kesimpulan:** cabang `is_discussion` di `onClickPin()` milik modul ini jadi **dead code yang provably tidak bisa dieksekusi lagi** di 18.0 (tidak ada UI element manapun yang memanggilnya) — TAPI ini BUKAN kehilangan fitur, karena Discuss channel pinning tetap berfungsi penuh lewat mekanisme native 18.0 (`message.pin()`), yang MENGGANTIKAN peran core 17.0 yang tadinya diduplikasi modul ini. End-user experience pin/unpin di Discuss channel **tidak berubah** — cuma jalur kode yang mengeksekusinya sekarang 100% core, bukan lagi (duplikat) modul ini.
+- **Keputusan:** kode dead branch ini **DIBIARKAN apa adanya** (tidak dihapus) — menghapusnya adalah cleanup di luar scope "port kode saja" yang tidak diminta, dan membiarkannya tidak officialy punya efek samping (tidak pernah terpanggil). Tidak perlu keputusan `[PERLU-KEPUTUSAN]` lebih lanjut dari dev — sudah confirmed secara teknis, bukan lagi ambiguitas.
+**Keputusan pemilik modul:** ✅ **CONFIRMED (Step 8, 2026-08-24)** — tidak ada dampak behavior; dead code dibiarkan, tidak perlu persetujuan tambahan.
 
 ---
 
@@ -349,6 +358,18 @@ backfill, buat `MF-NNN` yang mereferensikan `F-NNN` aslinya secara eksplisit (ta
 **Dampak:** Sebelum fix ini digabung dengan `MF-22`, section "Pinned Messages" akan selalu kosong (badge count `0`) walau ada pesan yang `is_pinned=True` di database — silent, tidak ada error apapun.
 **Status:** ✅ **RESOLVED dan TERVERIFIKASI** — `mail.message._to_store()` di-extend (`super()._to_store(store, **kwargs)` lalu `store.add(message, {'is_pinned': message.is_pinned})` per message). Dikonfirmasi Tour test: badge muncul benar dengan angka 1 setelah pin, section menampilkan pesan yang benar, badge kembali kosong setelah unpin.
 **Keputusan pemilik modul:** Tidak perlu — perbaikan wajib kompatibilitas, field yang di-expose sama persis dengan 17.0.
+
+---
+
+### MF-24 — `pinMessage.js`: `component.canAddReaction` getter dipindah jadi method `message.canAddReaction(thread)` — action "pins" selalu `false` — RESOLVED
+**Ditemukan di:** Step 8 (2026-08-24), Code Review — ditemukan dari pembacaan kode langsung (bukan dari Tour test, yang tidak pernah menyentuh jalur ini sejak awal ditulis lewat tombol inline `pinnedMessages.xml`, bukan action-menu)
+**Tag:** `[GAP-MIGRASI]`
+**Prioritas:** **Tinggi** — silent, tidak ada error, entry menu "Pin" (action registry `messageActionsRegistry`) tidak PERNAH muncul untuk pesan manapun, di kondisi manapun, sejak awal migrasi
+**Lokasi:** `pin_message/static/src/js/pinMessage.js:8` (callback `condition` di `messageActionsRegistry.add("pins", ...)`)
+**Deskripsi:** Kode (diwarisi apa adanya dari 17.0) memanggil `component.canAddReaction` sebagai property/getter langsung di Owl component `Message`. Dikonfirmasi baca source core langsung (`docker run --rm pos_margin_sale_migration_18-odoo:latest`): di 17.0 `canAddReaction` memang getter di `Message` component (`core/common/message.js`); di 18.0 getter ini DIHAPUS dari component, dipindah jadi METHOD di message MODEL: `message.canAddReaction(thread)` (`core/common/message_model.js:450`) — core sendiri memanggilnya lewat `component.props.message.canAddReaction(component.props.thread)` (`core/common/message_actions.js:53`, entry registry "add-reaction" milik core). Karena `component.canAddReaction` (property langsung di component) selalu `undefined` di 18.0, `!component.canAddReaction` selalu `true` → `condition` SELALU return `false`.
+**Dampak:** Entry menu "Pin" (ikon thumbtack di action bar pesan, sequence 15) tidak pernah render untuk pesan manapun — tapi tour test yang sudah ada (`pin_message_toggle_pin_tour`) tidak pernah menangkap ini karena tour tsb sengaja pakai tombol inline (`pinnedMessages.xml`, method `onMessagePin()`, jalur terpisah yang tidak lewat registry ini) — dipilih saat penulisan tour justru karena action-menu button "tidak pernah ketemu/timeout" (lihat `06c_IMPLEMENTATION_LOG.md` `pin_message` Fase E/F), yang saat itu disangka flakiness timing Tour, padahal akar masalahnya tombolnya memang tidak pernah dirender sama sekali oleh aplikasi, di context manapun.
+**Status:** ✅ **RESOLVED dan TERVERIFIKASI** — `condition` diubah jadi `component.message.canAddReaction(component.props.thread)` (mengikuti persis idiom core sendiri; `component.message` adalah getter yang sudah ada dan tetap valid di 18.0, `return this.props.message`). Re-run test suite penuh setelah fix: kedua Tour test (`pos_margin_threshold`, `pin_message`) tetap "tour succeeded", `0 failed, 1 error(s) of 19 tests` (1 error tetap `MF-21`, tidak terkait).
+**Keputusan pemilik modul:** Tidak perlu — perbaikan wajib kompatibilitas (API getter→method core), bukan perubahan behavior yang disengaja.
 
 ---
 
