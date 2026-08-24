@@ -203,17 +203,21 @@ wajib selesai penuh sebelum F (Template)**.
 
 ## Status saat ini
 
-**Belum mulai — bootstrap selesai 2026-08-24.** Branch `migration/18.0` dibuat dari `backfill/17.0`
-(commit `9d55d23`, berisi config CLI migration-tool). `CLAUDE.md` ini + struktur folder `doc-dev/
-migration_17.0_18.0/doc/` baru ditulis, belum di-commit (commit bootstrap ini keputusan manual dev,
-lihat instruksi serah-terima di akhir sesi). Belum ada step yang dikerjakan untuk modul manapun.
+**Step 1 `pos_margin_threshold` gate lulus (2026-08-24).** Bootstrap selesai (branch `migration/18.0`
+dari `backfill/17.0`, commit `9d55d23` + `26ab2be`). `01a_MIGRATION_INTAKE.md` + `01b_BASELINE_SPEC.md`
+untuk `pos_margin_threshold` sudah ditulis (leverage berat dari `doc-dev/backfill/spec/
+pos_margin_threshold/` yang sudah tervalidasi eksekusi Docker) — 4 finding dicatat ke `FINDINGS.md`
+(`MF-01`..`MF-03` diwarisi dari backfill F-01/F-02/F-03, `MF-04` temuan baru: `views/
+product_template_views.xml` dead file + duplikat XML-ID). Dikonfirmasi dev: tidak ada folder
+referensi (`native-target`/`native-target-enterprise`/`third-party-*`) yang tersedia — Step 2 modul
+ini akan dikerjakan tanpa itu (keterbatasan, bukan blocker). Source dibekukan (tidak ada
+`SYNC_POLICY.md`). **Belum dikerjakan:** Step 1 untuk `sale_margin_threshold` dan `pin_message`;
+Step 2+ untuk ketiga modul.
 
-**Field terbuka yang perlu dikonfirmasi dev di awal Step 1:**
-- Source masih aktif dikembangkan? (lihat §Identitas)
-- Folder referensi yang relevan sudah ada di disk? (`native-target` Odoo 18.0 Community,
-  `native-target-enterprise` kalau ada dependency Enterprise, `native-source` 17.0 opsional,
-  `third-party-*` kalau ada dependency OCA) — lihat §"Folder yang perlu di-connect" di
-  `migration-tool/templates/CLAUDE_TEMPLATE.md`.
+**Field terbuka:** tidak ada lagi untuk `pos_margin_threshold` Step 1. Untuk 2 modul lain, checklist
+folder referensi/dokumen pelengkap/source-aktif di §0/§4a/§4b `01a_MIGRATION_INTAKE.md` masing-masing
+perlu ditanyakan ulang saat Step 1 modul itu dimulai (jawaban dev sesi ini kemungkinan sama, tapi
+tetap wajib dikonfirmasi per modul, bukan diwariskan otomatis).
 
 > AI: update bagian ini sendiri di akhir tiap sesi kerja, supaya sesi berikutnya tahu persis harus
 > lanjut dari mana tanpa tanya ulang ke user.
@@ -222,7 +226,7 @@ lihat instruksi serah-terima di akhir sesi). Belum ada step yang dikerjakan untu
 
 | # | Step | pos_margin_threshold | sale_margin_threshold | pin_message |
 |---|---|---|---|---|
-| 1 | Intake & Scope | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
+| 1 | Intake & Scope | ✔️ Gate lulus (2026-08-24) | ⬜ Belum mulai | ⬜ Belum mulai |
 | 2 | Diff & Compatibility Analysis | ⬜ | ⬜ | ⬜ |
 | 3 | Migration Spec | ⬜ | ⬜ | ⬜ |
 | 4 | Spec Completeness Review | ⬜ | ⬜ | ⬜ |

@@ -8,7 +8,7 @@
 **Modul:** `pos_margin_threshold`, `sale_margin_threshold`, `pin_message` (satu file, prefix modul di
 tiap judul finding)
 **Migrasi:** 17.0 → 18.0
-**Terakhir update:** 2026-08-24 (bootstrap, belum ada finding)
+**Terakhir update:** 2026-08-24 (Step 1 `pos_margin_threshold` — 3 finding diwarisi dari backfill + 1 temuan baru)
 
 ---
 
@@ -38,15 +38,60 @@ backfill, buat `MF-NNN` yang mereferensikan `F-NNN` aslinya secara eksplisit (ta
 
 | ID | Judul | Modul | Ditemukan di Step | Tag | Prioritas | Status |
 |---|---|---|---|---|---|---|
-| MF-01 | | | | | | |
+| MF-01 | `margin_sale` per-variant tidak bisa divergen — inverse menulis ke template shared | pos_margin_threshold | 1 | `[DIWARISI-SOURCE]` `[PERLU-KEPUTUSAN]` | Sedang | Terbuka — belum ada keputusan pemilik modul |
+| MF-02 | `blocking_transaction_order` dideklarasikan tapi tidak berefek sendirian | pos_margin_threshold | 1 | `[DIWARISI-SOURCE]` `[PERLU-KEPUTUSAN]` | Rendah | Terbuka |
+| MF-03 | Model `wizard.margin.product`: kelas `pos_margin_threshold` hilang total dari MRO saat 2 modul terinstall | pos_margin_threshold + sale_margin_threshold | 1 | `[DIWARISI-SOURCE]` `[PERLU-KEPUTUSAN]` | Sedang | Terbuka |
+| MF-04 | `views/product_template_views.xml` dead file, duplikat XML-ID dengan `views/products.xml` | pos_margin_threshold | 1 | `[DIWARISI-SOURCE]` | Rendah | Terbuka — baru ditemukan, belum ada di backfill |
 
 ---
 
 ## Detail
 
-*(belum ada finding — diisi begitu step manapun, modul manapun, menemukan gap/bug/ambiguitas yang
-butuh keputusan manusia. Format satu entry, lihat `migration-tool/templates/FINDINGS.md` §Detail
-untuk template lengkap per-field.)*
+### MF-01 — `margin_sale` per-variant TIDAK BISA divergen — inverse menulis ke template (shared)
+**Ditemukan di:** Step 1 (2026-08-24) — diwarisi dari `doc-dev/backfill/FINDINGS.md` **F-01** (branch `backfill/17.0`, terkonfirmasi eksekusi Docker 2026-07-31)
+**Tag:** `[DIWARISI-SOURCE]` `[PERLU-KEPUTUSAN]`
+**Ref:** `BSL-011` (`01_intake/pos_margin_threshold/01b_BASELINE_SPEC.md`), backfill `F-01`
+**Lokasi:** `pos_margin_threshold/models/product.py` (`ProductProduct._set_product_margin_sale`, inverse method)
+**Deskripsi:** Field `margin_sale` di `ProductProduct` punya inverse sendiri tapi menulis ke `product_tmpl_id` (template, shared semua variant) — margin TIDAK PERNAH bisa berbeda antar variant satu template, walau field-nya terlihat "milik variant sendiri". Detail lengkap: lihat backfill `F-01`.
+**Dampak di 18.0:** Belum diketahui apakah mekanisme compute/inverse Odoo 18.0 berubah caranya bekerja — kalau tidak berubah (kemungkinan besar, ini API `fields.Float` dasar), quirk ini tetap identik. WAJIB dicek ulang di Step 2, jangan diasumsikan otomatis sama.
+**Rekomendasi:** Sama seperti backfill — kalau margin per-variant genuinely diinginkan, perlu perubahan bisnis (di luar scope migrasi port-kode-saja). Kalau margin selalu dimaksudkan sama, field ini redundant.
+**Keputusan pemilik modul:** *(kosong — diisi manusia, sama dengan status backfill F-01)*
+
+---
+
+### MF-02 — `blocking_transaction_order` dideklarasikan di `pos_margin_threshold` tapi tidak berefek sendirian
+**Ditemukan di:** Step 1 (2026-08-24) — diwarisi dari `doc-dev/backfill/FINDINGS.md` **F-02**
+**Tag:** `[DIWARISI-SOURCE]` `[PERLU-KEPUTUSAN]`
+**Ref:** `BSL-012`, backfill `F-02`
+**Lokasi:** `pos_margin_threshold/models/res_config_settings.py:8`
+**Deskripsi:** Field dideklarasikan tapi tidak ditampilkan di view settings modul ini dan tidak dibaca kode modul ini — baru bermakna kalau `sale_margin_threshold` juga terinstall.
+**Dampak di 18.0:** Rendah, murni dead weight kalau modul ini diinstall sendirian — tidak ada risiko teknis migrasi (field Boolean sederhana, tidak depend API yang berubah).
+**Rekomendasi:** Sama seperti backfill — pertimbangkan pindahkan deklarasi ke `sale_margin_threshold` saja, ATAU dokumentasikan eksplisit alasan duplikasi. Di luar scope migrasi port-kode-saja kecuali disetujui eksplisit.
+**Keputusan pemilik modul:** *(kosong)*
+
+---
+
+### MF-03 — Model `wizard.margin.product`: kelas `pos_margin_threshold` hilang total dari MRO saat 2 modul terinstall
+**Ditemukan di:** Step 1 (2026-08-24) — diwarisi dari `doc-dev/backfill/FINDINGS.md` **F-03** (terkonfirmasi eksekusi Docker, `tests/test_cross_module.py`)
+**Tag:** `[DIWARISI-SOURCE]` `[PERLU-KEPUTUSAN]`
+**Ref:** `BSL-013`, backfill `F-03`
+**Lokasi:** `pos_margin_threshold/wizard/wizard_margin_product.py:4-31`, `sale_margin_threshold/wizard/wizard_margin_product.py:4-31` (byte-identik)
+**Deskripsi:** Kedua modul mendefinisikan `_name = 'wizard.margin.product'` tanpa `_inherit`. `__mro__` final hanya berisi kelas dari modul yang diinstall lebih belakangan — kelas modul lain hilang total, bukan digabung.
+**Dampak di 18.0:** Sedang — aman selama kedua kelas byte-identik. Risiko utama BUKAN dari perubahan platform 18.0 (ini mekanisme registry model Odoo/Python, kemungkinan tidak berubah), tapi dari perubahan kode salah satu modul saja saat migrasi (mis. `pos_margin_threshold` di-migrasi duluan dengan penyesuaian kode, `sale_margin_threshold` belum) — silent-override bisa menyembunyikan perubahan yang belum lengkap.
+**Rekomendasi:** Saat migrasi KEDUA modul, pastikan wizard di kedua modul diubah BERSAMAAN dan tetap byte-identik (atau eksplisit konsolidasi jadi `_inherit` dari satu ke lainnya — itu perubahan struktural, minta persetujuan eksplisit dulu karena berpotensi dianggap "refactor" yang dilarang `CLAUDE.md` §Forbidden Actions kecuali wajib untuk kompatibilitas 18.0).
+**Keputusan pemilik modul:** *(kosong)*
+
+---
+
+### MF-04 — `views/product_template_views.xml` dead file, duplikat XML-ID dengan `views/products.xml`
+**Ditemukan di:** Step 1 (2026-08-24) — **BARU**, tidak ada di `doc-dev/backfill/FINDINGS.md` (belum pernah tercatat sebelumnya)
+**Tag:** `[DIWARISI-SOURCE]`
+**Ref:** `BSL-014` (`01_intake/pos_margin_threshold/01b_BASELINE_SPEC.md`)
+**Lokasi:** `pos_margin_threshold/views/product_template_views.xml` (seluruh file), vs `pos_margin_threshold/views/products.xml` (record `product_template_inherit_pos_margin_threshold`)
+**Deskripsi:** `product_template_views.xml` tidak terdaftar di `data:` manifest — dead file, tidak pernah dimuat Odoo di 17.0. File ini mendefinisikan XML-ID yang **identik** (`product_template_inherit_pos_margin_threshold`) dengan yang didefinisikan `products.xml`, tapi dengan `inherit_id` target berbeda (`product.product_template_only_form_view` vs `product.product_template_form_view`) dan struktur visibility field yang sedikit berbeda (versi di `product_template_views.xml` tidak punya kondisi `invisible` untuk multi-variant, versi di `products.xml` punya).
+**Dampak di 18.0:** Rendah selama tetap dead file. **Risiko kalau ditambahkan ke manifest tanpa disadari** (mis. saat migrasi seseorang "membersihkan" dan tidak sadar file ini sengaja tidak dimuat) — akan clash XML-ID langsung dengan `products.xml` saat modul di-install, kemungkinan besar error saat load data atau salah satu record menimpa yang lain tergantung urutan load.
+**Rekomendasi:** Pertahankan sebagai dead file yang sama persis di 18.0 (JANGAN didaftarkan ke manifest sebagai bagian dari migrasi — itu perubahan fungsional yang butuh persetujuan eksplisit, di luar "port kode saja").
+**Keputusan pemilik modul:** *(kosong — diisi manusia)*
 
 ---
 

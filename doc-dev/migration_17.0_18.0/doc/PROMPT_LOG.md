@@ -23,7 +23,7 @@ kolom modul ditambahkan di tabel supaya tetap bisa dipilah.
 | Step | Modul | # Prompt Normal | # Prompt Tool-fix | Catatan |
 |---|---|---|---|---|
 | 0 — Bootstrap | (semua) | 5 | 0 | Scope 3-modul + sifat migrasi + keputusan dual-branch (bukan dual-clone) + keputusan mengabaikan `origin/18.0` — semua lewat AskUserQuestion, tidak ada perubahan ke `migration-tool/templates` itu sendiri |
-| 1 — Intake & Baseline Spec | | | | |
+| 1 — Intake & Baseline Spec | pos_margin_threshold | 1 | 0 | Satu prompt ("lanjut") menghasilkan `01a_MIGRATION_INTAKE.md` + `01b_BASELINE_SPEC.md` draft lengkap + 4 finding (`MF-01..04`) ke `FINDINGS.md` — sebagian besar leverage dokumen backfill (`01A_FUNCTIONAL_SPEC.md`/`01B_ACCEPTANCE_CRITERIA.md`) yang sudah tervalidasi eksekusi, bukan ditulis dari nol |
 | 2 — Diff & Compatibility Analysis | | | | |
 | 3 — Migration Spec | | | | |
 | 4 — Spec Completeness Review | | | | |
