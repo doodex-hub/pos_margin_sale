@@ -1,9 +1,20 @@
 # Detail Test — pos_margin_threshold
 
 **Level:** Detail — varian/edge-case, fitur sekunder.
-**Sumber:** N/A — modul ini tidak punya skenario ber-`Level: Detail` tersendiri di `../10_BUSINESS_FLOW_MIGRATION.md` sesi ini.
+**Sumber:** skenario S-04 di `../10_BUSINESS_FLOW_MIGRATION.md`.
 
-## Item yang direkomendasikan dicek manual kalau ada waktu (belum ada bukti test otomatis)
+## Skenario: Wizard "Update margin sale" dibuka dari Product Variants (bukan Product Template)
+
+```
+1. Buka Inventory > Products > Product Variants (BUKAN menu "Products" biasa).
+2. Centang checkbox satu variant produk.
+3. Klik "Actions" > "Update margin sale".
+4. Baca label field yang menampilkan produk terpilih di jendela wizard.
+```
+
+**Yang HARUS terjadi:** label field itu harus **"Product variants"**, BUKAN "Products" — wizard ini punya dua tampilan berbeda tergantung dari mana dia dibuka (list Produk biasa vs list Variant), dan harus konsisten menampilkan field yang benar sesuai konteksnya.
+
+## Item lain yang direkomendasikan dicek manual kalau ada waktu (belum ada bukti test otomatis)
 
 Bukan blocker rilis (risiko sudah dinilai rendah, lihat `08_review/08_CODE_REVIEW.md` §C dan `09_devtest/09_DEV_TESTING.md`), tapi baik ditutup sebelum rilis besar:
 
@@ -24,4 +35,4 @@ Bukan blocker rilis (risiko sudah dinilai rendah, lihat `08_review/08_CODE_REVIE
 
 | Tanggal | Environment | Dijalankan oleh | Hasil | Catatan |
 |---|---|---|---|---|
-| | | | | |
+| 2026-08-26 | Docker QA (`pos_margin_sale_migration_18_qa2`, live server) | AI, real Chrome (Step 11 prep) | Pass (skenario Product Variants) | Label "Product variants" muncul benar dengan tag "[CONS_0001] Whiteboard Pen" |

@@ -43,6 +43,19 @@
 **Steps:** N/A — dikonfirmasi tidak ada kasus multi-dialog di modul ini. Satu-satunya dialog (`ask()`/`AlertDialog` di `pos_store.js`) dan satu-satunya wizard (`Update margin sale`) masing-masing berdiri sendiri, tidak pernah memicu dialog/wizard lain secara bersamaan dari satu aksi user yang sama.
 **Status:** N/A
 
+### S-04: Wizard "Update margin sale" dibuka dari Product Variants — field `product_ids` yang tampil
+**Level:** Detail
+**Precondition:** Login admin, minimal 1 product variant ada di list "Product Variants" (`action-176`, Inventory → Products → Product Variants)
+**Mode eksekusi:** AI-interaktif (Claude in Chrome)
+**Steps:**
+1. Buka Inventory → Products → **Product Variants** (bukan "Products"/Product Template)
+2. Centang checkbox 1 variant (dicoba: "Whiteboard Pen", `CONS_0001`)
+3. Klik "Actions" → "Update margin sale"
+4. Baca label field yang menampilkan produk terpilih di wizard
+**Expected:** Field yang tampil berlabel **"Product variants"** (field `product_ids`), BUKAN "Products"/"Product variants" versi `product_template_ids` yang muncul kalau wizard dibuka dari list Product Template (S-01). Ini membuktikan `is_product` compute (`_compute_product_model`, cek `active_model`) benar-benar membedakan konteks pembukaan wizard di 18.0.
+**Actual:** Persis sesuai expected — label field "Product variants" muncul dengan tag "[CONS_0001] Whiteboard Pen", bukan label "Products". Dikonfirmasi via screenshot. Dialog ditutup lewat Cancel (tidak di-Assign, supaya tidak mengubah data test lain).
+**Status:** [x] Pass — ini **koreksi penting**: skenario S-02 di atas (klik Cancel) SEBELUMNYA salah dikaitkan ke "AC-03-02" di draf awal dokumen Step 8/9 — AC-03-02 yang sebenarnya (per `05a_MIGRATION_ACCEPTANCE_CRITERIA.md`) adalah SKENARIO INI (`product_ids` vs `product_template_ids`), bukan soal tombol Cancel. S-02 tetap bukti valid (wizard Cancel tidak menerapkan apapun), cuma tidak terkait AC-03-02 — dicatat di sini supaya tidak ada lagi kebingungan penomoran AC di step berikutnya.
+
 ## Deferred (bukan blocker gate ini, risiko rendah — lihat `08_review`/`09_devtest`)
 
 - **AC-02-03** (tidak ada line di bawah minimum → tidak ada popup sama sekali) — tidak dieksekusi sesi ini (butuh sesi POS penuh: buka register, kasir). Risiko rendah: ini kontrol negatif dari logic `lines.length > 0` yang jalur positifnya (`lines.length > 0`) sudah terbukti benar via 2 Tour test.
@@ -54,7 +67,7 @@
 |---|---|---|
 | Smoke | — (tercakup Tour test Step 9, tidak diulang) | 0 |
 | Main Flow | S-01 | 1 |
-| Detail | — | 0 |
+| Detail | S-04 | 1 |
 | Negative | S-02, S-03 | 2 |
 
 ## Loop-back
