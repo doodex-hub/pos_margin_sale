@@ -14,7 +14,9 @@ third-party/OCA sebelum gate ditutup penuh
 
 - [x] `native-target` (Odoo 19.0 Community) — **dikonfirmasi dev 2026-08-26:**
   `D:\Kuncoro\doodex\repo\enterprise19.0`.
-- [ ] `native-source` (Odoo 18.0 Community) — opsional, belum dijawab.
+- [x] `native-source` (Odoo 18.0 Community) — **dikonfirmasi dev 2026-08-26:**
+  `D:\Kuncoro\doodex\repo\odoo18` (clone git resmi `odoo/odoo`, branch `18.0`). **Larangan permanen
+  Mode Git tetap berlaku di folder ini** — read-only via `ls`/`find`/`grep`, TIDAK PERNAH git command.
 - [x] `native-target-enterprise` — **RESOLVED, folder gabungan dengan `native-target`:** dev hanya
   menyebut satu path untuk keduanya. Dikonfirmasi via `ls` (2026-08-26): `enterprise19.0` BUKAN
   Enterprise-addons-only, melainkan struktur repo Odoo penuh (`odoo/`, `setup.py`, `MANIFEST.in`)
@@ -51,7 +53,7 @@ Mode Git) — gate ini berlaku.
   kosong) — dicatat di sini supaya jelas ini keputusan sadar, bukan terlewat.
 - [x] `ABS_PATH_NATIVE_TARGET` + `ABS_PATH_NATIVE_TARGET_ENTERPRISE` — diisi SATU baris deny yang sama
   (`D:\Kuncoro\doodex\repo\enterprise19.0`), konsisten aturan folder gabungan (lihat §0).
-- [ ] `ABS_PATH_NATIVE_SOURCE` — belum bisa diisi, `native-source` opsional belum dijawab dev.
+- [x] `ABS_PATH_NATIVE_SOURCE` — diisi `D:\Kuncoro\doodex\repo\odoo18`.
 - [ ] `ABS_PATH_THIRD_PARTY_SOURCE` / `ABS_PATH_THIRD_PARTY_TARGET` — belum dikonfirmasi dipakai atau
   tidak (§0). Kalau dev konfirmasi tidak ada dependency OCA, baris ini akan DIHAPUS (bukan dibiarkan
   placeholder).

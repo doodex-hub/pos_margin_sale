@@ -213,10 +213,14 @@ referensi) belum dijawab dev.
 `ls`, lihat §Folder di bawah), bukan git repo. Kedua peran folder referensi terpenuhi dari path yang
 sama.
 
-**Sisa item non-blocking (boleh dijawab belakangan, tidak menahan Step 2 mulai):**
-1. `native-source` (Odoo 18.0 Community, opsional) — belum ditanya/dijawab.
-2. `third-party-*` (OCA) — scan §2 ketiga modul tidak menemukan indikasi apapun, belum dikonfirmasi
-   eksplisit ke dev.
+**[RESOLVED 2026-08-26] `native-source`:** dev konfirmasi `D:\Kuncoro\doodex\repo\odoo18` (clone git
+`odoo/odoo`, branch `18.0`, semua addon Community relevan ada: `sale`, `point_of_sale`, `mail`,
+`product`, `stock_account`, `web`).
+
+**Sisa item non-blocking (satu-satunya yang tersisa sebelum Step 1 gate ditutup penuh):**
+1. `third-party-*` (OCA) — scan §2 ketiga modul tidak menemukan indikasi apapun, masih menunggu
+   konfirmasi eksplisit "tidak ada" dari dev (jawaban dev sesi ini soal ini belum jelas — sempat
+   ditanya ulang).
 
 **Keputusan user yang juga diperlukan (non-blocking untuk Step 1, tapi harus diputuskan sebelum Step
 3/6 modul terkait):**
@@ -268,7 +272,7 @@ Legenda: ⬜ Belum mulai · 🔄 Sedang dikerjakan · ✅ Draft/selesai ditulis 
 | Source 18.0 | 1, 2, 4, 8 | Ya | **Tidak ada folder terpisah** — baca lewat `git show migration/18.0:<path>` di repo yang sama (lihat §"Adaptasi dual-branch") |
 | `native-target` (Odoo 19.0 Community) | 2 | Ya | **Sudah ada, dikonfirmasi dev 2026-08-26:** `D:\Kuncoro\doodex\repo\enterprise19.0` |
 | `native-target-enterprise` | 2 (wajib — `sale_margin_threshold` punya dependency Rental) | Ya | **Sama folder dengan `native-target`** — dikonfirmasi via `ls` (2026-08-26): `enterprise19.0` BUKAN Enterprise-addons-only, melainkan struktur repo Odoo penuh (`odoo/`, `setup.py`, `MANIFEST.in`) dengan modul Community (`base`,`sale`,`point_of_sale`,`mail`,`product`,`stock_account`,`web`, dst) DAN Enterprise (`sale_renting`, `account_accountant`, `helpdesk`, `documents`, dst) tergabung di `odoo/addons/` yang sama — pola identik dengan lesson `advanced_sales_analysis` 18.0→19.0. **Bukan git repo** (hasil extract, tidak ada `.git/`) — tidak bisa `git log`/`git diff` di sana. |
-| `native-source` (Odoo 18.0, opsional) | 2 | Ya | Belum ditanya/dijawab — opsional, tidak blocking |
+| `native-source` (Odoo 18.0, opsional) | 2 | Ya | **Sudah ada, dikonfirmasi dev 2026-08-26:** `D:\Kuncoro\doodex\repo\odoo18` — clone git resmi `odoo/odoo`, branch `18.0`. **PENTING: JANGAN jalankan git apapun di folder ini** (larangan permanen Mode Git — hanya `target-codebase` yang boleh disentuh git). |
 | `third-party-*` | 2 (kalau ada dependency OCA) | Ya | Scan §2 ketiga modul tidak menemukan indikasi OCA — belum dikonfirmasi eksplisit ke dev |
 
 ---

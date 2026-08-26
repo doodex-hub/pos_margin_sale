@@ -14,7 +14,8 @@ third-party/OCA sebelum gate ditutup penuh
 
 - [x] `native-target` (Odoo 19.0 Community) — **dikonfirmasi dev 2026-08-26:**
   `D:\Kuncoro\doodex\repo\enterprise19.0`.
-- [ ] `native-source` (Odoo 18.0 Community) — opsional, belum dijawab.
+- [x] `native-source` (Odoo 18.0 Community) — **dikonfirmasi dev 2026-08-26:**
+  `D:\Kuncoro\doodex\repo\odoo18` (clone git resmi `odoo/odoo`, branch `18.0`).
 - [x] **`native-target-enterprise` — RESOLVED, folder gabungan dengan `native-target`.**
   Dikonfirmasi via `ls` (2026-08-26): `enterprise19.0` adalah struktur repo Odoo penuh dengan
   Community DAN Enterprise tergabung di `odoo/addons/` yang sama (bukan Enterprise-addons-only,

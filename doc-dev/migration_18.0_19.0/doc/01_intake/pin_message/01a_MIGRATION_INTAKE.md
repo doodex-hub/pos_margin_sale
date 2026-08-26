@@ -12,7 +12,8 @@ third-party/OCA sebelum gate ditutup penuh
 
 - [x] `native-target` (Odoo 19.0 Community) — **dikonfirmasi dev 2026-08-26:**
   `D:\Kuncoro\doodex\repo\enterprise19.0`.
-- [ ] `native-source` (18.0 Community) — opsional, belum dijawab.
+- [x] `native-source` (18.0 Community) — **dikonfirmasi dev 2026-08-26:**
+  `D:\Kuncoro\doodex\repo\odoo18` (clone git resmi `odoo/odoo`, branch `18.0`).
 - [x] `native-target-enterprise` — RESOLVED (folder gabungan dengan `native-target`, lihat dokumen
   `sale_margin_threshold`/`pos_margin_threshold` untuk detail verifikasi struktur). Modul
   `pin_message` sendiri tidak butuh peran Enterprise ini, tapi folder-nya sudah tersedia untuk
