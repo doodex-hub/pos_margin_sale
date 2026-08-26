@@ -200,29 +200,43 @@ wajib selesai penuh sebelum F (Template)**.
 
 ## Status saat ini
 
-**Ringkasan cepat (2026-08-26):** **Bootstrap selesai.** Branch `migration/19.0_target` dibuat dari
-`origin/migration/18.0` (Mode Git, GUI client dikonfirmasi tertutup sebelum eksekusi). `CLAUDE.md` +
-struktur `doc-dev/migration_18.0_19.0/doc/` (per-modul subfolder untuk step 01-06,08-11, `FINDINGS.md`
-+ `PROMPT_LOG.md` konsolidasi) sudah ditulis. `.gitignore` dipertahankan versi migration-tool terbaru
-(bukan yang diwarisi dari `migration/18.0`). **Step 1 (Intake & Scope) BELUM dimulai untuk ketiga
-modul** — ini yang harus dikerjakan AI di giliran berikutnya begitu diminta lanjut.
+**Ringkasan cepat (2026-08-26):** Bootstrap selesai (commit `b4fae75`). **Step 1 (Intake & Scope):
+draft `01a_MIGRATION_INTAKE.md` + `01b_BASELINE_SPEC.md` SUDAH DITULIS untuk ketiga modul** (riset
+paralel + rekonsiliasi dari baseline 18.0 project 17.0→18.0 sebelumnya + `FINDINGS.md` project itu).
+`FINDINGS.md` sudah diisi 10 quirk/bug warisan carry-forward (`MF-01`..`MF-10`, prefix modul) + 1
+finding knowledge-base yang sudah CONFIRMED N/A (`MF-11`, lihat di bawah). **Gate Step 1 BELUM
+ditutup untuk ketiga modul** — satu-satunya blocker: §0 tiap `01a_MIGRATION_INTAKE.md` (folder
+referensi) belum dijawab dev.
 
-**Belum ditanyakan ke dev (wajib sebelum Step 1 gate ditutup, per `01a_MIGRATION_INTAKE.md` §0):**
-apakah `native-target` (Community, clone `odoo/odoo` checkout 19.0) dan `native-target-enterprise`
-(kalau ada dependency Enterprise) sudah tersedia di disk dev — belum pernah disebut di percakapan
-manapun sesi ini, jadi WAJIB ditanya eksplisit di awal/akhir Step 1, bukan diasumsikan dari project
-17.0→18.0 sebelumnya (folder native yang lama kemungkinan checkout versi 17.0/18.0, bukan 19.0).
+**[BLOCKING] Belum dijawab dev (wajib sebelum Step 1 gate ditutup, ketiga modul):**
+1. `native-target` (Odoo 19.0 Community) — sudah ada di disk? Path-nya?
+2. `native-source` (Odoo 18.0 Community, opsional) — sudah ada? Path-nya?
+3. **`native-target-enterprise` — SEKARANG WAJIB, bukan cuma "wajib ditanya":** Step 1 menemukan
+   `sale_margin_threshold` punya dependency RUNTIME opsional ke modul Rental (Enterprise,
+   `hasattr(self, 'is_rental_order')`, lihat `01b_BASELINE_SPEC.md` modul itu). Environment testing
+   project 17→18 (image `odoo:18.0` Community) tidak punya Rental terinstall — jalur exempt-rental
+   belum pernah benar-benar dites live. Perlu path folder ini sebelum Step 2 `sale_margin_threshold`
+   bisa dianggap selesai.
+4. `third-party-*` (OCA) — scan tidak menemukan indikasi apapun di ketiga modul, tapi tetap wajib
+   dikonfirmasi eksplisit (silence ≠ tidak ada).
 
-**Knowledge base yang sudah tersedia sebelum Step 2 dimulai (ditemukan saat bootstrap):**
-`migration-tool/knowledge/version-diffs/18-to-19.md` dan
-`migration-tool/knowledge/dependency-compat/sale_report/18-to-19.md` sudah ada, ditulis dari project
-migrasi 18.0→19.0 PERTAMA lewat tool ini (`advanced_sales_analysis`, curation 2026-08-26). Temuan
-paling relevan untuk project ini: **`sale.order.line.tax_id` → `tax_ids` rename** (breaking, kolom DB
-ikut berubah) — `sale_margin_threshold` menyentuh `sale.order.line`, WAJIB dicek langsung di Step 2
-apakah modul ini baca/tulis field ini. Dicatat juga di `FINDINGS.md` §"Kandidat finding dari knowledge
-base".
+**Keputusan user yang juga diperlukan (non-blocking untuk Step 1, tapi harus diputuskan sebelum Step
+3/6 modul terkait):**
+- `MF-08` [sale_margin_threshold] prioritas **Tinggi** — bug `action_confirm()` singleton-assumption
+  (pecah di batch-confirm) — pertahankan identik, atau perbaiki sebagai bagian scope migrasi ini?
+- `MF-10` [pin_message] — `console.log` debug leftover di `pinMessage.js:7`, masih terbuka sejak
+  project sebelumnya — bersihkan, atau pertahankan?
+- `MF-03` [pos_margin_threshold+sale_margin_threshold] — kolisi `wizard.margin.product`: pertahankan
+  dua definisi identik (sinkron manual), atau konsolidasi jadi satu model?
+- `MF-05` [sale_margin_threshold] — duplikat XML-ID `product_template_inherit_sale_margin_threshold`
+  (kedua file dimuat, satu menimpa yang lain) — klarifikasi target `inherit_id` mana yang seharusnya
+  benar-benar aktif.
 
-**Belum dikerjakan:** Step 1-11 penuh untuk ketiga modul (project ini baru mulai).
+**Baik berita:** `sale.order.line.tax_id`→`tax_ids` (breaking rename 19.0 dari knowledge base) sudah
+DIKONFIRMASI TIDAK RELEVAN untuk `sale_margin_threshold` (grep penuh, nihil match) — `MF-11`,
+CONFIRMED N/A, tidak perlu dicek ulang.
+
+**Belum dikerjakan:** Step 1 gate closure (menunggu §0), lalu Step 2-11 penuh untuk ketiga modul.
 
 > AI: update bagian ini sendiri di akhir tiap sesi kerja, supaya sesi berikutnya tahu persis harus
 > lanjut dari mana tanpa tanya ulang ke user.
@@ -231,7 +245,7 @@ base".
 
 | # | Step | pos_margin_threshold | sale_margin_threshold | pin_message |
 |---|---|---|---|---|
-| 1 | Intake & Scope | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
+| 1 | Intake & Scope | ✅ Draft ditulis, gate belum ditutup (§0) | ✅ Draft ditulis, gate belum ditutup (§0) | ✅ Draft ditulis, gate belum ditutup (§0) |
 | 2 | Diff & Compatibility Analysis | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 3 | Migration Spec | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 4 | Spec Completeness Review | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
