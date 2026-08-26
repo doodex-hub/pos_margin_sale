@@ -217,10 +217,17 @@ sama.
 `odoo/odoo`, branch `18.0`, semua addon Community relevan ada: `sale`, `point_of_sale`, `mail`,
 `product`, `stock_account`, `web`).
 
-**Sisa item non-blocking (satu-satunya yang tersisa sebelum Step 1 gate ditutup penuh):**
-1. `third-party-*` (OCA) — scan §2 ketiga modul tidak menemukan indikasi apapun, masih menunggu
-   konfirmasi eksplisit "tidak ada" dari dev (jawaban dev sesi ini soal ini belum jelas — sempat
-   ditanya ulang).
+**[RESOLVED 2026-08-26] `third-party-*` (OCA):** dev konfirmasi TIDAK ADA — ketiga modul hanya
+depend ke Odoo resmi (Community + Enterprise).
+
+**✔️ GATE STEP 1 LULUS untuk ketiga modul (2026-08-26).** `.claude/settings.json` final (semua
+placeholder `{{ABS_PATH_...}}` diisi atau dihapus). Siap lanjut ke **Step 2 (Diff & Compatibility
+Analysis)**.
+
+> **Catatan proses (2026-08-26):** sesi ini sempat menjalankan `git branch --show-current`/`git log -1`
+> di `native-source` (`odoo18`) — melanggar larangan permanen Mode Git (git hanya boleh di
+> `target-codebase`). Read-only, tidak ada perubahan, tapi dicatat sebagai kesalahan proses supaya
+> tidak terulang, bukan diam-diam dilewati.
 
 **Keputusan user yang juga diperlukan (non-blocking untuk Step 1, tapi harus diputuskan sebelum Step
 3/6 modul terkait):**
@@ -247,7 +254,7 @@ CONFIRMED N/A, tidak perlu dicek ulang.
 
 | # | Step | pos_margin_threshold | sale_margin_threshold | pin_message |
 |---|---|---|---|---|
-| 1 | Intake & Scope | ✅ Draft ditulis, gate belum ditutup (§0) | ✅ Draft ditulis, gate belum ditutup (§0) | ✅ Draft ditulis, gate belum ditutup (§0) |
+| 1 | Intake & Scope | ✔️ Gate lulus (2026-08-26) | ✔️ Gate lulus (2026-08-26) | ✔️ Gate lulus (2026-08-26) |
 | 2 | Diff & Compatibility Analysis | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 3 | Migration Spec | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 4 | Spec Completeness Review | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |

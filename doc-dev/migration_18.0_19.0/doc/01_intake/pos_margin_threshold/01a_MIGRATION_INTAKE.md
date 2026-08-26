@@ -3,8 +3,7 @@
 **Step:** 1 — Intake & Scope
 **Versi:** 18.0 → 19.0
 **Tanggal:** 2026-08-26
-**Status:** 🔄 Draft ditulis, native-target/enterprise RESOLVED, menunggu jawaban dev soal
-third-party/OCA sebelum gate ditutup penuh
+**Status:** ✔️ Gate LULUS (2026-08-26) — semua §0/§0a/§0b terpenuhi
 
 ---
 
@@ -23,10 +22,12 @@ third-party/OCA sebelum gate ditutup penuh
   dengan Community DAN Enterprise (termasuk `sale_renting`, modul yang relevan untuk
   `sale_margin_threshold`) tergabung di `odoo/addons/` yang sama. Bukan git repo (tidak ada `.git/`).
   `.claude/settings.json` sudah diisi dengan path ini.
-- [ ] `third-party-source`/`third-party-target` — tidak ada indikasi OCA/vendor dari scan manifest
-  modul ini. Belum dikonfirmasi eksplisit ke dev: dikonfirmasi tidak ada?
+- [x] `third-party-source`/`third-party-target` — **dikonfirmasi TIDAK ADA oleh dev (2026-08-26):**
+  ketiga modul hanya depend ke Odoo resmi (Community + Enterprise), tidak ada addon pihak ketiga/OCA.
+  Baris `Edit(//{{ABS_PATH_THIRD_PARTY_SOURCE}}/**)`/`Edit(//{{ABS_PATH_THIRD_PARTY_TARGET}}/**)` di
+  `settings.json` dihapus (tidak dipakai).
 
-**Status:** sisa satu item non-blocking (third-party) sebelum gate ditutup penuh.
+**Status:** ✔️ **Gate Step 1 LULUS (2026-08-26)** — semua checklist §0/§0a/§0b terpenuhi.
 
 ### 0a. Konfirmasi Branch/Versi `source-codebase` & `target-codebase`
 
@@ -54,11 +55,10 @@ Mode Git) — gate ini berlaku.
 - [x] `ABS_PATH_NATIVE_TARGET` + `ABS_PATH_NATIVE_TARGET_ENTERPRISE` — diisi SATU baris deny yang sama
   (`D:\Kuncoro\doodex\repo\enterprise19.0`), konsisten aturan folder gabungan (lihat §0).
 - [x] `ABS_PATH_NATIVE_SOURCE` — diisi `D:\Kuncoro\doodex\repo\odoo18`.
-- [ ] `ABS_PATH_THIRD_PARTY_SOURCE` / `ABS_PATH_THIRD_PARTY_TARGET` — belum dikonfirmasi dipakai atau
-  tidak (§0). Kalau dev konfirmasi tidak ada dependency OCA, baris ini akan DIHAPUS (bukan dibiarkan
-  placeholder).
+- [x] `ABS_PATH_THIRD_PARTY_SOURCE` / `ABS_PATH_THIRD_PARTY_TARGET` — dikonfirmasi tidak dipakai,
+  baris deny-nya dihapus dari `settings.json`.
 
-**`.claude/settings.json` BELUM final** — akan diedit lagi begitu §0 terjawab.
+**`.claude/settings.json` FINAL** — semua placeholder `{{ABS_PATH_...}}` sudah diisi atau dihapus.
 
 ---
 

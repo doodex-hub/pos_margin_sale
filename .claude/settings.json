@@ -65,9 +65,6 @@
 
       "Edit(//D:/Kuncoro/doodex/repo/enterprise19.0/**)",
       "Edit(//D:/Kuncoro/doodex/repo/odoo18/**)",
-      "Edit(//{{ABS_PATH_NATIVE_SOURCE_ENTERPRISE}}/**)",
-      "Edit(//{{ABS_PATH_THIRD_PARTY_SOURCE}}/**)",
-      "Edit(//{{ABS_PATH_THIRD_PARTY_TARGET}}/**)",
       "Edit(//D:/Kuncoro/doodex/repo/migration-tool-project/migration-tool/knowledge/**)",
       "Edit(//D:/Kuncoro/doodex/repo/migration-tool-project/migration-tool/templates/**)"
     ]

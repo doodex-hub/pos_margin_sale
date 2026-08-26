@@ -3,8 +3,7 @@
 **Step:** 1 — Intake & Scope
 **Versi:** 18.0 → 19.0
 **Tanggal:** 2026-08-26
-**Status:** 🔄 Draft ditulis, native-target/enterprise RESOLVED, menunggu jawaban dev soal
-third-party/OCA sebelum gate ditutup penuh
+**Status:** ✔️ Gate LULUS (2026-08-26) — semua §0/§0a/§0b terpenuhi
 
 ---
 
@@ -25,10 +24,10 @@ third-party/OCA sebelum gate ditutup penuh
   (`models/sale_order.py:14`) MASIH ADA di 19.0. Ini bukan verifikasi lengkap (belum cek signature/
   behavior detail), cuma konfirmasi awal field-nya tidak hilang/rename — detail lengkap tetap
   domain Step 2.
-- [ ] `third-party-source`/`third-party-target` — tidak ada indikasi OCA/vendor dari scan manifest.
-  Belum dikonfirmasi eksplisit ke dev.
+- [x] `third-party-source`/`third-party-target` — **dikonfirmasi TIDAK ADA oleh dev (2026-08-26)**,
+  hanya Odoo resmi (Community + Enterprise).
 
-**Status:** sisa satu item non-blocking (third-party) sebelum gate ditutup penuh.
+**Status:** ✔️ **Gate Step 1 LULUS (2026-08-26)**.
 
 ### 0a. Konfirmasi Branch/Versi
 
