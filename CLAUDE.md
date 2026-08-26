@@ -221,8 +221,34 @@ sama.
 depend ke Odoo resmi (Community + Enterprise).
 
 **✔️ GATE STEP 1 LULUS untuk ketiga modul (2026-08-26).** `.claude/settings.json` final (semua
-placeholder `{{ABS_PATH_...}}` diisi atau dihapus). Siap lanjut ke **Step 2 (Diff & Compatibility
-Analysis)**.
+placeholder `{{ABS_PATH_...}}` diisi atau dihapus).
+
+**Step 2 (Diff & Compatibility Analysis) — SELESAI untuk ketiga modul (2026-08-26, tidak ada gate).**
+Dikerjakan lewat 3 agent riset paralel, cross-check langsung ke kode native `odoo18` (18.0 Community)
+vs `enterprise19.0` (19.0 Community+Enterprise gabungan). **Hasil sangat tidak seimbang antar
+modul:**
+- **`sale_margin_threshold`: TENANG.** Tidak ada blocker baru — semua perubahan core cuma rename
+  kosmetik/internal (`ir.module.module` class rename, `_register_hook` pindah file,
+  `self._context`→`self.env.context`). `MF-08` (batch-confirm bug) dikonfirmasi blast radius-nya
+  SAMA di 19.0 seperti 18.0, bukan lebih parah.
+- **`pos_margin_threshold`: BERAT.** Dua gap kritis baru (`MF-12`, `MF-13`) — `Orderline.props.line.shape`
+  dihapus total (patch akan **crash saat load**), `getDisplayData()` dihapus + rename massal
+  snake_case→camelCase di POS core (`pay()` override akan **crash saat dipanggil**). Path import
+  juga pindah 3x (`generic_components/`→`components/`, `app/store/`→`app/services/`+`app/utils/`).
+- **`pin_message`: PALING BERAT di seluruh project.** Dua gap kritis baru (`MF-14`, `MF-15`) dengan
+  blast radius MELAMPAUI modul ini sendiri: `mail.message._to_store()` override akan `TypeError` di
+  SETIAP pengiriman pesan ke frontend manapun (bukan cuma fitur pin), dan `messageActionsRegistry`
+  payload shape berubah total (`title`→`name`, `onClick`→`onSelected`, argumen callback kehilangan
+  `.props`) berpotensi mematahkan action-menu pesan secara luas.
+
+Detail lengkap + rekomendasi porting per temuan: `02_diff/<modul>/02_DIFF_ANALYSIS.md` dan
+`FINDINGS.md` `MF-12`..`MF-15`. Dua temuan `mail`/`point_of_sale` juga ditulis ke
+`migration-tool/migration-records/pos-margin-sale_18.0_19.0/SUMMARY.md` sebagai kandidat knowledge
+base (sangat general, kemungkinan besar terulang di project migrasi 18→19 lain yang menyentuh modul
+sama).
+
+Siap lanjut ke **Step 3 (Migration Spec)** — prioritas tertinggi: rencana porting konkret untuk
+`MF-12`/`MF-13`/`MF-14`/`MF-15`.
 
 > **Catatan proses (2026-08-26):** sesi ini sempat menjalankan `git branch --show-current`/`git log -1`
 > di `native-source` (`odoo18`) — melanggar larangan permanen Mode Git (git hanya boleh di
@@ -255,7 +281,7 @@ CONFIRMED N/A, tidak perlu dicek ulang.
 | # | Step | pos_margin_threshold | sale_margin_threshold | pin_message |
 |---|---|---|---|---|
 | 1 | Intake & Scope | ✔️ Gate lulus (2026-08-26) | ✔️ Gate lulus (2026-08-26) | ✔️ Gate lulus (2026-08-26) |
-| 2 | Diff & Compatibility Analysis | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
+| 2 | Diff & Compatibility Analysis | ✅ Selesai — 2 gap kritis (`MF-12`/`13`) | ✅ Selesai — tidak ada blocker baru | ✅ Selesai — 2 gap kritis, blast radius luas (`MF-14`/`15`) |
 | 3 | Migration Spec | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 4 | Spec Completeness Review | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 5 | Acceptance Criteria & Test Plan | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |

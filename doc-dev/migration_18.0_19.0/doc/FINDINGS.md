@@ -11,10 +11,13 @@
 lihat §"Adaptasi multi-modul" di `CLAUDE.md`, sama seperti project migrasi 17.0→18.0 sebelumnya di
 repo ini).
 **Migrasi:** 18.0 → 19.0
-**Terakhir update:** 2026-08-26 (Step 1 — Intake & Baseline Spec draft ditulis untuk ketiga modul).
-MF-01..MF-10 di bawah adalah quirk/bug WARISAN dari project migrasi 17.0→18.0 sebelumnya (dibawa ke
-sini dengan ID baru supaya dokumen ini self-contained, bukan finding baru project 18.0→19.0 ini) —
-lihat kolom "Ref asal" untuk ketertelusuran ke `doc-dev/migration_17.0_18.0/doc/FINDINGS.md`.
+**Terakhir update:** 2026-08-26 (Step 2 — Diff & Compatibility Analysis selesai untuk ketiga modul).
+MF-01..MF-10 adalah quirk/bug WARISAN dari project migrasi 17.0→18.0 sebelumnya (ID baru, dokumen
+self-contained) — lihat kolom "Ref asal" untuk ketertelusuran ke
+`doc-dev/migration_17.0_18.0/doc/FINDINGS.md`. **MF-12..MF-15 adalah gap BARU yang genuinely muncul
+dari perubahan platform 19.0** (ditemukan Step 2, `[GAP-MIGRASI]`) — dua di antaranya
+(`MF-14`/`MF-15`, `pin_message`) install/runtime-blocking dengan blast radius melampaui modul itu
+sendiri.
 
 Prefix judul finding dengan nama modul (`MF-01 [sale_margin_threshold]`, dst) supaya tetap bisa
 dipilah pemilik modul saat review batch (konsisten pola `FINDINGS.md` project 17.0→18.0 di
@@ -37,6 +40,10 @@ dipilah pemilik modul saat review batch (konsisten pola `FINDINGS.md` project 17
 | MF-09 [pin_message] | Cabang `is_discussion` di `onClickPin()` dead code, dikonfirmasi harmless | 1 (carry-forward) | `[DIWARISI-SOURCE]` | Rendah | Open (accepted) |
 | MF-10 [pin_message] | `console.log(component.message.type)` debug leftover di `pinMessage.js:7` | 1 (carry-forward) | `[DIWARISI-SOURCE][PERLU-KEPUTUSAN]` | Rendah | Open |
 | MF-11 [sale_margin_threshold] | `sale.order.line.tax_id`→`tax_ids` (knowledge base 18→19) — dikonfirmasi TIDAK relevan | 1 | `[GAP-MIGRASI]` (verdict: N/A) | — | ✅ CONFIRMED N/A |
+| MF-12 [pos_margin_threshold] | `Orderline.props.line.shape` dihapus total di 19.0 — patch akan crash saat load | 2 | `[GAP-MIGRASI]` | **Kritis** | Open |
+| MF-13 [pos_margin_threshold] | `getDisplayData()` dihapus + rename massal snake_case→camelCase (`get_order`, `get_product`, dst) — `pay()` override akan crash saat dipanggil | 2 | `[GAP-MIGRASI]` | **Kritis** | Open |
+| MF-14 [pin_message] | `mail.message._to_store()` — `fields` jadi positional wajib, override modul akan `TypeError` di SETIAP pengiriman pesan ke frontend | 2 | `[GAP-MIGRASI]` | **Kritis** | Open |
+| MF-15 [pin_message] | `messageActionsRegistry` payload shape berubah total (`title`→`name`, `onClick`→`onSelected`, argumen jadi objek tanpa `.props`) | 2 | `[GAP-MIGRASI]` | **Kritis** | Open |
 
 ---
 
@@ -198,6 +205,76 @@ base project migrasi 18→19 lain (`advanced_sales_analysis`) TIDAK relevan untu
 ada referensi ke field ini sama sekali.
 **Dampak:** Tidak ada.
 **Status:** ✅ CONFIRMED N/A (2026-08-26) — tidak perlu dicek ulang di Step 2 kecuali kode berubah.
+
+### MF-12 [pos_margin_threshold] — `Orderline.props.line.shape` dihapus total di 19.0
+**Ditemukan di:** Step 2 (2026-08-26), agent riset diff-analysis, cross-check langsung `odoo18` vs `enterprise19.0`.
+**Tag:** `[GAP-MIGRASI]`
+**Ref:** `02_diff/pos_margin_threshold/02_DIFF_ANALYSIS.md` `DIFF-06`.
+**Lokasi:** `pos_margin_threshold/static/src/store/models/models.js:12-16`
+(`patch(Orderline.props.line.shape, {...})`).
+**Deskripsi:** Di 19.0, `Orderline.props.line` didefinisikan sebagai `Object` polos — tidak ada
+`.shape` sama sekali (component sekarang menerima record model langsung, bukan objek display-data).
+`patch()` terhadap `undefined` akan throw.
+**Dampak:** **Kritis** — modul akan crash saat load fitur JS POS di 19.0, bukan cuma silent-fail.
+**Rekomendasi:** Di Step 6, hapus patch ini; tambahkan getter (`isLessMinimumSalePrice`,
+`minimumSalePriceWithTax`) langsung di `PosOrderline`/`PosOrderlineAccounting` sehingga template
+`Orderline` 19.0 bisa membacanya lewat `line.<getter>`.
+**Keputusan pemilik modul:** *(kosong — bukan pilihan opsional, harus diperbaiki agar modul bisa
+jalan; keputusan yang perlu user adalah APAKAH pendekatan porting di atas disetujui saat Step 3/6)*
+
+### MF-13 [pos_margin_threshold] — `getDisplayData()` dihapus + rename massal snake_case→camelCase
+**Ditemukan di:** Step 2 (2026-08-26).
+**Tag:** `[GAP-MIGRASI]`
+**Ref:** `02_diff/pos_margin_threshold/02_DIFF_ANALYSIS.md` `DIFF-07`, `DIFF-08`, `DIFF-09`.
+**Lokasi:** `pos_margin_threshold/static/src/store/models/models.js:35-43` (patch `getDisplayData()`),
+`pos_margin_threshold/static/src/store/pos_store.js:12-15` (`get_order`, `get_orderlines`,
+`get_unit_display_price`, `get_product`).
+**Deskripsi:** `PosOrderline.prototype.getDisplayData()` tidak ada lagi di manapun di addon 19.0
+(grep penuh: 0 match) — patch modul ini jadi no-op total. Terpisah, method core yang dipanggil
+`pay()` override modul (`get_order`, `get_orderlines`, `get_product`) di-rename massal jadi
+camelCase di 19.0; `get_unit_display_price` khususnya tidak punya pengganti nama persis (logic
+pindah ke getter `displayPriceUnit`/`currencyDisplayPriceUnit` di base class baru
+`PosOrderlineAccounting`).
+**Dampak:** **Kritis** — fitur inti (highlight/blokir harga di bawah minimum saat bayar) akan
+crash (`pay()` override) DAN fitur highlight visual jadi non-fungsional senyap (`getDisplayData()`).
+**Rekomendasi:** Step 6 wajib porting: rename seluruh pemanggilan method core jadi camelCase, cari
+pengganti `get_unit_display_price` di base class accounting baru, pindahkan logic `getDisplayData()`
+jadi getter langsung di `PosOrderline`.
+**Keputusan pemilik modul:** *(kosong)*
+
+### MF-14 [pin_message] — `mail.message._to_store()` signature berubah, blast radius luas
+**Ditemukan di:** Step 2 (2026-08-26).
+**Tag:** `[GAP-MIGRASI]`
+**Ref:** `02_diff/pin_message/02_DIFF_ANALYSIS.md` `DIFF-01`.
+**Lokasi:** `pin_message/models/mail_message.py:22` (`def _to_store(self, store, /, **kwargs)`).
+**Deskripsi:** Di 19.0, `_to_store()` core menambah parameter `fields` sebagai POSITIONAL WAJIB
+(bukan lagi keyword-only opsional). Override modul ini (`store, /, **kwargs`, tidak ada slot untuk
+argumen positional kedua) akan `TypeError` setiap kali `store.add(<mail.message>, ...)` dipanggil
+DI MANAPUN di sistem (chatter, Discuss, notifikasi apapun) — bukan cuma jalur yang disentuh modul
+ini sendiri.
+**Dampak:** **Kritis, blast radius terluas di seluruh project** — bisa mematahkan pengiriman pesan
+ke frontend secara umum, tidak terbatas ke fitur pin.
+**Rekomendasi:** Step 6 wajib ubah signature jadi
+`def _to_store(self, store, fields, /, **kwargs): super()._to_store(store, fields, **kwargs)`
+(atau bentuk yang cocok persis dengan signature 19.0).
+**Keputusan pemilik modul:** *(kosong — perbaikan ini wajib, bukan opsional, supaya modul bisa
+terinstall sama sekali di 19.0)*
+
+### MF-15 [pin_message] — `messageActionsRegistry` payload shape berubah total
+**Ditemukan di:** Step 2 (2026-08-26).
+**Tag:** `[GAP-MIGRASI]`
+**Ref:** `02_diff/pin_message/02_DIFF_ANALYSIS.md` `DIFF-02`.
+**Lokasi:** `pin_message/static/src/js/pinMessage.js:5-26`.
+**Deskripsi:** 19.0 me-rename `title`→`name`, `onClick`→`onSelected`, dan mengubah argumen callback
+dari instance component Owl asli jadi objek polos `{action, store, owner, message, thread}` — TIDAK
+ADA `.props`. `condition` modul ini (`component.message.canAddReaction(component.props.thread)`)
+akan throw karena `component.props` sekarang `undefined`, di getter reactive yang dievaluasi untuk
+SETIAP pesan yang di-render (potensi mematahkan action-menu pesan secara luas).
+**Dampak:** **Kritis.**
+**Rekomendasi:** Step 6: rewrite sesuai pola native 19.0
+(`mail/static/src/discuss/message_pin/common/message_actions.js` — `registerMessageAction`, key
+`name`/`onSelected`, destructure `{message, thread}` bukan `component`).
+**Keputusan pemilik modul:** *(kosong — wajib diperbaiki)*
 
 ---
 
