@@ -3,8 +3,8 @@
 **Step:** 1 — Intake & Scope
 **Versi:** 18.0 → 19.0
 **Tanggal:** 2026-08-26
-**Status:** 🔄 Draft ditulis, gate BELUM ditutup — menunggu jawaban dev di §0 (folder referensi,
-KHUSUSNYA `native-target-enterprise`, wajib untuk modul ini)
+**Status:** 🔄 Draft ditulis, native-target/enterprise RESOLVED, menunggu jawaban dev soal
+third-party/OCA sebelum gate ditutup penuh
 
 ---
 
@@ -12,24 +12,22 @@ KHUSUSNYA `native-target-enterprise`, wajib untuk modul ini)
 
 **Checklist:**
 
-- [ ] `native-target` (Odoo 19.0 Community) — belum dijawab dev. **Blocking** gate Step 1 project ini
-  (semua 3 modul).
+- [x] `native-target` (Odoo 19.0 Community) — **dikonfirmasi dev 2026-08-26:**
+  `D:\Kuncoro\doodex\repo\enterprise19.0`.
 - [ ] `native-source` (Odoo 18.0 Community) — opsional, belum dijawab.
-- [ ] **`native-target-enterprise` — WAJIB, dan temuan konkret modul ini yang membuatnya wajib:**
-  `models/sale_order.py` punya field compute `is_rental_order_installed_true` yang mengecek
-  `hasattr(self, 'is_rental_order')` — deteksi RUNTIME (bukan `depends` manifest) apakah modul Rental
-  (Enterprise, family `sale_renting`/`sale_temporal`) terinstall. Kalau ya, `action_confirm()`
-  SEPENUHNYA skip validasi margin untuk rental order. Ini bukan dependency Enterprise yang WAJIB
-  (modul tetap jalan tanpa Rental terinstall — `hasattr` return `False`), tapi behavior-nya berbeda
-  tergantung ada/tidaknya modul itu, jadi `native-target-enterprise` 19.0 WAJIB tersedia untuk
-  Step 2 memverifikasi field `is_rental_order` masih ada dengan nama sama di 19.0 Enterprise.
-  **Dikonfirmasi dari project 17.0→18.0 sebelumnya:** environment testing waktu itu (image
-  `odoo:18.0` Community) tidak punya modul Rental terinstall — `hasattr` selalu `False` di sana, jalur
-  rental-exempt tidak pernah benar-benar dites secara live.
+- [x] **`native-target-enterprise` — RESOLVED, folder gabungan dengan `native-target`.**
+  Dikonfirmasi via `ls` (2026-08-26): `enterprise19.0` adalah struktur repo Odoo penuh dengan
+  Community DAN Enterprise tergabung di `odoo/addons/` yang sama (bukan Enterprise-addons-only,
+  bukan git repo). **Sanity check awal (bukan Step 2 penuh):** `sale_renting` ADA di
+  `odoo/addons/sale_renting/`, dan `is_rental_order` dikonfirmasi masih ada persis nama itu di
+  `sale_renting/models/sale_order.py` (19.0) — field yang dicek `hasattr()` oleh modul ini
+  (`models/sale_order.py:14`) MASIH ADA di 19.0. Ini bukan verifikasi lengkap (belum cek signature/
+  behavior detail), cuma konfirmasi awal field-nya tidak hilang/rename — detail lengkap tetap
+  domain Step 2.
 - [ ] `third-party-source`/`third-party-target` — tidak ada indikasi OCA/vendor dari scan manifest.
-  Tetap wajib dikonfirmasi eksplisit ke dev.
+  Belum dikonfirmasi eksplisit ke dev.
 
-**Status:** belum bisa ditutup.
+**Status:** sisa satu item non-blocking (third-party) sebelum gate ditutup penuh.
 
 ### 0a. Konfirmasi Branch/Versi
 
@@ -47,9 +45,8 @@ dev menjawab §0.
 
 ## Ringkasan untuk Review — Perlu Konfirmasi User
 
-1. **[BLOCKING]** Sama seperti modul lain: `native-target` belum dijawab. **Khusus modul ini:**
-   `native-target-enterprise` WAJIB (lihat temuan `is_rental_order` di atas) — bukan cuma "wajib
-   ditanya", tapi genuinely dipakai kalau tersedia.
+1. **[RESOLVED]** `native-target`/`native-target-enterprise` = `D:\Kuncoro\doodex\repo\enterprise19.0`
+   (folder gabungan). Sanity check awal: `is_rental_order` masih ada di `sale_renting` 19.0.
 2. **Konfirmasi tidak ada `sale.order.line.tax_id`:** dicek langsung (grep penuh Python/XML/JS) —
    modul ini TIDAK menyentuh field `tax_id` pada `sale.order.line` sama sekali (yang ada cuma
    `product.template.taxes_id`, field berbeda, tidak terdampak rename 19.0). Jadi breaking-change

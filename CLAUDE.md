@@ -208,17 +208,15 @@ finding knowledge-base yang sudah CONFIRMED N/A (`MF-11`, lihat di bawah). **Gat
 ditutup untuk ketiga modul** — satu-satunya blocker: §0 tiap `01a_MIGRATION_INTAKE.md` (folder
 referensi) belum dijawab dev.
 
-**[BLOCKING] Belum dijawab dev (wajib sebelum Step 1 gate ditutup, ketiga modul):**
-1. `native-target` (Odoo 19.0 Community) — sudah ada di disk? Path-nya?
-2. `native-source` (Odoo 18.0 Community, opsional) — sudah ada? Path-nya?
-3. **`native-target-enterprise` — SEKARANG WAJIB, bukan cuma "wajib ditanya":** Step 1 menemukan
-   `sale_margin_threshold` punya dependency RUNTIME opsional ke modul Rental (Enterprise,
-   `hasattr(self, 'is_rental_order')`, lihat `01b_BASELINE_SPEC.md` modul itu). Environment testing
-   project 17→18 (image `odoo:18.0` Community) tidak punya Rental terinstall — jalur exempt-rental
-   belum pernah benar-benar dites live. Perlu path folder ini sebelum Step 2 `sale_margin_threshold`
-   bisa dianggap selesai.
-4. `third-party-*` (OCA) — scan tidak menemukan indikasi apapun di ketiga modul, tapi tetap wajib
-   dikonfirmasi eksplisit (silence ≠ tidak ada).
+**[RESOLVED 2026-08-26] `native-target`/`native-target-enterprise`:** dev konfirmasi
+`D:\Kuncoro\doodex\repo\enterprise19.0` — satu folder gabungan Community+Enterprise (dikonfirmasi via
+`ls`, lihat §Folder di bawah), bukan git repo. Kedua peran folder referensi terpenuhi dari path yang
+sama.
+
+**Sisa item non-blocking (boleh dijawab belakangan, tidak menahan Step 2 mulai):**
+1. `native-source` (Odoo 18.0 Community, opsional) — belum ditanya/dijawab.
+2. `third-party-*` (OCA) — scan §2 ketiga modul tidak menemukan indikasi apapun, belum dikonfirmasi
+   eksplisit ke dev.
 
 **Keputusan user yang juga diperlukan (non-blocking untuk Step 1, tapi harus diputuskan sebelum Step
 3/6 modul terkait):**
@@ -268,10 +266,10 @@ Legenda: ⬜ Belum mulai · 🔄 Sedang dikerjakan · ✅ Draft/selesai ditulis 
 | `target-codebase` (repo ini, branch `migration/19.0_target`) | Semua step | Tidak | Sudah connect (folder utama) |
 | `migration-tool` | Semua step (baca template/knowledge; tulis ke `migration-records/` saja) | Tulis di `migration-records/` saja | Sudah connect |
 | Source 18.0 | 1, 2, 4, 8 | Ya | **Tidak ada folder terpisah** — baca lewat `git show migration/18.0:<path>` di repo yang sama (lihat §"Adaptasi dual-branch") |
-| `native-target` (Odoo 19.0 Community) | 2 | Ya | Belum diketahui — **wajib tanya dev di Step 1 §0**, jangan asumsikan dari project 17.0→18.0 (folder itu kemungkinan checkout 18.0, bukan 19.0) |
-| `native-target-enterprise` | 2 (wajib kalau ada dependency Enterprise) | Ya | Belum diketahui — cek dependency map dulu, lihat catatan `advanced_sales_analysis` soal folder gabungan Community+Enterprise di `CLAUDE_TEMPLATE.md` §Folder |
-| `native-source` (Odoo 18.0, opsional) | 2 | Ya | Belum diketahui |
-| `third-party-*` | 2 (kalau ada dependency OCA) | Ya | Belum diketahui |
+| `native-target` (Odoo 19.0 Community) | 2 | Ya | **Sudah ada, dikonfirmasi dev 2026-08-26:** `D:\Kuncoro\doodex\repo\enterprise19.0` |
+| `native-target-enterprise` | 2 (wajib — `sale_margin_threshold` punya dependency Rental) | Ya | **Sama folder dengan `native-target`** — dikonfirmasi via `ls` (2026-08-26): `enterprise19.0` BUKAN Enterprise-addons-only, melainkan struktur repo Odoo penuh (`odoo/`, `setup.py`, `MANIFEST.in`) dengan modul Community (`base`,`sale`,`point_of_sale`,`mail`,`product`,`stock_account`,`web`, dst) DAN Enterprise (`sale_renting`, `account_accountant`, `helpdesk`, `documents`, dst) tergabung di `odoo/addons/` yang sama — pola identik dengan lesson `advanced_sales_analysis` 18.0→19.0. **Bukan git repo** (hasil extract, tidak ada `.git/`) — tidak bisa `git log`/`git diff` di sana. |
+| `native-source` (Odoo 18.0, opsional) | 2 | Ya | Belum ditanya/dijawab — opsional, tidak blocking |
+| `third-party-*` | 2 (kalau ada dependency OCA) | Ya | Scan §2 ketiga modul tidak menemukan indikasi OCA — belum dikonfirmasi eksplisit ke dev |
 
 ---
 

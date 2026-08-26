@@ -3,24 +3,24 @@
 **Step:** 1 — Intake & Scope
 **Versi:** 18.0 → 19.0
 **Tanggal:** 2026-08-26
-**Status:** 🔄 Draft ditulis, gate BELUM ditutup — menunggu jawaban dev di §0 (folder referensi,
-konsisten dengan dua modul lain di project ini)
+**Status:** 🔄 Draft ditulis, native-target/enterprise RESOLVED, menunggu jawaban dev soal
+third-party/OCA sebelum gate ditutup penuh
 
 ---
 
 ## 0. Folder Referensi — WAJIB Ditanyakan ke Dev SEKARANG
 
-- [ ] `native-target` (Odoo 19.0 Community) — belum dijawab dev. Blocking gate Step 1 project ini.
+- [x] `native-target` (Odoo 19.0 Community) — **dikonfirmasi dev 2026-08-26:**
+  `D:\Kuncoro\doodex\repo\enterprise19.0`.
 - [ ] `native-source` (18.0 Community) — opsional, belum dijawab.
-- [ ] `native-target-enterprise` — dependency map modul ini sendiri (§2 di bawah: `web`, `base`,
-  `mail`, semua Community) TIDAK menemukan indikasi Enterprise. Tetap wajib ditanya eksplisit
-  (aturan §0 template, silence ≠ tidak ada) — belum dijawab. Modul sibling `sale_margin_threshold`
-  yang membuat `native-target-enterprise` wajib untuk PROJECT ini secara keseluruhan (lihat dokumen
-  modul itu), tapi modul `pin_message` sendiri tidak butuh itu.
+- [x] `native-target-enterprise` — RESOLVED (folder gabungan dengan `native-target`, lihat dokumen
+  `sale_margin_threshold`/`pos_margin_threshold` untuk detail verifikasi struktur). Modul
+  `pin_message` sendiri tidak butuh peran Enterprise ini, tapi folder-nya sudah tersedia untuk
+  project secara keseluruhan.
 - [ ] `third-party-source`/`third-party-target` — tidak ada indikasi OCA. Belum dikonfirmasi
   eksplisit ke dev.
 
-**Status:** belum bisa ditutup.
+**Status:** sisa satu item non-blocking (third-party) sebelum gate ditutup penuh.
 
 ### 0a. Konfirmasi Branch/Versi
 
@@ -35,7 +35,7 @@ Sama seperti modul lain — satu `.claude/settings.json` untuk seluruh repo. Lih
 
 ## Ringkasan untuk Review — Perlu Konfirmasi User
 
-1. **[BLOCKING]** Sama seperti modul lain: `native-target` belum dijawab.
+1. **[RESOLVED]** `native-target`/`native-target-enterprise` = `D:\Kuncoro\doodex\repo\enterprise19.0`.
 2. **Modul ini paling kecil dari ketiganya** (1 model file, 3 file JS patch, 2 template QWeb patch,
    1 CSS) tapi **arsitekturnya paling rapuh** — HAMPIR SEMUA logic-nya adalah patch terhadap komponen
    Owl inti `mail`/`discuss`, area yang historis paling sering berubah struktural antar versi major

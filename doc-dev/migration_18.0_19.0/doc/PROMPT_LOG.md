@@ -24,7 +24,7 @@ step. Lihat `migration-tool/templates/PROMPT_LOG.md` untuk definisi klasifikasi 
 | Step | # Prompt Normal | # Prompt Tool-fix | Catatan |
 |---|---|---|---|
 | 0 — Bootstrap (sebelum step 1 resmi) | 1 | | Kickoff: "Lakukan migrasi 18 ke 19, branch target `migration/19.0_target`, source copy dari `migration/18.0`" — branch dibuat via Mode Git (dual-branch, bukan dual-clone, pola sama seperti project 17.0→18.0 di repo ini), `CLAUDE.md` + struktur `doc-dev/migration_18.0_19.0/doc/` diinstansiasi. |
-| 1 — Intake & Baseline Spec | 1 | | "LANJUT" — ditulis draft `01a_MIGRATION_INTAKE.md` + `01b_BASELINE_SPEC.md` untuk ketiga modul (3 agent riset paralel + sintesis manual), FINDINGS.md di-update dengan 10 quirk warisan carry-forward (MF-01..MF-10) + 1 finding knowledge-base confirmed-N/A (MF-11). Gate BELUM ditutup — §0 (native-target/enterprise) masih menunggu jawaban dev. |
+| 1 — Intake & Baseline Spec | 2 | | "LANJUT" — ditulis draft `01a_MIGRATION_INTAKE.md` + `01b_BASELINE_SPEC.md` untuk ketiga modul (3 agent riset paralel + sintesis manual), FINDINGS.md di-update dengan 10 quirk warisan carry-forward (MF-01..MF-10) + 1 finding knowledge-base confirmed-N/A (MF-11). Lalu dev jawab §0: `native-target`+`native-target-enterprise` = folder gabungan `enterprise19.0` (dikonfirmasi via `ls`, bukan git repo). `.claude/settings.json` diisi (`ABS_PATH_MIGRATION_TOOL`, `ABS_PATH_NATIVE_TARGET(+ENTERPRISE)`, `ABS_PATH_SOURCE_CODEBASE` dihapus — N/A dual-branch). Sisa item non-blocking: `native-source`/`third-party` belum dijawab. |
 | 2 — Diff & Compatibility Analysis | | | |
 | 3 — Migration Spec | | | |
 | 4 — Spec Completeness Review | | | |
@@ -35,7 +35,7 @@ step. Lihat `migration-tool/templates/PROMPT_LOG.md` untuk definisi klasifikasi 
 | 9 — Dev Testing | | | |
 | 10 — QA Testing | | | |
 | 11 — UAT Sign-off | | | |
-| **Total** | 2 | 0 | |
+| **Total** | 3 | 0 | |
 
 ## Catatan Definisi
 

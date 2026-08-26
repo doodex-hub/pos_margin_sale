@@ -3,7 +3,8 @@
 **Step:** 1 — Intake & Scope
 **Versi:** 18.0 → 19.0
 **Tanggal:** 2026-08-26
-**Status:** 🔄 Draft ditulis, gate BELUM ditutup — menunggu jawaban dev di §0 (folder referensi)
+**Status:** 🔄 Draft ditulis, native-target/enterprise RESOLVED, menunggu jawaban dev soal
+third-party/OCA sebelum gate ditutup penuh
 
 ---
 
@@ -11,21 +12,19 @@
 
 **Checklist:**
 
-- [ ] `native-target` (Odoo 19.0 Community) — **belum dijawab dev.** Ditanya di akhir sesi bootstrap
-  (2026-08-26), belum ada respons eksplisit. **BLOCKING gate Step 1 ini** sampai dijawab.
-- [ ] `native-source` (Odoo 18.0 Community) — opsional, juga belum dijawab.
-- [ ] `native-target-enterprise` — **WAJIB dijawab, bukan opsional lagi**: dependency map modul
-  sibling `sale_margin_threshold` (lihat dokumen modul itu) mengonfirmasi ketergantungan RUNTIME
-  (bukan manifest `depends`, cek `hasattr(self, 'is_rental_order')`) ke modul Rental — berlisensi
-  Enterprise. `pos_margin_threshold` sendiri TIDAK menyentuh field/model Enterprise apapun secara
-  langsung (dependency map §2 di bawah: `base`, `point_of_sale`, `product`, `stock_account`, semua
-  Community) — tapi karena ketiga modul dikerjakan sebagai satu project/branch, `native-target-enterprise`
-  tetap wajib tersedia sebelum Step 2 project ini dianggap selesai (Step 2 `sale_margin_threshold`
-  butuh ini).
+- [x] `native-target` (Odoo 19.0 Community) — **dikonfirmasi dev 2026-08-26:**
+  `D:\Kuncoro\doodex\repo\enterprise19.0`.
+- [ ] `native-source` (Odoo 18.0 Community) — opsional, belum dijawab.
+- [x] `native-target-enterprise` — **RESOLVED, folder gabungan dengan `native-target`:** dev hanya
+  menyebut satu path untuk keduanya. Dikonfirmasi via `ls` (2026-08-26): `enterprise19.0` BUKAN
+  Enterprise-addons-only, melainkan struktur repo Odoo penuh (`odoo/`, `setup.py`, `MANIFEST.in`)
+  dengan Community DAN Enterprise (termasuk `sale_renting`, modul yang relevan untuk
+  `sale_margin_threshold`) tergabung di `odoo/addons/` yang sama. Bukan git repo (tidak ada `.git/`).
+  `.claude/settings.json` sudah diisi dengan path ini.
 - [ ] `third-party-source`/`third-party-target` — tidak ada indikasi OCA/vendor dari scan manifest
-  modul ini. Tetap wajib ditanya eksplisit (belum dijawab dev): dikonfirmasi tidak ada?
+  modul ini. Belum dikonfirmasi eksplisit ke dev: dikonfirmasi tidak ada?
 
-**Status:** belum bisa ditutup. Lihat pertanyaan konkret di ringkasan akhir sesi.
+**Status:** sisa satu item non-blocking (third-party) sebelum gate ditutup penuh.
 
 ### 0a. Konfirmasi Branch/Versi `source-codebase` & `target-codebase`
 
@@ -50,10 +49,9 @@ Mode Git) — gate ini berlaku.
   tidak ada path filesystem lain yang perlu diproteksi lewat `Edit deny`. Baris
   `Edit(//{{ABS_PATH_SOURCE_CODEBASE}}/**)` di `settings.json` dihapus (bukan diisi placeholder
   kosong) — dicatat di sini supaya jelas ini keputusan sadar, bukan terlewat.
-- [ ] `ABS_PATH_NATIVE_TARGET` / `ABS_PATH_NATIVE_TARGET_ENTERPRISE` / `ABS_PATH_NATIVE_SOURCE` —
-  **belum bisa diisi**, menunggu jawaban dev di §0 di atas. Placeholder tetap literal
-  `{{ABS_PATH_...}}` untuk sekarang (rule-nya inert, bukan salah — tapi harus diisi sebelum Step 2
-  mulai).
+- [x] `ABS_PATH_NATIVE_TARGET` + `ABS_PATH_NATIVE_TARGET_ENTERPRISE` — diisi SATU baris deny yang sama
+  (`D:\Kuncoro\doodex\repo\enterprise19.0`), konsisten aturan folder gabungan (lihat §0).
+- [ ] `ABS_PATH_NATIVE_SOURCE` — belum bisa diisi, `native-source` opsional belum dijawab dev.
 - [ ] `ABS_PATH_THIRD_PARTY_SOURCE` / `ABS_PATH_THIRD_PARTY_TARGET` — belum dikonfirmasi dipakai atau
   tidak (§0). Kalau dev konfirmasi tidak ada dependency OCA, baris ini akan DIHAPUS (bukan dibiarkan
   placeholder).
