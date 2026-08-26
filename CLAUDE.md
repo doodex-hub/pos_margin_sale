@@ -317,13 +317,33 @@ keduanya — baru ketahuan dari Tour test:
 (ditulis sebelum `MF-22`/`MF-23` ditemukan — dev sudah commit manual sekali, mungkin perlu entry
 tambahan untuk `MF-22`/`MF-23`, belum diminta eksplisit oleh dev).
 
-**Belum dikerjakan:** Step 10 (QA Testing, gate) → 11 (UAT, gate) untuk ketiga modul. Tidak ada lagi
-item wajib-konfirmasi-dev tersisa (`MF-21` sudah RESOLVED). Gap risiko rendah yang didokumentasikan
-eksplisit (bukan blocker gate manapun, tapi disarankan ditutup manual kalau ada waktu di QA):
-`pos_margin_threshold` AC-02-03/04 (kontrol negatif + assert visual), AC-03-01/02 (wizard UI, kode
-0-diff dari 17.0); `sale_margin_threshold` AC-01-04 (rental, tidak bisa dites di environment
-Community sama sekali), AC-03-02 (wizard cancel), AC-04-03 (UI field visibility); `pin_message`
-AC-02-01 (native Discuss pin) dan AC-04-02 (reload ganti record).
+**Step 10 — QA Testing (gate, LULUS ketiganya, 2026-08-26):** dieksekusi AI-interaktif via Claude in
+Chrome (Chrome asli — dikonfirmasi TIDAK kena limitasi Service Worker yang membatasi Browser pane
+bawaan sesi ini), terhadap instance live G2-mode (`docker compose run` one-off, database
+`pos_margin_sale_migration_18_qa`, dihapus bersih setelah sesi). Menutup gap yang SEBELUMNYA cuma
+"dikonfirmasi lewat baca kode" jadi genuinely diverifikasi lewat interaksi nyata:
+- **`pos_margin_threshold`:** wizard "Update margin sale" (AC-03-01) — pilih produk, isi margin,
+  Assign → margin & minimum sale price ter-update benar, chatter mencatat perubahan, Sales Price
+  otomatis ter-highlight merah saat di bawah minimum baru. Cancel (AC-03-02) — dikonfirmasi tidak
+  mengubah apapun.
+- **`sale_margin_threshold`:** dedup field "Margin"/"Minimum sale price" (AC-04-03) — dikonfirmasi
+  lewat inspeksi DOM langsung: HANYA satu label muncul walau kedua modul margin sama-sama
+  mendefinisikan view addition untuk field ini, tidak ada duplikasi UI. AC-01-04 (rental) tetap
+  N/A permanen (modul Enterprise, tidak tersedia di environment Community project ini).
+- **`pin_message`:** Discuss-channel native pin/unpin (AC-02-01) — **verifikasi interaktif PERTAMA
+  untuk jalur ini di seluruh project** (sebelumnya `MF-09` cuma dikonfirmasi baca source, sekarang
+  dikonfirmasi lewat klik nyata: menu aksi pesan Discuss HANYA berisi satu entry "Pin" — tidak ada
+  duplikat/interferensi dari action custom modul — dialog konfirmasi native + pin + unpin semua
+  berfungsi sempurna). Reload saat ganti record (AC-04-02) — round-trip record A→B→A dikonfirmasi
+  tidak ada state bocor.
+- Semua AC prioritas tinggi kini punya bukti nyata (Tour test otomatis ATAU interaksi browser
+  langsung) — tidak ada lagi item "cuma dikonfirmasi baca kode" yang tersisa untuk ketiga modul.
+
+**Belum dikerjakan:** Step 11 (UAT, gate) untuk ketiga modul. Tidak ada item wajib-konfirmasi-dev
+tersisa (`MF-21` RESOLVED). Sisa gap yang genuinely tidak bisa/belum ditutup (didokumentasikan
+eksplisit, risiko rendah): `pos_margin_threshold` AC-02-03/04 (kontrol negatif POS + assert visual
+teks, butuh sesi register POS penuh); `sale_margin_threshold` AC-01-04 (rental, permanent N/A tanpa
+Enterprise), AC-03-02 (wizard confirm cancel, belum dites interaktif).
 
 > AI: update bagian ini sendiri di akhir tiap sesi kerja, supaya sesi berikutnya tahu persis harus
 > lanjut dari mana tanpa tanya ulang ke user.
@@ -341,7 +361,7 @@ AC-02-01 (native Discuss pin) dan AC-04-02 (reload ganti record).
 | 7 | Data Migration Scripts | — (N/A, port kode saja) | — | — |
 | 8 | Code Review | ✔️ Gate lulus (2026-08-24) | ✔️ Gate lulus (2026-08-24) | ✔️ Gate lulus (2026-08-24) — 1 bug baru (`MF-24`) ditemukan+diperbaiki+diverifikasi dalam review |
 | 9 | Dev Testing | ✔️ Gate lulus (2026-08-26) | ✔️ Gate lulus (2026-08-26) — `MF-03` dikonfirmasi order-independent | ✔️ Gate lulus (2026-08-26) — `MF-24` fix diverifikasi end-to-end di UI |
-| 10 | QA Testing | ⬜ | ⬜ | ⬜ |
+| 10 | QA Testing | ✔️ Gate lulus (2026-08-26) — wizard assign margin diverifikasi nyata (Chrome asli) | ✔️ Gate lulus (2026-08-26) — dedup field label diverifikasi nyata | ✔️ Gate lulus (2026-08-26) — Discuss-channel pin/unpin diverifikasi nyata, `MF-09` dikonfirmasi lewat interaksi (bukan cuma baca kode) |
 | 11 | UAT Sign-off | ⬜ | ⬜ | ⬜ |
 
 Legenda: ⬜ Belum mulai · 🔄 Sedang dikerjakan · ✅ Draft/selesai ditulis · ✔️ Disetujui/lulus gate.
