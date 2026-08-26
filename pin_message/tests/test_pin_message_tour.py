@@ -19,3 +19,13 @@ class TestPinMessageTour(HttpCase):
             "pin_message_toggle_pin_tour",
             login="admin",
         )
+
+    def test_pin_message_action_menu_pin_visible_tour(self):
+        # Step 9 addendum: closes the AC-02-02 gap flagged in Step 8 Code Review (MF-24) -- proves
+        # the action-menu "Pin" entry (pinMessage.js) actually renders in the UI after the fix,
+        # not just that the (unrelated) inline-button tour above still passes.
+        self.start_tour(
+            f"/odoo/res.partner/{self.test_partner.id}",
+            "pin_message_action_menu_pin_visible_tour",
+            login="admin",
+        )

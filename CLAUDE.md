@@ -203,9 +203,33 @@ wajib selesai penuh sebelum F (Template)**.
 
 ## Status saat ini
 
-**Ringkasan cepat (2026-08-24):** Step 1-6 selesai ketiga modul (lihat detail Tour test di bawah).
-Step 7 N/A. **Step 8 (Code Review) LULUS GATE untuk ketiga modul** — lihat ringkasan di bawah.
-**Belum dikerjakan: Step 9-11.**
+**Ringkasan cepat (2026-08-26):** Step 1-9 selesai ketiga modul (lihat detail Tour test di bawah).
+Step 7 N/A. **Step 8 (Code Review) dan Step 9 (Dev Testing) LULUS GATE untuk ketiga modul** — lihat
+ringkasan di bawah. **Belum dikerjakan: Step 10-11.**
+
+**Step 9 — Dev Testing (gate, LULUS ketiganya, 2026-08-26):** menutup 3 gap yang ditandai Step 8 lewat
+test baru (audit stub `ast`-based dulu — semua test lama TERKONFIRMASI real, tidak ada stub), lalu
+re-run test suite penuh (`docker compose down -v` + up bersih).
+- **`pos_margin_threshold`:** Tour baru `test_pos_margin_threshold_below_minimum_blocked_tour`
+  (AC-02-01, jalur `blocking_transaction_pos=True`/`AlertDialog`) — **"tour succeeded"**.
+- **`pin_message`:** Tour baru `test_pin_message_action_menu_pin_visible_tour` (AC-02-02) —
+  **membuktikan fix `MF-24` (Step 8) benar-benar membuat entry menu "Pin" muncul di UI** (hover
+  message → klik quick-action/dropdown "Pin" → badge jadi 1), bukan cuma test suite tidak error.
+  **"tour succeeded".**
+- **`sale_margin_threshold`:** test MRO baru di sisi modul ini sendiri (`AC-04-02`) — **dan dites
+  EMPIRIS DUA urutan install** (`-i pos_margin_threshold,sale_margin_threshold` standar DAN dibalik
+  `-i sale_margin_threshold,pos_margin_threshold`, database test terpisah). **Temuan penting:** premis
+  asli `MF-03`/`AC-04-02` ("MRO tergantung urutan install") **TERBUKTI SALAH** — hasil MRO IDENTIK di
+  kedua urutan, `sale_margin_threshold` SELALU menang, `pos_margin_threshold` SELALU hilang dari
+  `__mro__`, independen urutan CLI. `05a_MIGRATION_ACCEPTANCE_CRITERIA.md` (`pos_margin_threshold` DAN
+  `sale_margin_threshold`) sudah dikoreksi teksnya untuk mencerminkan mekanisme sebenarnya. Risiko
+  `MF-03` (silent-override kalau salah satu modul diubah sendirian) tetap sama, cuma penjelasannya
+  yang diperbaiki.
+- **Hasil akhir gabungan (fresh DB, ketiga modul + 4 test baru):** `0 failed, 1 error(s) of 22 tests`
+  (naik dari 19 — 3 test baru berhasil ditambah tanpa regresi). 1 error tetap `MF-21`, tidak terkait.
+- **`pin_message` AC-03-01** (Discuss-channel native pin) juga dikoreksi di `05a` — premis lama
+  ("memicu `onClickPin()` override modul") sudah tidak berlaku di 18.0 (`MF-09`, dead code tapi
+  harmless, lihat Step 8), diganti jadi "lewat mekanisme native 18.0".
 
 **Step 8 — Code Review (gate, LULUS ketiganya, 2026-08-24):** dikerjakan lewat 3 agent paralel
 (gather diff+gap-analysis+core-collision-check per modul, real `git diff backfill/17.0 HEAD`, cross-
@@ -280,11 +304,14 @@ keduanya — baru ketahuan dari Tour test:
 (ditulis sebelum `MF-22`/`MF-23` ditemukan — dev sudah commit manual sekali, mungkin perlu entry
 tambahan untuk `MF-22`/`MF-23`, belum diminta eksplisit oleh dev).
 
-**Belum dikerjakan:** Step 9 (Dev Testing, gate — termasuk kandidat baru dari review Step 8: Tour/
-klik-manual action-menu "Pin" `pin_message` untuk membuktikan `MF-24` fix end-to-end di UI, Tour
-jalur blocking `pos_margin_threshold`, test MRO reverse-order `sale_margin_threshold`) → 10 (QA,
-gate) → 11 (UAT, gate) untuk ketiga modul. Sebelum Step 10/11: `MF-21` WAJIB dikonfirmasi ke dev
-(bahasa Prancis terinstall di environment production `sale_margin_threshold`?).
+**Belum dikerjakan:** Step 10 (QA Testing, gate) → 11 (UAT, gate) untuk ketiga modul. Gap risiko
+rendah yang didokumentasikan eksplisit (bukan blocker gate manapun, tapi disarankan ditutup manual
+kalau ada waktu di QA): `pos_margin_threshold` AC-02-03/04 (kontrol negatif + assert visual),
+AC-03-01/02 (wizard UI, kode 0-diff dari 17.0); `sale_margin_threshold` AC-01-04 (rental, tidak bisa
+dites di environment Community sama sekali), AC-03-02 (wizard cancel), AC-04-03 (UI field
+visibility); `pin_message` AC-02-01 (native Discuss pin) dan AC-04-02 (reload ganti record). **Sebelum
+Step 10/11: `MF-21` WAJIB dikonfirmasi ke dev** (bahasa Prancis terinstall di environment production
+`sale_margin_threshold`?).
 
 > AI: update bagian ini sendiri di akhir tiap sesi kerja, supaya sesi berikutnya tahu persis harus
 > lanjut dari mana tanpa tanya ulang ke user.
@@ -301,7 +328,7 @@ gate) → 11 (UAT, gate) untuk ketiga modul. Sebelum Step 10/11: `MF-21` WAJIB d
 | 6 | Code Migration | ✅ Selesai, Tour test PASS | ✅ Selesai (G1/G2 + `MF-21` dikonfirmasi) | ✅ Selesai, Tour test PASS (jalur log note; Discuss channel belum) |
 | 7 | Data Migration Scripts | — (N/A, port kode saja) | — | — |
 | 8 | Code Review | ✔️ Gate lulus (2026-08-24) | ✔️ Gate lulus (2026-08-24) | ✔️ Gate lulus (2026-08-24) — 1 bug baru (`MF-24`) ditemukan+diperbaiki+diverifikasi dalam review |
-| 9 | Dev Testing | ⬜ | ⬜ | ⬜ |
+| 9 | Dev Testing | ✔️ Gate lulus (2026-08-26) | ✔️ Gate lulus (2026-08-26) — `MF-03` dikonfirmasi order-independent | ✔️ Gate lulus (2026-08-26) — `MF-24` fix diverifikasi end-to-end di UI |
 | 10 | QA Testing | ⬜ | ⬜ | ⬜ |
 | 11 | UAT Sign-off | ⬜ | ⬜ | ⬜ |
 

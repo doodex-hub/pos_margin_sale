@@ -56,8 +56,8 @@ Then semua user dihapus dari `group_sale_margin_action` (identik 17.0).
 
 **AC-04-02** (verifies `BSL-007`, `MF-03`)
 Given kedua modul terinstall
-When registry dibangun (urutan `-i sale_margin_threshold,pos_margin_threshold` — **urutan KEBALIKAN dari test `pos_margin_threshold`**, untuk membuktikan MRO tergantung urutan install, bukan modul spesifik)
-Then `wizard.margin.product` MRO cuma berisi kelas modul yang install belakangan.
+When registry dibangun (dites DUA urutan: `-i pos_margin_threshold,sale_margin_threshold` dan kebalikannya `-i sale_margin_threshold,pos_margin_threshold`)
+Then `wizard.margin.product` MRO cuma berisi kelas `sale_margin_threshold` — **di KEDUA urutan install** (dikonfirmasi Step 9, 2026-08-26: bukan tergantung urutan `-i`, `sale_margin_threshold` selalu menang. Lihat `FINDINGS.md` `MF-03`).
 
 **AC-04-03** (verifies `BSL-005`)
 Given kedua modul terinstall, user buka form Product Template

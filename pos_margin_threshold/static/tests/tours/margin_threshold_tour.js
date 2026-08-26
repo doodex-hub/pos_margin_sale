@@ -46,3 +46,27 @@ registry.category("web_tour.tours").add("pos_margin_threshold_below_minimum_conf
             Chrome.endTour(),
         ].flat(),
 });
+
+// Step 9 Dev Testing addendum (2026-08-24) — closes the AC-02-01 gap flagged in Step 8 Code Review
+// (08_review/pos_margin_threshold/08_CODE_REVIEW.md): the confirm/proceed path (AC-02-02, above)
+// was the only one with Tour coverage; the blocking path (blocking_transaction_pos=True, AlertDialog,
+// payment fully stopped) had none. Verifies PosStore.pay()'s other branch end-to-end.
+registry.category("web_tour.tours").add("pos_margin_threshold_below_minimum_blocked_tour", {
+    steps: () =>
+        [
+            Chrome.startPoS(),
+            Dialog.confirm(),
+            ProductScreen.isShown(),
+            ProductScreen.addOrderline("Margin Threshold Test Product", "1", "5"),
+            // shouldCheck=false: clicking Pay does NOT transition to the payment screen at all in
+            // the blocked path -- it opens the AlertDialog and returns, staying on ProductScreen.
+            ProductScreen.clickPayButton(false),
+            Dialog.is({ title: "Price unit less than minimum price" }),
+            Dialog.bodyIs("Some products are below the minimum price. Please check !"),
+            // AlertDialog has a single "Ok" button (core default confirmLabel) -- dismissing it
+            // must NOT advance to payment; the sale is genuinely blocked, not just delayed.
+            Dialog.confirm(),
+            ProductScreen.isShown(),
+            Chrome.endTour(),
+        ].flat(),
+});

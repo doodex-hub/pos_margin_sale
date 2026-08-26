@@ -32,10 +32,21 @@ Then action `"pins"` tampil, `"pin"` native tidak.
 
 ## AC-03 — Pin pesan Discuss channel (jalur delegasi core) — RISIKO TERTINGGI `DIFF-06`
 
-**AC-03-01 — WAJIB dites eksplisit, TIDAK BOLEH diasumsikan dari AC-01/02** (verifies `BSL-002`, `MF-09`)
+**AC-03-01 — PREMIS DIKOREKSI Step 8/9 (2026-08-24/26), lihat catatan** (verifies `BSL-002`, `MF-09`)
 Given pesan di `discuss.channel`, belum pinned
-When user klik pin (lewat action native `"pin"`, memicu `onClickPin()` override modul ini)
-Then dialog konfirmasi core muncul, pin berhasil — **kalau `TypeError: this.messagePinService is undefined` muncul, ini KONFIRMASI `DIFF-06` (`MF-09` bermanifestasi nyata di 18.0) — WAJIB dieskalasi ke user sebelum lanjut, bukan diam-diam dibiarkan gagal.**
+When user klik pin (lewat action native "pin")
+Then dialog konfirmasi core muncul, pin berhasil — **lewat mekanisme native 18.0 (`message.pin()` di message model), BUKAN lagi lewat `onClickPin()` override modul ini.**
+
+> **Koreksi Step 8/9:** Teks asli AC ini mengasumsikan klik native "pin" di Discuss channel akan
+> memicu `onClickPin()` override modul ini (warisan asumsi 17.0, di mana itu benar). Dikonfirmasi
+> langsung terhadap source Odoo 17.0 vs 18.0 (Step 8): di 18.0, `messagePinService` (yang dipakai
+> cabang `is_discussion` di `onClickPin()`) DIHAPUS TOTAL dari core, dan core 18.0 TIDAK LAGI
+> memanggil `onClickPin()` untuk aksi native pin Discuss channel sama sekali — native pin sekarang
+> panggil `message.pin()` langsung di message model. Cabang `is_discussion` modul ini jadi dead code
+> yang provably tidak bisa dieksekusi UI manapun di 18.0 — TAPI end-user experience tidak berubah
+> (Discuss channel pinning tetap berfungsi penuh, cuma lewat kode native, bukan lagi override modul
+> ini). Behavior AC ini (dialog muncul, pin berhasil) tetap BENAR secara end-to-end, cuma mekanisme
+> internalnya berubah. Lihat `FINDINGS.md` `MF-09` untuk detail lengkap.
 
 ## AC-04 — Section Pinned Messages
 

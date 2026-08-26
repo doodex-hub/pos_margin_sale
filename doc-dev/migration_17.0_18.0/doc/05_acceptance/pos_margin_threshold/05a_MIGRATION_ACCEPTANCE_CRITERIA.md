@@ -79,4 +79,11 @@ Then tidak ada UI untuk `blocking_transaction_order` (identik 17.0).
 **AC-04-02 — TERKAIT `MF-03`** (verifies `BSL-013`)
 Given KEDUA modul terinstall
 When registry dibangun ulang
-Then `wizard.margin.product` MRO cuma berisi kelas dari modul yang install belakangan (identik 17.0) — **WAJIB dites dengan urutan install SAMA seperti backfill** (`-i pos_margin_threshold,sale_margin_threshold`) supaya hasil MRO comparable.
+Then `wizard.margin.product` MRO cuma berisi kelas `sale_margin_threshold` (identik 17.0).
+
+> **Koreksi Step 9 (2026-08-26):** Teks asli AC ini ("modul yang install belakangan") mengasumsikan
+> hasil MRO tergantung URUTAN install. Dites empiris DUA urutan (`-i pos_margin_threshold,sale_margin_threshold`
+> dan dibalik `-i sale_margin_threshold,pos_margin_threshold`) — hasil MRO **identik di kedua urutan**,
+> selalu `sale_margin_threshold` yang menang, `pos_margin_threshold` selalu hilang dari MRO. Premis
+> "tergantung urutan install" TERBUKTI SALAH — behaviornya konsisten/deterministik terhadap modul mana
+> yang menang, bukan tergantung urutan `-i`. Lihat `FINDINGS.md` `MF-03` untuk bukti mentah.

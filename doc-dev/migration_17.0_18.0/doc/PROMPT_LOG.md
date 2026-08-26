@@ -40,10 +40,10 @@ kolom modul ditambahkan di tabel supaya tetap bisa dipilah.
 | 6 — Code Migration (semua fase A-G2) | | | | |
 | 7 — Data Migration Scripts | | | | N/A — port kode saja |
 | 8 — Code Review (gate) | pos_margin_threshold, sale_margin_threshold, pin_message | 1 | 0 | Prompt ("berhenti apa lagi?" — feedback: lanjut tanpa jeda ke Step 8) — 3 agent paralel gather diff+gap-analysis+core-collision-check per modul (git diff `backfill/17.0`→`HEAD`, cross-check langsung ke source real 17.0/18.0 di image `pos_margin_sale_migration_18-odoo:latest`), lalu sintesis manual jadi `08_CODE_REVIEW.md` per modul. Ketiga modul lulus gate. Menemukan+memperbaiki+memverifikasi 1 bug fungsional nyata yang lolos dari Tour test sebelumnya (`MF-24`, `pin_message` action-menu "Pin" silently dead karena `canAddReaction` getter→method di 18.0) — re-run test suite penuh mengonfirmasi tidak ada regresi. Juga mengonfirmasi `MF-09` (Discuss-channel `onClickPin`) harmless via cross-check source langsung, bukan lagi `[PERLU-KEPUTUSAN]` terbuka. Tidak ada tool-fix ke `migration-tool/templates` |
-| 9 — Dev Testing | | | | |
+| 9 — Dev Testing (gate) | pos_margin_threshold, sale_margin_threshold, pin_message | 2 | 0 | Prompt ("apa status disisni" lalu "LANJUT") — audit stub test `ast`-based (semua test lama terkonfirmasi real, tidak ada stub), tulis 3 test baru menutup gap Step 8 (`pos_margin_threshold` Tour blocking path, `pin_message` Tour action-menu visibility untuk verifikasi `MF-24` end-to-end di UI, `sale_margin_threshold` test MRO sisi modul sendiri), lalu re-run test suite penuh (fresh DB) — 0 regresi, `0 failed, 1 error(s) of 22 tests`. Temuan tambahan: dites empiris MRO `wizard.margin.product` di DUA urutan install (`docker compose run` one-off) — premis asli `MF-03`/AC-04-02 ("tergantung urutan install") TERBUKTI SALAH, `sale_margin_threshold` selalu menang independen urutan; `05a_MIGRATION_ACCEPTANCE_CRITERIA.md` (2 modul) dikoreksi. Ketiga modul lulus gate. Tidak ada tool-fix |
 | 10 — QA Testing | | | | |
 | 11 — UAT Sign-off | | | | |
-| **Total** | | 7 | 0 | |
+| **Total** | | 9 | 0 | |
 
 ## Catatan Definisi
 

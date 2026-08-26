@@ -33,3 +33,12 @@ class TestMarginThresholdTour(TestPointOfSaleHttpCommon):
     def test_pos_margin_threshold_below_minimum_confirm_tour(self):
         self.main_pos_config.open_ui()
         self.start_pos_tour("pos_margin_threshold_below_minimum_confirm_tour", login="pos_admin")
+
+    def test_pos_margin_threshold_below_minimum_blocked_tour(self):
+        # Step 9 addendum: closes the AC-02-01 gap flagged in Step 8 Code Review -- the confirm
+        # path (above) had Tour coverage, the blocking path did not.
+        self.env['ir.config_parameter'].sudo().set_param(
+            'post_margin_sale.blocking_transaction_pos', True
+        )
+        self.main_pos_config.open_ui()
+        self.start_pos_tour("pos_margin_threshold_below_minimum_blocked_tour", login="pos_admin")
