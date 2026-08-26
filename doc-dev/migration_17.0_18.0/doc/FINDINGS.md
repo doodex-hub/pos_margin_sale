@@ -8,9 +8,9 @@
 **Modul:** `pos_margin_threshold`, `sale_margin_threshold`, `pin_message` (satu file, prefix modul di
 tiap judul finding)
 **Migrasi:** 17.0 → 18.0
-**Terakhir update:** 2026-08-24 (Step 8, Code Review — `MF-24` ditemukan+diperbaiki+diverifikasi
-[action-menu "Pin" 18.0 silently dead karena `canAddReaction` getter→method], `MF-09` dikonfirmasi
-harmless via cross-check source 17.0/18.0; total 24 finding, 9 diwarisi backfill)
+**Terakhir update:** 2026-08-26 (Step 9 lanjutan — `MF-21` di-RESOLVE dengan fix kode atas keputusan
+dev eksplisit [Prancis tidak boleh jadi syarat deployment], `sale_order.py` tidak lagi punya
+dependency ke `fr_FR`; total 24 finding, 9 diwarisi backfill)
 
 ---
 
@@ -60,7 +60,7 @@ backfill, buat `MF-NNN` yang mereferensikan `F-NNN` aslinya secara eksplisit (ta
 | MF-18 | `pos.session._loader_params_product_product()` — hook dihapus total, diganti `_load_pos_data_fields()` per-model (`product.product`) | pos_margin_threshold | 6 | `[GAP-MIGRASI]` | **Tinggi** — field custom modul tidak akan pernah sampai ke frontend POS tanpa fix ini | ✅ **RESOLVED** — override dipindah ke `ProductProduct._load_pos_data_fields()` di `models/product.py`, override lama di `pos_session.py` dihapus |
 | MF-19 | Komponen Owl `Orderline` sekarang validasi ketat `props.line` (shape schema) — field custom yang ditambahkan `getDisplayData()` di-reject sebagai "unknown key" | pos_margin_threshold | 6 | `[GAP-MIGRASI]` | Tinggi (crash render kalau tidak diperbaiki) | ✅ **RESOLVED** — `Orderline.props.line.shape` di-patch untuk mendeklarasikan 3 key baru |
 | MF-20 | `orderline.xml` xpath `/ul[hasclass('info-list')]` (direct child) — core 18.0 menambah `<div>` wrapper, xpath direct-child tidak match lagi | pos_margin_threshold | 6 | `[GAP-MIGRASI]` | Tinggi (crash render QWeb) | ✅ **RESOLVED** — xpath diubah jadi descendant (`//ul[...]`) |
-| MF-21 | `Environment.lang` (18.0) validasi ketat — `UserError` kalau context `lang=fr_FR` tapi bahasa Prancis tidak diinstall di database | sale_margin_threshold | 6 | `[CATATAN-DEPLOYMENT]` | Sedang | ✅ Bukan bug kode — dikonfirmasi test pass 0 error setelah bahasa Prancis diinstall (`--load-language=fr_FR`). **Perlu dikonfirmasi ke dev:** environment production harus punya bahasa Prancis terinstall, atau `action_confirm()` bilingual EN/FR modul ini akan crash di 18.0 (TIDAK crash di 17.0 — lihat detail) |
+| MF-21 | `Environment.lang` (18.0) validasi ketat — `UserError` kalau context `lang=fr_FR` tapi bahasa Prancis tidak diinstall di database | sale_margin_threshold | 6 | `[GAP-MIGRASI]` | Sedang | ✅ **RESOLVED** (2026-08-26) — dev memutuskan tidak boleh mensyaratkan Prancis terinstall; kode diperbaiki (hapus `.with_context(lang='fr_FR')`, pilih string langsung seperti pola cabang blocking). Dikonfirmasi `0 failed, 0 error(s) of 22 tests` TANPA bahasa Prancis terinstall sama sekali |
 | MF-22 | `pin_message/chatter.js` — `load()` full-override memanggil `this.threadService.fetchData(thread, requestList, options)`, service+signature ini sudah tidak ada di 18.0 | pin_message | 6 | `[GAP-MIGRASI]` | **Tinggi** — crash total begitu chatter mount | ✅ **RESOLVED** — override dihapus (extend, bukan replace), terkonfirmasi Tour test nyata "tour succeeded" |
 | MF-23 | `is_pinned` tidak lagi bisa "diminta" lewat field-list custom di `Chatter.load()` — field kustom ke frontend mail sekarang lewat `mail.message._to_store()` (per-model, seperti pola POS `_load_pos_data_fields`, `MF-18`) | pin_message | 6 | `[GAP-MIGRASI]` | Tinggi (silent, field tidak pernah sampai ke frontend tanpa fix) | ✅ **RESOLVED** — `mail.message._to_store()` di-extend, tambah `store.add(message, {'is_pinned': ...})`, terkonfirmasi Tour test |
 | MF-24 | `pinMessage.js` — `component.canAddReaction` (getter component 17.0) dipindah jadi method `message.canAddReaction(thread)` di 18.0 — `condition` action "pins" selalu `false`, entry menu Pin tidak pernah render | pin_message | 8 | `[GAP-MIGRASI]` | **Tinggi** (silent, action-menu "Pin" tidak pernah muncul, sejak awal migrasi tanpa disadari) | ✅ **RESOLVED** — `condition` diubah jadi `component.message.canAddReaction(component.props.thread)`, terkonfirmasi re-run test suite penuh (kedua Tour test tetap "tour succeeded") |
@@ -328,16 +328,18 @@ Dicek `docker run --rm odoo:17.0`/`odoo:18.0` grep langsung `mail/static/src/dis
 
 ---
 
-### MF-21 — `Environment.lang` (18.0) validasi ketat bahasa terinstall — CATATAN DEPLOYMENT
+### MF-21 — `Environment.lang` (18.0) validasi ketat bahasa terinstall — RESOLVED (fix kode, bukan lagi catatan deployment)
 **Ditemukan di:** Step 6 (2026-08-24), lewat run test suite penuh (`--test-enable`) pertama kali di 18.0 — `sale_margin_threshold/tests/test_action_confirm.py::test_action_confirm_wizard_path_when_not_blocking` gagal `UserError: Invalid language code: fr_FR`
-**Tag:** `[CATATAN-DEPLOYMENT]` (bukan `[GAP-MIGRASI]` — lihat alasan di Deskripsi)
+**Tag:** `[GAP-MIGRASI]` (direklasifikasi dari `[CATATAN-DEPLOYMENT]` — lihat keputusan dev di bawah)
 **Prioritas:** Sedang
-**Lokasi:** `sale_margin_threshold/models/sale_order.py:42` (`wizard.with_context(lang='fr_FR').write(...)`)
-**Deskripsi:** Odoo 18.0 `Environment.lang` (`odoo/api.py`) sekarang me-raise `UserError` eksplisit kalau context `lang` bukan `en_US` DAN bukan bahasa yang benar-benar terinstall (`res.lang._get_data`). Test database sesi ini TIDAK punya bahasa Prancis terinstall (sama seperti environment test backfill 17.0 — dikonfirmasi `docker-compose.yml` 17.0 juga tidak install bahasa apapun secara eksplisit), tapi test yang SAMA PERSIS lolos 0 error di 17.0 dan baru gagal di 18.0 — **dikonfirmasi ini genuinely validasi BARU 18.0**, bukan config test yang berubah.
-**Verifikasi:** Menambahkan `--load-language=fr_FR` ke command Docker membuat SEMUA 17 test (termasuk yang ini) pass `0 failed, 0 error(s)` — membuktikan ini BUKAN bug kode `sale_order.py`, teknik `with_context(lang=...).write(...)` untuk field bilingual tetap valid selama bahasa targetnya benar-benar terinstall.
-**Dampak:** Kalau environment PRODUCTION modul ini nanti dijalankan TANPA bahasa Prancis terinstall, `action_confirm()` akan crash `UserError` setiap kali cabang `blocking_transaction_order=False` (wizard konfirmasi) dieksekusi — meng-crash alur core (confirm quotation), bukan cuma gagal senyap.
-**Status:** ✅ Dikonfirmasi bukan bug kode — **butuh keputusan/konfirmasi dev**: pastikan bahasa Prancis terinstall di environment production sebelum go-live 18.0 (kemungkinan besar SUDAH terinstall kalau modul ini memang dipakai user berbahasa Prancis, tapi wajib dikonfirmasi eksplisit, jangan diasumsikan).
-**Keputusan pemilik modul:** *(kosong — perlu konfirmasi eksplisit dev: bahasa Prancis terinstall di production?)*
+**Lokasi:** `sale_margin_threshold/models/sale_order.py:41-43` (dulu: `wizard.create(...)` + `wizard.with_context(lang='fr_FR').write(...)`)
+**Deskripsi (akar masalah):** Odoo 18.0 `Environment.lang` (`odoo/api.py`) sekarang me-raise `UserError` eksplisit kalau context `lang` bukan `en_US` DAN bukan bahasa yang benar-benar terinstall (`res.lang._get_data`) — validasi BARU di 18.0, tidak ada di 17.0. Kode asli menulis pesan wizard translatable field (`message = fields.Text(translate=True)`) DUA kali — sekali normal (Inggris), sekali lagi dipaksa `.with_context(lang='fr_FR')` untuk menyimpan versi Prancis lewat mekanisme translated-field Odoo, yang WAJIB `fr_FR` benar-benar terdaftar sebagai `res.lang`.
+**Keputusan dev (2026-08-26):** bahasa Prancis di environment production **tidak bisa dijamin selalu terinstall** ("fr bisa terinstall bisa tidak") — modul TIDAK BOLEH mensyaratkan itu. Diputuskan: **perbaiki kode**, bukan menambah syarat deployment.
+**Fix:** Cabang lain di file yang sama (`blocking_transaction_order=True`, baris 33-37) sudah menyelesaikan masalah identik ("pilih teks Inggris atau Prancis tergantung bahasa user") TANPA translated-field sama sekali — cukup `if user_language == 'French': pakai message_Fr else: pakai message` (string plain, `user_language` dari `detect_user_language()` yang membaca `self.env.context.get('lang')`). Idiom yang SAMA diterapkan ke cabang wizard: `wizard_message = message_Fr if user_language == 'French' else message`, lalu SATU `wizard.create({'message': wizard_message})` — dua-kali-tulis dan `.with_context(lang='fr_FR')` dihapus total. Tidak ada lagi referensi `fr_FR` di manapun di modul ini.
+**Kenapa ini aman/tidak melanggar aturan "port apa adanya":** perubahan ini secara eksplisit diminta+disetujui user (bukan AI unilateral "memperbaiki bug lama") sebagai respons terhadap constraint deployment baru ("fr bisa ada bisa tidak"). Behavior YANG TERLIHAT USER tidak berubah sama sekali (user Prancis tetap lihat teks Prancis, user lain tetap lihat Inggris) — cuma MEKANISME internalnya yang diganti dari "translated-field storage" (butuh `res.lang` terinstall) jadi "pilih string langsung" (tidak butuh apa-apa), pola yang sudah ada persis sama di baris 33-37 file yang sama.
+**Verifikasi:** Re-run test suite penuh TANPA `--load-language=fr_FR` sama sekali (docker-compose standar, tidak pernah install bahasa apapun) — **`0 failed, 0 error(s) of 22 tests`** (turun dari "1 error" sebelumnya). Semua 4 Tour test tetap "tour succeeded", tidak ada regresi.
+**Status:** ✅ **RESOLVED** — bukan lagi item yang perlu dikonfirmasi ke dev sebelum go-live; modul sekarang berfungsi identik terlepas apakah Prancis terinstall atau tidak.
+**Keputusan pemilik modul:** ✅ Dev memilih fix kode (2026-08-26) — lihat "Keputusan dev" di atas.
 
 ---
 

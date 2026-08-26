@@ -34,12 +34,12 @@ services:
     # Mode D (Tour test headless Chrome asli, Step 6/9) -- aktif sekarang.
     # Mode G1 (install test polos) dan Mode G2 (server tetap hidup) di bawah,
     # tinggal uncomment salah satu kalau perlu ganti mode lagi.
-    # NOTE: `--load-language=fr_FR` sengaja TIDAK dipasang permanen di sini -- dipakai SEKALI
-    # (manual, command line dev) untuk verifikasi MF-21 (sale_margin_threshold butuh bahasa
-    # Prancis terinstall). Dipasang permanen di run biasa, ini bikin SELURUH UI POS (dialog,
-    # format angka "1,00" vs "1.00") ikut ter-render Prancis, merusak assertion Tour test modul
-    # lain yang tidak terkait sama sekali. Kalau perlu re-verifikasi MF-21, tambahkan
-    # `--load-language=fr_FR` di command ini SEMENTARA, jalankan, lalu hapus lagi.
+    # NOTE: JANGAN pasang `--load-language=fr_FR` di sini. Sempat dipakai sementara untuk
+    # verifikasi MF-21 (sale_margin_threshold dulu butuh bahasa Prancis terinstall) -- MF-21
+    # sudah di-RESOLVE lewat fix kode (2026-08-26, sale_order.py tidak lagi bergantung pada
+    # fr_FR sama sekali), jadi flag ini TIDAK PERNAH perlu dipasang lagi. Riwayat: memasangnya
+    # permanen dulu sempat bikin SELURUH UI POS (dialog, format angka "1,00" vs "1.00") ikut
+    # ter-render Prancis, merusak assertion Tour test modul lain yang tidak terkait sama sekali.
     command: >
       odoo -d pos_margin_sale_migration_18_test
       -i pos_margin_threshold,sale_margin_threshold,pin_message

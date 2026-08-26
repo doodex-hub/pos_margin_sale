@@ -37,11 +37,13 @@
 
 **Reverse-order verification (one-off, di luar `docker-compose.yml` standar):** `docker compose run --rm ... -i sale_margin_threshold,pos_margin_threshold ... --test-tags /pos_margin_threshold:TestCrossModuleWizardMargin,/sale_margin_threshold:TestCrossModuleGroupDedup` terhadap database test terpisah (`pos_margin_sale_migration_18_reverse_test`, dihapus setelah dicek) — `0 failed, 0 error(s) of 3 tests`, `__mro__` byte-identik dengan urutan standar. Bukti: `docker-env/logs/odoo_reverse.log` (lokal, tidak dicommit — `docker-env/logs/` di-gitignore).
 
-**Hasil run gabungan ketiga modul (fresh DB, urutan standar):** `0 failed, 1 error(s) of 22 tests` — 1 error `MF-21` (lihat baris berikutnya, WAJIB dikonfirmasi ke dev sebelum go-live, bukan bug kode).
+**Hasil run gabungan ketiga modul (fresh DB, urutan standar, SEBELUM `MF-21` di-fix):** `0 failed, 1 error(s) of 22 tests` — 1 error `MF-21`.
 
-## `MF-21` — status akhir sebelum lanjut
+**Update — setelah `MF-21` di-fix (2026-08-26, lihat di bawah):** re-run test suite penuh TANPA `--load-language=fr_FR` sama sekali — **`0 failed, 0 error(s) of 22 tests`**. Semua 4 Tour test tetap "tour succeeded".
 
-Tetap `[CATATAN-DEPLOYMENT]`, bukan bug — **WAJIB dikonfirmasi ke dev sebelum Step 10/11:** apakah bahasa Prancis (`fr_FR`) benar-benar terinstall di environment production. Nuansa tambahan dari Step 8: kemungkinan mekanisme bilingual ini sudah silently broken di 17.0 kalau Prancis tidak pernah terinstall (lihat `08_CODE_REVIEW.md` §F, `FINDINGS.md` `MF-21`) — pertanyaan konfirmasi ke dev bukan cuma "apakah terinstall" tapi juga "apakah fitur ini pernah benar-benar berfungsi di 17.0 production".
+## `MF-21` — status akhir
+
+✅ **RESOLVED** (bukan lagi `[CATATAN-DEPLOYMENT]`) — dev menegaskan bahasa Prancis production tidak boleh jadi syarat modul ini bisa berjalan. Kode `sale_order.py` diperbaiki: cabang wizard sekarang memilih string EN/FR langsung (sama seperti pola yang sudah ada di cabang blocking), tidak ada lagi `.with_context(lang='fr_FR')`/mekanisme translated-field. Behavior yang terlihat user tidak berubah. Tidak perlu konfirmasi dev apapun lagi sebelum Step 10/11. Detail lengkap: `FINDINGS.md` `MF-21`.
 
 ## Kontribusi ke Knowledge Base
 
@@ -50,6 +52,6 @@ Tetap `[CATATAN-DEPLOYMENT]`, bukan bug — **WAJIB dikonfirmasi ke dev sebelum 
 ## Verdict
 
 - [x] ✅ **Semua AC prioritas Unit/Integration pass — lanjut ke step 10**
-- **Item wajib sebelum Step 10/11 (bukan blocker Step 9):** konfirmasi `MF-21` ke dev (bahasa Prancis production).
+- **`MF-21` sudah RESOLVED sepenuhnya** (fix kode, lihat di atas) — tidak ada lagi item wajib konfirmasi dev terkait ini.
 - **Gap risiko rendah, diterima, dibawa ke Step 10:** AC-01-04 (rental, tidak bisa dites di environment ini sama sekali), AC-03-02 (wizard cancel), AC-04-03 (UI field visibility) — direkomendasikan ditutup manual di QA kalau memungkinkan, tidak menghalangi gate ini.
 - **Dokumentasi perlu dikoreksi (bukan kode):** `05a_MIGRATION_ACCEPTANCE_CRITERIA.md` AC-04-02 — premis "tergantung urutan install" salah, ganti jadi "MRO selalu memenangkan `sale_margin_threshold`, independen urutan install" (lihat `FINDINGS.md` `MF-03`).

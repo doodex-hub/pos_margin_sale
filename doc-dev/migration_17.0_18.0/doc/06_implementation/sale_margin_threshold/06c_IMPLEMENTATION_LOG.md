@@ -109,13 +109,15 @@
 
 - **Status:** ✅ Selesai (sudah sintaks modern, tidak ada perubahan)
 
-## [Fase A5, revisi] `MF-21` — `Environment.lang` validasi ketat bahasa terinstall (ditemukan saat run test suite penuh)
+## [Fase A5, revisi] `MF-21` — `Environment.lang` validasi ketat bahasa terinstall (ditemukan saat run test suite penuh) — RESOLVED (fix kode, Step 9 lanjutan)
 
-- **Scope:** `models/sale_order.py:42` (`wizard.with_context(lang='fr_FR').write(...)`)
-- **Temuan:** Menjalankan test suite penuh (`--test-enable`, bukan cuma `-i` install) pertama kali di 18.0 menemukan `test_action_confirm_wizard_path_when_not_blocking` gagal `UserError: Invalid language code: fr_FR` — Odoo 18.0 `Environment.lang` (`odoo/api.py`) sekarang validasi ketat bahasa context terhadap `res.lang` yang benar-benar terinstall.
-- **Verifikasi:** Menambahkan `--load-language=fr_FR` ke command Docker membuat test yang sama (dan semua 17 test lain) pass `0 failed, 0 error`. **Dikonfirmasi ini BUKAN bug kode** — teknik bilingual `with_context(lang=...).write(...)` tetap valid selama bahasa target genuinely terinstall.
-- **Aksi:** TIDAK ADA perubahan kode (`sale_order.py` port apa adanya) — ini murni temuan environment/deployment, dicatat sebagai `MF-21` `[CATATAN-DEPLOYMENT]` di `FINDINGS.md`, butuh konfirmasi dev bahwa production akan punya bahasa Prancis terinstall.
-- **Status:** ✅ Dikonfirmasi, bukan blocker kode — **perlu keputusan dev** (lihat `MF-21`).
+- **Scope:** `models/sale_order.py:41-43` (dulu: `wizard.create(...)` + `wizard.with_context(lang='fr_FR').write(...)`)
+- **Temuan (Step 6):** Menjalankan test suite penuh (`--test-enable`, bukan cuma `-i` install) pertama kali di 18.0 menemukan `test_action_confirm_wizard_path_when_not_blocking` gagal `UserError: Invalid language code: fr_FR` — Odoo 18.0 `Environment.lang` (`odoo/api.py`) sekarang validasi ketat bahasa context terhadap `res.lang` yang benar-benar terinstall.
+- **Verifikasi awal (Step 6):** Menambahkan `--load-language=fr_FR` ke command Docker membuat test yang sama (dan semua test lain) pass `0 failed, 0 error`. Dikonfirmasi ini BUKAN bug logic (teknik bilingual tetap valid selama bahasa target genuinely terinstall) — tapi awalnya dicatat sebagai `[CATATAN-DEPLOYMENT]`, bukan fix kode, karena solusinya waktu itu diasumsikan "pastikan Prancis terinstall di production".
+- **Update Step 9 lanjutan (2026-08-26) — dev eksplisit menolak asumsi itu:** dev menegaskan bahasa Prancis di production **tidak bisa dijamin selalu terinstall**, jadi modul TIDAK BOLEH mensyaratkannya. **Fix kode**: cabang blocking (baris 33-37, tidak pernah diubah, tidak pernah bermasalah) sudah menyelesaikan masalah "pilih teks EN/FR sesuai bahasa user" TANPA translated-field/`with_context(lang=...)` sama sekali — pola yang sama diterapkan ke cabang wizard: `wizard_message = message_Fr if user_language == 'French' else message`, satu `create()`, hapus double-write dan `.with_context(lang='fr_FR')` total.
+- **Kenapa ini bukan pelanggaran "port apa adanya":** perubahan diminta+disetujui eksplisit oleh dev sebagai respons ke constraint deployment baru, bukan AI unilateral memperbaiki bug lama. Behavior yang terlihat user (pesan muncul sesuai bahasa user) tidak berubah — cuma mekanisme internal (translated-field storage → pilih-string-langsung, pola yang SUDAH ADA di baris 33-37 file yang sama).
+- **Re-verifikasi:** Test suite penuh TANPA `--load-language=fr_FR` sama sekali — **`0 failed, 0 error(s) of 22 tests`**, semua 4 Tour test tetap "tour succeeded".
+- **Status:** ✅ **RESOLVED** — bukan lagi item yang perlu konfirmasi dev sebelum go-live. Lihat `FINDINGS.md` `MF-21` untuk detail lengkap.
 
 ---
 

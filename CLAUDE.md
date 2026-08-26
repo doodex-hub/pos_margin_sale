@@ -225,11 +225,24 @@ re-run test suite penuh (`docker compose down -v` + up bersih).
   `sale_margin_threshold`) sudah dikoreksi teksnya untuk mencerminkan mekanisme sebenarnya. Risiko
   `MF-03` (silent-override kalau salah satu modul diubah sendirian) tetap sama, cuma penjelasannya
   yang diperbaiki.
-- **Hasil akhir gabungan (fresh DB, ketiga modul + 4 test baru):** `0 failed, 1 error(s) of 22 tests`
-  (naik dari 19 — 3 test baru berhasil ditambah tanpa regresi). 1 error tetap `MF-21`, tidak terkait.
+- **Hasil akhir gabungan (fresh DB, ketiga modul + 4 test baru, SEBELUM `MF-21` di-fix):**
+  `0 failed, 1 error(s) of 22 tests` (naik dari 19 — 3 test baru berhasil ditambah tanpa regresi).
 - **`pin_message` AC-03-01** (Discuss-channel native pin) juga dikoreksi di `05a` — premis lama
   ("memicu `onClickPin()` override modul") sudah tidak berlaku di 18.0 (`MF-09`, dead code tapi
   harmless, lihat Step 8), diganti jadi "lewat mekanisme native 18.0".
+
+**`MF-21` — RESOLVED lewat fix kode (2026-08-26, lanjutan sesi Step 9 yang sama):** user menegaskan
+bahasa Prancis di production **tidak bisa dijamin selalu terinstall** — modul tidak boleh
+mensyaratkan itu. `sale_margin_threshold/models/sale_order.py` cabang wizard (baris 41-43) diperbaiki:
+dulu double-write (`create()` + `.with_context(lang='fr_FR').write()`) yang butuh `fr_FR` genuinely
+terinstall (validasi baru `Environment.lang` 18.0), sekarang SATU `create()` yang langsung pilih
+`message_Fr`/`message` sesuai `user_language` terdeteksi — pola yang SUDAH ADA persis sama di cabang
+blocking (baris 33-37) file yang sama, tidak pernah butuh translated-field/`with_context(lang=...)`.
+Behavior yang terlihat user (pesan sesuai bahasa) tidak berubah, cuma mekanisme internal. Tidak ada
+lagi referensi `fr_FR` di modul ini. **Re-verifikasi: `0 failed, 0 error(s) of 22 tests`, TANPA
+`--load-language=fr_FR` sama sekali** — bersih total, semua 4 Tour test tetap "tour succeeded".
+`docker-env/docker-compose.yml` komentarnya diperbarui (flag itu sekarang benar-benar tidak pernah
+perlu dipasang lagi, bukan cuma "jarang").
 
 **Step 8 — Code Review (gate, LULUS ketiganya, 2026-08-24):** dikerjakan lewat 3 agent paralel
 (gather diff+gap-analysis+core-collision-check per modul, real `git diff backfill/17.0 HEAD`, cross-
@@ -304,14 +317,13 @@ keduanya — baru ketahuan dari Tour test:
 (ditulis sebelum `MF-22`/`MF-23` ditemukan — dev sudah commit manual sekali, mungkin perlu entry
 tambahan untuk `MF-22`/`MF-23`, belum diminta eksplisit oleh dev).
 
-**Belum dikerjakan:** Step 10 (QA Testing, gate) → 11 (UAT, gate) untuk ketiga modul. Gap risiko
-rendah yang didokumentasikan eksplisit (bukan blocker gate manapun, tapi disarankan ditutup manual
-kalau ada waktu di QA): `pos_margin_threshold` AC-02-03/04 (kontrol negatif + assert visual),
-AC-03-01/02 (wizard UI, kode 0-diff dari 17.0); `sale_margin_threshold` AC-01-04 (rental, tidak bisa
-dites di environment Community sama sekali), AC-03-02 (wizard cancel), AC-04-03 (UI field
-visibility); `pin_message` AC-02-01 (native Discuss pin) dan AC-04-02 (reload ganti record). **Sebelum
-Step 10/11: `MF-21` WAJIB dikonfirmasi ke dev** (bahasa Prancis terinstall di environment production
-`sale_margin_threshold`?).
+**Belum dikerjakan:** Step 10 (QA Testing, gate) → 11 (UAT, gate) untuk ketiga modul. Tidak ada lagi
+item wajib-konfirmasi-dev tersisa (`MF-21` sudah RESOLVED). Gap risiko rendah yang didokumentasikan
+eksplisit (bukan blocker gate manapun, tapi disarankan ditutup manual kalau ada waktu di QA):
+`pos_margin_threshold` AC-02-03/04 (kontrol negatif + assert visual), AC-03-01/02 (wizard UI, kode
+0-diff dari 17.0); `sale_margin_threshold` AC-01-04 (rental, tidak bisa dites di environment
+Community sama sekali), AC-03-02 (wizard cancel), AC-04-03 (UI field visibility); `pin_message`
+AC-02-01 (native Discuss pin) dan AC-04-02 (reload ganti record).
 
 > AI: update bagian ini sendiri di akhir tiap sesi kerja, supaya sesi berikutnya tahu persis harus
 > lanjut dari mana tanpa tanya ulang ke user.

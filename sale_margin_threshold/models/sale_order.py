@@ -38,9 +38,8 @@ class SaleOrder(models.Model):
             else:
                 message += "\n\nDo you want to continue with the quotation for making sale order?"
                 message_Fr += "\n\nVoulez-vous continuer avec le devis pour passer commande ?"
-                wizard = self.env['sale.confirmation.wizard'].create({'message': message})
-                wizard.with_context(lang='fr_FR').write({
-                'message': message_Fr})
+                wizard_message = message_Fr if user_language == 'French' else message
+                wizard = self.env['sale.confirmation.wizard'].create({'message': wizard_message})
                 return {
                     'type': 'ir.actions.act_window',
                     'name': _('Confirm minimum sale price'),

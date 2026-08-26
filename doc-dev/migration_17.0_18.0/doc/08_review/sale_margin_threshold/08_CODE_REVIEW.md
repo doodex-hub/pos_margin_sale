@@ -71,7 +71,7 @@ Tidak ada item "implemented differently" atau "not implemented" — spec-nya sem
 - [x] ✅ **Lulus** — tidak ada 🔴, lanjut ke step 9
 
 **Item yang butuh tindak lanjut sebelum UAT (bukan blocker Step 8):**
-1. **`MF-21` — WAJIB dikonfirmasi ke dev sebelum go-live:** environment production harus punya bahasa Prancis (`fr_FR`) benar-benar terinstall, atau `action_confirm()` jalur wizard (non-blocking) akan crash `UserError` di 18.0. Rekomendasikan menambahkan nuansa "kemungkinan sudah silently broken di 17.0 tanpa Prancis terinstall" (temuan §F) ke percakapan konfirmasi ini — pertanyaannya bukan cuma "apakah Prancis terinstall" tapi juga "apakah fitur bilingual ini pernah benar-benar berfungsi di production 17.0".
+1. **`MF-21` — ✅ RESOLVED (Step 9 lanjutan, 2026-08-26):** dev menegaskan bahasa Prancis production tidak boleh jadi syarat. Kode diperbaiki (`sale_order.py` cabang wizard sekarang pakai pola pilih-string-langsung yang sama seperti cabang blocking, tidak ada lagi `.with_context(lang='fr_FR')`) — dikonfirmasi `0 failed, 0 error(s) of 22 tests` tanpa bahasa Prancis terinstall sama sekali. Tidak perlu konfirmasi dev lagi. Detail: `FINDINGS.md` `MF-21`.
 2. Tulis test untuk AC-03-02 (klik Cancel di wizard) — trivial, risiko rendah, tapi mudah ditutup.
 3. Tulis test MRO urutan instalasi terbalik (`-i sale_margin_threshold,pos_margin_threshold`) untuk melengkapi bukti AC-04-02 dari sisi modul ini.
 4. AC-04-03 (UI field visibility) dan AC-01-04 (rental) — didokumentasikan sebagai gap yang genuinely tidak bisa/belum ditutup di environment ini; putuskan bersama dev apakah ini cukup penting untuk effort tambahan sebelum UAT atau diterima sebagai risiko rendah yang didokumentasikan.
