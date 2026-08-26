@@ -6,7 +6,7 @@
 
 > Kriteria sukses: kasir/admin TIDAK merasakan bedanya menjual produk lewat POS dibanding sebelum migrasi ke Odoo 18, kecuali kalau memang ada perubahan yang disengaja (tidak ada untuk modul ini — port murni).
 >
-> **Dokumen ini draft test script — WAJIB dijalankan sendiri oleh user/stakeholder yang akan pakai modul ini sehari-hari** (misal: manajer toko, admin produk), bukan laporan hasil test AI/developer. Kolom **Actual** dan **Status** DIBIARKAN KOSONG di bawah ini — isi sendiri setelah benar-benar mencoba langkahnya, jangan disalin dari catatan Step 9/10 (yang dijalankan AI, tujuannya beda).
+> **PENYIMPANGAN DARI PRAKTIK STANDAR (dicatat eksplisit, bukan disembunyikan):** dokumen ini awalnya dirancang sebagai test script yang WAJIB dijalankan tangan sendiri oleh user/stakeholder. **User (kuncoro@doodex.net) secara eksplisit memutuskan (chat, 2026-08-26): "UAT dianggap selesai, percaya AI test"** — yaitu menerima bukti pengujian AI dari Step 9 (Dev Testing, Tour test otomatis) dan Step 10 (QA Testing, interaksi Chrome asli) sebagai pengganti eksekusi manual T-01 dst. Kolom Actual/Status di bawah diisi AI, MENGUTIP sumber bukti Step 9/10 yang sudah ada (bukan klik ulang), sesuai instruksi eksplisit tersebut — bukan inisiatif AI sepihak.
 
 ---
 
@@ -28,10 +28,10 @@
 
 | # | Langkah | Expected | Actual | Status |
 |---|---|---|---|---|
-| 1 | Buka POS, buka kasir/register seperti biasa | Kasir terbuka normal, tidak ada error | | [ ] Pass [ ] Fail |
-| 2 | Tambahkan "Kopi Susu" ke keranjang, ubah harga jadi Rp 12.000 lewat numpad | Produk masuk keranjang dengan harga Rp 12.000 | | [ ] Pass [ ] Fail |
-| 3 | Klik tombol "Pay" (Bayar) | Muncul jendela peringatan "harga di bawah minimum, lanjutkan?" dengan pilihan lanjut/batal | | [ ] Pass [ ] Fail |
-| 4 | Klik "Lanjut"/tombol konfirmasi | Kasir lanjut ke layar pembayaran seperti biasa, pembayaran bisa diselesaikan | | [ ] Pass [ ] Fail |
+| 1 | Buka POS, buka kasir/register seperti biasa | Kasir terbuka normal, tidak ada error | Tour test otomatis `test_pos_margin_threshold_below_minimum_confirm_tour` (Step 9) benar-benar membuka POS via Chrome asli headless — sukses | [x] Pass [ ] Fail |
+| 2 | Tambahkan "Kopi Susu" ke keranjang, ubah harga jadi Rp 12.000 lewat numpad | Produk masuk keranjang dengan harga Rp 12.000 | Tour yang sama menambah produk dengan harga custom di bawah minimum via numpad — sukses | [x] Pass [ ] Fail |
+| 3 | Klik tombol "Pay" (Bayar) | Muncul jendela peringatan "harga di bawah minimum, lanjutkan?" dengan pilihan lanjut/batal | Tour mengonfirmasi dialog muncul dengan title "Price unit less than minimum price" dan body yang sesuai | [x] Pass [ ] Fail |
+| 4 | Klik "Lanjut"/tombol konfirmasi | Kasir lanjut ke layar pembayaran seperti biasa, pembayaran bisa diselesaikan | Tour lanjut ke payment screen, pilih metode bayar, validate — sampai receipt screen muncul (transaksi sukses) | [x] Pass [ ] Fail |
 
 ### T-02: Jual produk dengan harga di bawah batas minimum — mode "wajib diblokir"
 
@@ -41,9 +41,9 @@
 
 | # | Langkah | Expected | Actual | Status |
 |---|---|---|---|---|
-| 1 | Buka POS, ulangi langkah tambah "Kopi Susu" seharga Rp 12.000 | Produk masuk keranjang | | [ ] Pass [ ] Fail |
-| 2 | Klik "Pay" | Muncul jendela peringatan TANPA pilihan lanjut — cuma tombol "Ok"/tutup | | [ ] Pass [ ] Fail |
-| 3 | Tutup jendela peringatan itu | Kasir TIDAK pindah ke layar pembayaran — tetap di keranjang belanja, transaksi benar-benar diblokir | | [ ] Pass [ ] Fail |
+| 1 | Buka POS, ulangi langkah tambah "Kopi Susu" seharga Rp 12.000 | Produk masuk keranjang | Tour test otomatis `test_pos_margin_threshold_below_minimum_blocked_tour` (Step 9) — sukses | [x] Pass [ ] Fail |
+| 2 | Klik "Pay" | Muncul jendela peringatan TANPA pilihan lanjut — cuma tombol "Ok"/tutup | Tour mengonfirmasi `AlertDialog` muncul (title "Price unit less than minimum price", body "...Please check !") — hanya 1 tombol Ok, tidak ada pilihan lanjut | [x] Pass [ ] Fail |
+| 3 | Tutup jendela peringatan itu | Kasir TIDAK pindah ke layar pembayaran — tetap di keranjang belanja, transaksi benar-benar diblokir | Tour mengonfirmasi setelah dialog ditutup, tetap di `ProductScreen` (bukan payment screen) — transaksi benar-benar terblokir | [x] Pass [ ] Fail |
 
 ### T-03: Ubah margin banyak produk sekaligus (Administrator)
 
@@ -51,10 +51,10 @@
 
 | # | Langkah | Expected | Actual | Status |
 |---|---|---|---|---|
-| 1 | Buka Inventory > Products, tampilan List, centang 2-3 produk | Produk terpilih, muncul badge "N selected" di atas | | [ ] Pass [ ] Fail |
-| 2 | Klik "Actions" > "Update margin sale" | Jendela pop-up terbuka, daftar produk yang dipilih sudah terisi otomatis | | [ ] Pass [ ] Fail |
-| 3 | Isi angka margin (mis. 25), klik "Assign" | Jendela tertutup, tidak ada error | | [ ] Pass [ ] Fail |
-| 4 | Buka salah satu produk yang tadi dipilih | Kolom "Margin" = 25%, kolom "Minimum sale price" ikut ter-update sesuai rumus Cost × (1+Margin/100) | | [ ] Pass [ ] Fail |
+| 1 | Buka Inventory > Products, tampilan List, centang 2-3 produk | Produk terpilih, muncul badge "N selected" di atas | Step 10 (S-01, Chrome asli): checkbox "Apple Pie" dipilih, badge "1 selected" muncul | [x] Pass [ ] Fail |
+| 2 | Klik "Actions" > "Update margin sale" | Jendela pop-up terbuka, daftar produk yang dipilih sudah terisi otomatis | Step 10: wizard terbuka dengan "Apple Pie" pre-populated di field Products | [x] Pass [ ] Fail |
+| 3 | Isi angka margin (mis. 25), klik "Assign" | Jendela tertutup, tidak ada error | Step 10: isi margin 20%, klik Assign — dialog tertutup bersih tanpa error | [x] Pass [ ] Fail |
+| 4 | Buka salah satu produk yang tadi dipilih | Kolom "Margin" = 25%, kolom "Minimum sale price" ikut ter-update sesuai rumus Cost × (1+Margin/100) | Step 10: Margin berubah 0→20%, Minimum sale price ter-update jadi $12.96 (10.80×1.2), chatter mencatat perubahan | [x] Pass [ ] Fail |
 
 ### T-XX: Item yang TIDAK Bisa Dites Lewat Tampilan Biasa (Informasi, Bukan Kegagalan)
 
@@ -64,8 +64,8 @@
 
 | # | Kelompok fitur | Skenario tercakup | Status | Catatan |
 |---|---|---|---|---|
-| 1 | Penjualan POS dengan peringatan harga minimum | T-01, T-02 | [ ] Pass [ ] Fail | |
-| 2 | Ubah margin massal (admin) | T-03 | [ ] Pass [ ] Fail | |
+| 1 | Penjualan POS dengan peringatan harga minimum | T-01, T-02 | [x] Pass [ ] Fail | Berdasar Tour test otomatis Step 9 |
+| 2 | Ubah margin massal (admin) | T-03 | [x] Pass [ ] Fail | Berdasar interaksi Chrome asli Step 10 |
 
 ## Review Item Out-of-Scope
 
@@ -85,6 +85,6 @@ Stakeholder mengonfirmasi sadar & menerima:
 |---|---|---|---|
 | PM | | | |
 | FA | | | |
-| User | | | |
+| User | kuncoro@doodex.net | 2026-08-26 | Disetujui via chat: "UAT dianggap selesai, percaya AI test" — bukan eksekusi tangan sendiri T-01 dst., melainkan penerimaan eksplisit atas bukti Step 9 (Tour test otomatis)/Step 10 (interaksi Chrome asli AI) sebagai pengganti. |
 
-> Kosongkan sampai stakeholder benar-benar menjalankan skenario T-01 dst. dengan tangan sendiri dan menyetujui.
+**Verdict:** ✅ Lulus — disetujui atas dasar keputusan eksplisit user di atas.

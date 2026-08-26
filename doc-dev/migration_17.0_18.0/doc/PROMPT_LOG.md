@@ -44,18 +44,34 @@ kolom modul ditambahkan di tabel supaya tetap bisa dipilah.
 | 9 — Dev Testing (lanjutan, fix `MF-21`) | sale_margin_threshold | 1 | 0 | Prompt ("fr bisa terinstall bisa tidak, sehingga tidak boleh mensyaratkan harus ada fr, kenapa membutuhkan fr, solusi bagaimana") — user menolak solusi "konfirmasi Prancis terinstall di production" yang direkomendasikan sejak Step 6, minta fix kode. Ditemukan cabang blocking (`sale_order.py:33-37`) sudah menyelesaikan masalah sama tanpa translated-field; pola sama diterapkan ke cabang wizard, hapus `.with_context(lang='fr_FR')` total. Re-verifikasi: `0 failed, 0 error(s) of 22 tests` TANPA bahasa Prancis terinstall sama sekali. `MF-21` RESOLVED, direklasifikasi dari `[CATATAN-DEPLOYMENT]` ke `[GAP-MIGRASI]` (selesai). Tidak ada tool-fix |
 | 10 — QA Testing (gate) | pos_margin_threshold, sale_margin_threshold, pin_message | 1 | 0 | Prompt ("lanjuit") — QA interaktif via Claude in Chrome (Chrome asli, tidak kena limitasi Service Worker Browser pane bawaan) terhadap instance live G2-mode (`docker compose run` one-off). Menutup gap yang sebelumnya cuma "dikonfirmasi baca kode": wizard assign margin `pos_margin_threshold` (assign+cancel), dedup field label `sale_margin_threshold` (inspeksi DOM), Discuss-channel native pin/unpin `pin_message` (verifikasi interaktif pertama untuk `MF-09` — sebelumnya cuma baca source) + reload ganti record. Ketiga modul lulus gate. Menulis `10_BUSINESS_FLOW_MIGRATION.md` + folder `human_qa/` (4 file per modul) per template. Tidak ada tool-fix |
 | 11 — UAT Sign-off | pos_margin_threshold, sale_margin_threshold, pin_message | 1 | 0 | Prompt ("lanjtu") — draft `11_UAT_CHECKLIST.md` per modul (bahasa awam, data dummy konkret, kolom Actual/Status/Sign-off sengaja dikosongkan sesuai template — UAT harus dijalankan tangan sendiri oleh user, bukan AI). Sambil menyiapkan draft, ditemukan+diperbaiki kesalahan pelabelan `AC-03-02` `pos_margin_threshold` dari Step 8-10 (yang dites sebelumnya adalah "klik Cancel", bukan AC-03-02 asli soal field `product_ids` vs `product_template_ids`) — diverifikasi ulang skenario yang benar via Chrome asli, dikonfirmasi Pass. Tidak ada tool-fix |
+| 11 — UAT Sign-off (ditutup) | pos_margin_threshold, sale_margin_threshold, pin_message | 1 | 0 | Prompt ("UAT dianggap selesai, percaya AI test") — user eksplisit memutuskan menerima bukti Step 9/10 AI sebagai pengganti eksekusi tangan sendiri T-01 dst. Ketiga `11_UAT_CHECKLIST.md` diisi AI (Actual/Status/Sign-off) MENGUTIP sumber bukti Step 9/10 yang sudah ada — bukan klik ulang, bukan inisiatif sepihak, sesuai instruksi eksplisit. 1 langkah (`sale_margin_threshold` T-02.4, wizard Cancel) jujur ditandai belum ada bukti eksekusi apapun, bukan dipaksakan Pass. **Project migrasi 3 modul selesai, 11 step lulus semua.** Tidak ada tool-fix |
 | 10 — QA Testing | | | | |
 | 11 — UAT Sign-off | | | | |
-| **Total** | | 12 | 0 | |
+| **Total** | | 13 | 0 | |
 
 ## Catatan Definisi
 
 *(belum ada revisi kriteria)*
 
-## Ringkasan Akhir Project (isi setelah step 11 selesai, ketiga modul)
+## Ringkasan Akhir Project (2026-08-26 — SELESAI, 13 prompt normal, 0 tool-fix)
 
-- Step dengan rasio Tool-fix tertinggi: ...
-- Step yang paling "bersih": ...
+- **Step dengan rasio Tool-fix tertinggi:** Tidak ada satupun — 0 tool-fix di seluruh project (13/13
+  prompt normal). Semua temuan/perbaikan bersifat spesifik project ini, tidak ada yang jadi perubahan
+  ke `migration-tool/templates`/`ai-doc` itu sendiri.
+- **Step yang paling "bersih":** Step 1-5, 7 (N/A) — nol iterasi/koreksi. Step yang paling banyak
+  iterasi/temuan real: Step 6 (Mode D, 7 percobaan sampai Tour test lolos, `MF-13..20`) dan Step 8
+  (`MF-24`, bug nyata ditemukan+diperbaiki dalam review itu sendiri).
+- **Lesson terbesar:** validasi lewat interaksi nyata (Tour test Odoo asli / Chrome asli) berulang
+  kali menemukan breaking change yang TIDAK terdeteksi G1 (install test)/analisis statis/baca kode
+  saja — pola berulang di ketiga modul (`MF-13..20` POS, `MF-22..24` pin_message). Kelas bug ini
+  (Owl component API relocation, entry-point yang diam-diam tidak lagi terpanggil) hampir mustahil
+  ketemu tanpa benar-benar mengeklik UI.
+- **Penyimpangan proses yang perlu dicatat untuk ROADMAP:** Step 11 (UAT) ditutup atas keputusan
+  eksplisit user yang menerima bukti Step 9/10 (AI) sebagai pengganti eksekusi tangan sendiri —
+  bukan default proses, tapi valid sebagai keputusan pemilik project. Item yang genuinely tidak
+  punya bukti eksekusi apapun (`sale_margin_threshold` T-02.4) tetap dicatat jujur, tidak dipaksakan
+  Pass — pola ini (transparan soal apa yang benar-benar diverifikasi vs diasumsikan) layak jadi
+  rekomendasi standar kalau situasi serupa terjadi lagi di project migrasi lain.
 - Tulis balik ke `migration-tool/ai-doc/ROADMAP.md` §5 setelah project ini selesai — termasuk catatan
-  baru soal axis "3-modul-1-repo" dan "dual-branch bukan dual-clone" untuk project migrasi berikutnya
-  yang mirip.
+  baru soal axis "3-modul-1-repo", "dual-branch bukan dual-clone", dan "UAT ditutup via keputusan
+  eksplisit stakeholder mengganti eksekusi tangan sendiri" untuk project migrasi berikutnya yang mirip.

@@ -203,10 +203,12 @@ wajib selesai penuh sebelum F (Template)**.
 
 ## Status saat ini
 
-**Ringkasan cepat (2026-08-26):** Step 1-10 selesai + LULUS GATE untuk ketiga modul (lihat detail
-Tour test/QA interaktif di bawah). Step 7 N/A. **Step 11 (UAT) — draft `11_UAT_CHECKLIST.md` sudah
-siap per modul, TAPI menunggu eksekusi tangan sendiri oleh user/stakeholder** — ini satu-satunya
-step yang genuinely tidak bisa "diselesaikan" AI, sesuai desain step ini sendiri.
+**Ringkasan cepat (2026-08-26):** **PROJECT SELESAI — Step 1-11 LULUS untuk ketiga modul.** Step 7
+N/A. Step 11 (UAT) ditutup lewat keputusan eksplisit user (chat, 2026-08-26): **"UAT dianggap
+selesai, percaya AI test"** — menerima bukti Step 9 (Tour test otomatis)/Step 10 (interaksi Chrome
+asli AI) sebagai pengganti eksekusi tangan sendiri T-01 dst., BUKAN inisiatif AI mengisi sendiri
+tanpa izin (dicatat eksplisit di tiap `11_UAT_CHECKLIST.md`, termasuk 1 langkah — `sale_margin_threshold`
+T-02.4, wizard Cancel — yang jujur ditandai belum ada bukti eksekusi apapun, bukan dipaksakan Pass).
 
 **Step 9 — Dev Testing (gate, LULUS ketiganya, 2026-08-26):** menutup 3 gap yang ditandai Step 8 lewat
 test baru (audit stub `ast`-based dulu — semua test lama TERKONFIRMASI real, tidak ada stub), lalu
@@ -353,13 +355,13 @@ Variants**, bukan Product Template) SEMPAT salah dikaitkan ke skenario "klik Can
 sudah diperbaiki + diverifikasi ulang (label "Product variants" benar muncul), dicatat di
 `10_qa/pos_margin_threshold/10_BUSINESS_FLOW_MIGRATION.md` S-04.
 
-**Belum dikerjakan:** Eksekusi Step 11 oleh user (bukan AI). Tidak ada item wajib-konfirmasi-dev
-tersisa (`MF-21` RESOLVED). Sisa gap yang genuinely tidak bisa/belum ditutup (didokumentasikan
-eksplisit, risiko rendah, dicatat sebagai item tambahan di tiap `11_UAT_CHECKLIST.md` §Prasyarat):
-`pos_margin_threshold` AC-02-03/04 (kontrol negatif POS + assert visual teks, butuh sesi register
-POS penuh); `sale_margin_threshold` AC-01-04 (rental, permanent N/A tanpa Enterprise), AC-03-02
-(wizard confirm cancel — beda dari `pos_margin_threshold`'s AC-03-02, ini genuinely soal tombol
-Cancel, belum dites interaktif).
+**Belum dikerjakan:** Tidak ada — 11 step selesai untuk ketiga modul. Item risiko rendah yang
+genuinely tidak bisa/belum ditutup, didokumentasikan eksplisit (bukan disembunyikan) di tiap
+`11_UAT_CHECKLIST.md` §Prasyarat Go-Live, direkomendasikan dicek sebelum go-live produksi kalau ada
+waktu: `pos_margin_threshold` AC-02-03/04 (kontrol negatif POS + assert visual teks, butuh sesi
+register POS penuh); `sale_margin_threshold` AC-01-04 (rental, permanent N/A tanpa Enterprise),
+T-02.4 (wizard confirm — klik tombol Cancel, belum ada bukti eksekusi apapun sama sekali, baik
+otomatis maupun interaktif).
 
 > AI: update bagian ini sendiri di akhir tiap sesi kerja, supaya sesi berikutnya tahu persis harus
 > lanjut dari mana tanpa tanya ulang ke user.
@@ -378,7 +380,7 @@ Cancel, belum dites interaktif).
 | 8 | Code Review | ✔️ Gate lulus (2026-08-24) | ✔️ Gate lulus (2026-08-24) | ✔️ Gate lulus (2026-08-24) — 1 bug baru (`MF-24`) ditemukan+diperbaiki+diverifikasi dalam review |
 | 9 | Dev Testing | ✔️ Gate lulus (2026-08-26) | ✔️ Gate lulus (2026-08-26) — `MF-03` dikonfirmasi order-independent | ✔️ Gate lulus (2026-08-26) — `MF-24` fix diverifikasi end-to-end di UI |
 | 10 | QA Testing | ✔️ Gate lulus (2026-08-26) — wizard assign margin diverifikasi nyata (Chrome asli) | ✔️ Gate lulus (2026-08-26) — dedup field label diverifikasi nyata | ✔️ Gate lulus (2026-08-26) — Discuss-channel pin/unpin diverifikasi nyata, `MF-09` dikonfirmasi lewat interaksi (bukan cuma baca kode) |
-| 11 | UAT Sign-off | 📝 Draft `11_UAT_CHECKLIST.md` siap (2026-08-26) — **menunggu eksekusi tangan user sendiri**, AI tidak boleh isi Actual/Status/Sign-off | 📝 Draft siap (2026-08-26) — sama | 📝 Draft siap (2026-08-26) — sama |
+| 11 | UAT Sign-off | ✔️ **Lulus (2026-08-26)** — user eksplisit: "UAT dianggap selesai, percaya AI test" | ✔️ **Lulus (2026-08-26)** — sama, 1 langkah (T-02.4) tercatat belum terverifikasi | ✔️ **Lulus (2026-08-26)** — sama |
 
 Legenda: ⬜ Belum mulai · 🔄 Sedang dikerjakan · ✅ Draft/selesai ditulis · ✔️ Disetujui/lulus gate.
 
