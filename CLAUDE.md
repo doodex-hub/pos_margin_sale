@@ -203,9 +203,10 @@ wajib selesai penuh sebelum F (Template)**.
 
 ## Status saat ini
 
-**Ringkasan cepat (2026-08-26):** Step 1-9 selesai ketiga modul (lihat detail Tour test di bawah).
-Step 7 N/A. **Step 8 (Code Review) dan Step 9 (Dev Testing) LULUS GATE untuk ketiga modul** — lihat
-ringkasan di bawah. **Belum dikerjakan: Step 10-11.**
+**Ringkasan cepat (2026-08-26):** Step 1-10 selesai + LULUS GATE untuk ketiga modul (lihat detail
+Tour test/QA interaktif di bawah). Step 7 N/A. **Step 11 (UAT) — draft `11_UAT_CHECKLIST.md` sudah
+siap per modul, TAPI menunggu eksekusi tangan sendiri oleh user/stakeholder** — ini satu-satunya
+step yang genuinely tidak bisa "diselesaikan" AI, sesuai desain step ini sendiri.
 
 **Step 9 — Dev Testing (gate, LULUS ketiganya, 2026-08-26):** menutup 3 gap yang ditandai Step 8 lewat
 test baru (audit stub `ast`-based dulu — semua test lama TERKONFIRMASI real, tidak ada stub), lalu
@@ -339,11 +340,26 @@ bawaan sesi ini), terhadap instance live G2-mode (`docker compose run` one-off, 
 - Semua AC prioritas tinggi kini punya bukti nyata (Tour test otomatis ATAU interaksi browser
   langsung) — tidak ada lagi item "cuma dikonfirmasi baca kode" yang tersisa untuk ketiga modul.
 
-**Belum dikerjakan:** Step 11 (UAT, gate) untuk ketiga modul. Tidak ada item wajib-konfirmasi-dev
+**Step 11 — UAT Sign-off (draft siap, 2026-08-26):** ditulis `11_UAT_CHECKLIST.md` per modul —
+skenario T-01 dst. dalam bahasa awam (nama tombol/menu persis seperti yang user lihat, data dummy
+konkret seperti "Kopi Susu Rp 12.000"), kolom Actual/Status/Sign-off SENGAJA DIKOSONGKAN sesuai
+prinsip template (`migration-tool/templates/11_UAT_CHECKLIST.md`) — UAT baru bermakna kalau
+dijalankan tangan sendiri oleh business user/stakeholder, bukan AI/dev/QA. **Ini BUKAN gate yang
+lulus** sampai user benar-benar menjalankan dan tanda tangan sign-off sendiri.
+
+**Koreksi kecil ditemukan saat menyiapkan draft (2026-08-26):** `pos_margin_threshold` AC-03-02 yang
+sebenarnya (field `product_ids` muncul saat wizard "Update margin sale" dibuka dari list **Product
+Variants**, bukan Product Template) SEMPAT salah dikaitkan ke skenario "klik Cancel" di Step 10 —
+sudah diperbaiki + diverifikasi ulang (label "Product variants" benar muncul), dicatat di
+`10_qa/pos_margin_threshold/10_BUSINESS_FLOW_MIGRATION.md` S-04.
+
+**Belum dikerjakan:** Eksekusi Step 11 oleh user (bukan AI). Tidak ada item wajib-konfirmasi-dev
 tersisa (`MF-21` RESOLVED). Sisa gap yang genuinely tidak bisa/belum ditutup (didokumentasikan
-eksplisit, risiko rendah): `pos_margin_threshold` AC-02-03/04 (kontrol negatif POS + assert visual
-teks, butuh sesi register POS penuh); `sale_margin_threshold` AC-01-04 (rental, permanent N/A tanpa
-Enterprise), AC-03-02 (wizard confirm cancel, belum dites interaktif).
+eksplisit, risiko rendah, dicatat sebagai item tambahan di tiap `11_UAT_CHECKLIST.md` §Prasyarat):
+`pos_margin_threshold` AC-02-03/04 (kontrol negatif POS + assert visual teks, butuh sesi register
+POS penuh); `sale_margin_threshold` AC-01-04 (rental, permanent N/A tanpa Enterprise), AC-03-02
+(wizard confirm cancel — beda dari `pos_margin_threshold`'s AC-03-02, ini genuinely soal tombol
+Cancel, belum dites interaktif).
 
 > AI: update bagian ini sendiri di akhir tiap sesi kerja, supaya sesi berikutnya tahu persis harus
 > lanjut dari mana tanpa tanya ulang ke user.
@@ -362,7 +378,7 @@ Enterprise), AC-03-02 (wizard confirm cancel, belum dites interaktif).
 | 8 | Code Review | ✔️ Gate lulus (2026-08-24) | ✔️ Gate lulus (2026-08-24) | ✔️ Gate lulus (2026-08-24) — 1 bug baru (`MF-24`) ditemukan+diperbaiki+diverifikasi dalam review |
 | 9 | Dev Testing | ✔️ Gate lulus (2026-08-26) | ✔️ Gate lulus (2026-08-26) — `MF-03` dikonfirmasi order-independent | ✔️ Gate lulus (2026-08-26) — `MF-24` fix diverifikasi end-to-end di UI |
 | 10 | QA Testing | ✔️ Gate lulus (2026-08-26) — wizard assign margin diverifikasi nyata (Chrome asli) | ✔️ Gate lulus (2026-08-26) — dedup field label diverifikasi nyata | ✔️ Gate lulus (2026-08-26) — Discuss-channel pin/unpin diverifikasi nyata, `MF-09` dikonfirmasi lewat interaksi (bukan cuma baca kode) |
-| 11 | UAT Sign-off | ⬜ | ⬜ | ⬜ |
+| 11 | UAT Sign-off | 📝 Draft `11_UAT_CHECKLIST.md` siap (2026-08-26) — **menunggu eksekusi tangan user sendiri**, AI tidak boleh isi Actual/Status/Sign-off | 📝 Draft siap (2026-08-26) — sama | 📝 Draft siap (2026-08-26) — sama |
 
 Legenda: ⬜ Belum mulai · 🔄 Sedang dikerjakan · ✅ Draft/selesai ditulis · ✔️ Disetujui/lulus gate.
 
