@@ -247,8 +247,21 @@ Detail lengkap + rekomendasi porting per temuan: `02_diff/<modul>/02_DIFF_ANALYS
 base (sangat general, kemungkinan besar terulang di project migrasi 18→19 lain yang menyentuh modul
 sama).
 
-Siap lanjut ke **Step 3 (Migration Spec)** — prioritas tertinggi: rencana porting konkret untuk
-`MF-12`/`MF-13`/`MF-14`/`MF-15`.
+**Step 3 (Migration Spec) — SELESAI untuk ketiga modul (2026-08-26, tidak ada gate).** Ditulis
+langsung dari temuan Step 2 (tanpa riset baru — semua detail teknis sudah cukup dari diff analysis).
+- **`sale_margin_threshold`:** tidak ada perubahan kode wajib sama sekali — cuma bump versi manifest.
+- **`pos_margin_threshold`:** 3 import path (mekanis), porting `getDisplayData()`/`props.line.shape`
+  jadi getter langsung di record (butuh baca source `PosOrderlineAccounting` 19.0 di Step 6, belum
+  ditulis kodenya di sini), rename method core snake_case→camelCase di `pay()` override
+  (`get_unit_display_price` butuh identifikasi getter pengganti yang tepat, bukan tebakan).
+- **`pin_message`:** 2 fix WAJIB prioritas tertinggi project — signature `_to_store()` (tambah
+  parameter `fields` positional) dan rewrite total `messageActionsRegistry` (`title`→`name`,
+  `onClick`→`onSelected`, callback destructure `{message,thread}` bukan `component.props`), rujuk
+  pola native `mail/static/src/discuss/message_pin/common/message_actions.js` 19.0.
+
+Detail lengkap per modul: `03_spec/<modul>/03_MIGRATION_SPEC.md`.
+
+Siap lanjut ke **Step 4 (Spec Completeness Review, gate)**.
 
 > **Catatan proses (2026-08-26):** sesi ini sempat menjalankan `git branch --show-current`/`git log -1`
 > di `native-source` (`odoo18`) — melanggar larangan permanen Mode Git (git hanya boleh di
@@ -282,7 +295,7 @@ CONFIRMED N/A, tidak perlu dicek ulang.
 |---|---|---|---|---|
 | 1 | Intake & Scope | ✔️ Gate lulus (2026-08-26) | ✔️ Gate lulus (2026-08-26) | ✔️ Gate lulus (2026-08-26) |
 | 2 | Diff & Compatibility Analysis | ✅ Selesai — 2 gap kritis (`MF-12`/`13`) | ✅ Selesai — tidak ada blocker baru | ✅ Selesai — 2 gap kritis, blast radius luas (`MF-14`/`15`) |
-| 3 | Migration Spec | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
+| 3 | Migration Spec | ✅ Selesai (2026-08-26) | ✅ Selesai (2026-08-26) | ✅ Selesai (2026-08-26) |
 | 4 | Spec Completeness Review | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 5 | Acceptance Criteria & Test Plan | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 6 | Code Migration | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |

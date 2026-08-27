@@ -26,7 +26,7 @@ step. Lihat `migration-tool/templates/PROMPT_LOG.md` untuk definisi klasifikasi 
 | 0 — Bootstrap (sebelum step 1 resmi) | 1 | | Kickoff: "Lakukan migrasi 18 ke 19, branch target `migration/19.0_target`, source copy dari `migration/18.0`" — branch dibuat via Mode Git (dual-branch, bukan dual-clone, pola sama seperti project 17.0→18.0 di repo ini), `CLAUDE.md` + struktur `doc-dev/migration_18.0_19.0/doc/` diinstansiasi. |
 | 1 — Intake & Baseline Spec | 5 | | "LANJUT" -> draft `01a`/`01b` ketiga modul + FINDINGS.md (MF-01..MF-11) -> dev jawab §0 bertahap (native-target/enterprise = `enterprise19.0` gabungan; native-source = `odoo18`; third-party = tidak ada) -> `.claude/settings.json` final -> **gate Step 1 LULUS ketiga modul (2026-08-26)**. |
 | 2 — Diff & Compatibility Analysis | 1 | | Otomatis lanjut setelah gate Step 1 (prinsip "jalan terus") — 3 agent riset paralel cross-check `odoo18` vs `enterprise19.0` per modul. Hasil: 4 gap kritis baru (`MF-12`..`MF-15`), 2 di antaranya (`pin_message`) blast radius melampaui modul sendiri. `sale_margin_threshold` tidak ada blocker baru. |
-| 3 — Migration Spec | | | |
+| 3 — Migration Spec | 1 | | "LANJUT" — ditulis langsung dari temuan Step 2 (tanpa agent riset baru), 03_MIGRATION_SPEC.md ketiga modul. |
 | 4 — Spec Completeness Review | | | |
 | 5 — Acceptance Criteria & Test Plan | | | |
 | 6 — Code Migration (semua fase A-G2) | | | |
@@ -35,7 +35,7 @@ step. Lihat `migration-tool/templates/PROMPT_LOG.md` untuk definisi klasifikasi 
 | 9 — Dev Testing | | | |
 | 10 — QA Testing | | | |
 | 11 — UAT Sign-off | | | |
-| **Total** | 7 | 0 | |
+| **Total** | 8 | 0 | |
 
 ## Catatan Definisi
 
