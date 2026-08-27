@@ -28,14 +28,14 @@ step. Lihat `migration-tool/templates/PROMPT_LOG.md` untuk definisi klasifikasi 
 | 2 — Diff & Compatibility Analysis | 1 | | Otomatis lanjut setelah gate Step 1 (prinsip "jalan terus") — 3 agent riset paralel cross-check `odoo18` vs `enterprise19.0` per modul. Hasil: 4 gap kritis baru (`MF-12`..`MF-15`), 2 di antaranya (`pin_message`) blast radius melampaui modul sendiri. `sale_margin_threshold` tidak ada blocker baru. |
 | 3 — Migration Spec | 1 | | "LANJUT" — ditulis langsung dari temuan Step 2 (tanpa agent riset baru), 03_MIGRATION_SPEC.md ketiga modul. |
 | 4 — Spec Completeness Review | 1 | | "LANJUT" — enumerasi tabel cakupan ketiga modul + verifikasi tambahan 7 view inherit_id target (belum dicek Step 2) langsung ke enterprise19.0. Semua stabil, gate lulus ketiganya. |
-| 5 — Acceptance Criteria & Test Plan | | | |
+| 5 — Acceptance Criteria & Test Plan | 1 | | "LANJUT" — AC diturunkan dari BSL-NNN baseline spec (bukan migration spec), 05a+05b ketiga modul. pin_message dapat 1 requirement test baru (regression _to_store generik). |
 | 6 — Code Migration (semua fase A-G2) | | | |
 | 7 — Data Migration Scripts | | | — (N/A, port kode saja) |
 | 8 — Code Review | | | |
 | 9 — Dev Testing | | | |
 | 10 — QA Testing | | | |
 | 11 — UAT Sign-off | | | |
-| **Total** | 9 | 0 | |
+| **Total** | 10 | 0 | |
 
 ## Catatan Definisi
 

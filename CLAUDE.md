@@ -269,7 +269,19 @@ stabil di `enterprise19.0` (XML-ID dan field anchor masih ada persis sama). `MF-
 XML-ID `sale_margin_threshold`) dikonfirmasi tetap ada identik, bukan hilang karena migrasi versi.
 Tidak ada gap baru — tidak perlu balik ke Step 2/3.
 
-Siap lanjut ke **Step 5 (Acceptance Criteria & Test Plan)**.
+**Step 5 (Acceptance Criteria & Test Plan) — SELESAI untuk ketiga modul (2026-08-26, tidak ada
+gate).** AC diturunkan langsung dari `01b_BASELINE_SPEC.md` (BSL-NNN), bukan dari migration spec.
+- **`pos_margin_threshold`:** 11 AC, 2 gap test yang masih terbuka sejak project 17→18 (AC-02-03/04,
+  butuh sesi POS register penuh, belum pernah dieksekusi).
+- **`sale_margin_threshold`:** 11 AC, sebagian besar diharapkan PASS tanpa modifikasi (tidak ada
+  perubahan kode wajib dari Step 3). AC-04-03 (batch-confirm) belum ada test — baru dibutuhkan kalau
+  user putuskan memperbaiki `MF-08`.
+- **`pin_message`:** 10 AC. **AC-02-01/02 dan AC-04-02 adalah AC paling kritis di seluruh project**
+  — memverifikasi langsung fix `MF-14`/`MF-15`. Ditambahkan requirement test BARU (belum ada di
+  project 17→18): regression test eksplisit "chatter model apapun tidak `TypeError`" untuk
+  membuktikan blast radius `MF-14` benar-benar tertutup, bukan cuma tour pin yang PASS.
+
+Siap lanjut ke **Step 6 (Code Migration)** — fase A1 dulu (Applicability Check), per modul.
 
 > **Catatan proses (2026-08-26):** sesi ini sempat menjalankan `git branch --show-current`/`git log -1`
 > di `native-source` (`odoo18`) — melanggar larangan permanen Mode Git (git hanya boleh di
@@ -305,7 +317,7 @@ CONFIRMED N/A, tidak perlu dicek ulang.
 | 2 | Diff & Compatibility Analysis | ✅ Selesai — 2 gap kritis (`MF-12`/`13`) | ✅ Selesai — tidak ada blocker baru | ✅ Selesai — 2 gap kritis, blast radius luas (`MF-14`/`15`) |
 | 3 | Migration Spec | ✅ Selesai (2026-08-26) | ✅ Selesai (2026-08-26) | ✅ Selesai (2026-08-26) |
 | 4 | Spec Completeness Review | ✔️ Gate lulus (2026-08-26) | ✔️ Gate lulus (2026-08-26) | ✔️ Gate lulus (2026-08-26) |
-| 5 | Acceptance Criteria & Test Plan | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
+| 5 | Acceptance Criteria & Test Plan | ✅ Selesai (2026-08-26) | ✅ Selesai (2026-08-26) | ✅ Selesai (2026-08-26) |
 | 6 | Code Migration | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 7 | Data Migration Scripts | — (N/A, port kode saja) | — | — |
 | 8 | Code Review | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
