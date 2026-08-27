@@ -33,9 +33,9 @@ step. Lihat `migration-tool/templates/PROMPT_LOG.md` untuk definisi klasifikasi 
 | 7 — Data Migration Scripts | | | — (N/A, port kode saja) |
 | 8 — Code Review | 3 | | "LANJUT" -> 3 agent odoo-code-reviewer paralel -> user jawab MF-08 (dipertahankan)/MF-10 (bersihkan)/docker-compose (konfirmasi sudah benar) -> fix MF-22 (self._context, 5 lokasi) + MF-10 cleanup -> re-run test bersih, 0 failed/0 error -> **gate LULUS ketiga modul**. 4 finding baru (MF-20/21/23/24) dicatat untuk keputusan user, tidak blocking. |
 | 9 — Dev Testing | 1 | | "LANJUT" -> audit AST-based stub-check (22 method, semua Lengkap) -> tulis 09_DEV_TESTING.md ketiga modul dari hasil test yang sudah dijalankan sebelumnya -> **gate LULUS ketiganya**. |
-| 10 — QA Testing | | | |
+| 10 — QA Testing | 2 | | "apakah kamu bis apakai playwirth?" -> setup Playwright (Node.js, Chromium) sebagai fallback karena Claude Browser MCP internal gagal total (Service Worker error) dan tidak ada Claude in Chrome terhubung -> 6 skenario ditulis+dieksekusi live (S-10-01 s.d. S-10-06), 2 gap carry-forward tertutup (`AC-03-02` pos, `AC-05-01`/`AC-06-01` pin_message) + verifikasi ulang dedup UI/Actions menu (`AC-02-02`/`AC-04-02` sale) -> 0 console error di seluruh run -> `10_BUSINESS_FLOW_MIGRATION.md` + `human_qa/` ketiga modul ditulis -> **gate LULUS ketiga modul**. |
 | 11 — UAT Sign-off | | | |
-| **Total** | 18 | 0 | |
+| **Total** | 20 | 0 | |
 
 ## Catatan Definisi
 

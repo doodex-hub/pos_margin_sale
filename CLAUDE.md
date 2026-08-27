@@ -378,7 +378,43 @@ AC-02-03/04 (butuh sesi POS register penuh), `sale_margin_threshold` AC-01-01 (r
 tanpa Enterprise environment nyata), `pin_message` AC-05-01/06-01 (Discuss-channel, reload
 round-trip) — semua direncanakan Step 10 seperti pola project sebelumnya.
 
-Siap lanjut ke **Step 10 (QA Testing, gate)**.
+**✔️ GATE STEP 10 (QA Testing) LULUS untuk ketiga modul (2026-08-27).** Tool Claude Browser MCP
+internal GAGAL TOTAL di environment ini (Service Worker registration error, `document.body.innerHTML`
+cuma 24 karakter, screenshot gagal) dan tidak ada Claude in Chrome terhubung — dialihkan ke
+**Playwright (Node.js, headless Chromium)** sebagai AI+tool eksternal (dev eksplisit setuju:
+"apakah kamu bis apakai playwirth?"). Script QA disimpan di scratchpad (tidak dicommit — bukan
+scaffold permanen modul), dijalankan langsung ke instance Docker G2-live (`odoo:19.0`, db
+`pos_margin_sale_migration_19_qa`, port `8079`).
+
+**6 skenario ditulis dan genuinely dieksekusi live** (bukan `[HASIL-BACA]`), menutup SEMUA gap
+carry-forward yang direncanakan untuk step ini:
+- `S-10-01`/`S-10-06` [pin_message] — Discuss-channel native pin tidak terganggu dead code modul
+  (`AC-05-01`) + reload round-trip status pin tidak bocor antar thread (`AC-06-01`). Keduanya PASS,
+  0 console error — lapis verifikasi ke-4 (setelah Step 2/6/8) untuk modul risiko tertinggi project.
+- `S-10-02`/`S-10-03` [pos_margin_threshold] — wizard "Update margin sale" dari list Product
+  Template (`AC-03-01`) DAN dari list Product Variants (`AC-03-02`, gap yang belum pernah
+  dieksekusi otomatis sejak project 17→18) — keduanya PASS, field berlabel benar ("Products" vs
+  "Product variants"). Ditemukan juga: fitur "Variants" (`product.group_product_variant`) perlu
+  diaktifkan manual dulu di Inventory Settings supaya menu "Product Variants" muncul — bukan bug
+  migrasi, setting Odoo native pada instalasi bersih.
+- `S-10-04` [sale_margin_threshold] — field Margin tidak duplikat di form produk (`AC-02-02`) +
+  hanya SATU entry "Update margin sale" di Actions menu (`AC-04-02`, bonus verifikasi cross-module)
+  — PASS.
+- `S-10-05` [pos_margin_threshold] — wizard Cancel = tidak ada perubahan (`AC-03-03`) — PASS
+  (margin produk tetap 0.00% sebelum/sesudah Cancel, dikonfirmasi lewat `inputValue()` field, bukan
+  cuma teks visual).
+
+Dokumentasi lengkap: `10_qa/<module>/10_BUSINESS_FLOW_MIGRATION.md` + `10_qa/<module>/human_qa/`
+(4 file per modul) untuk ketiganya. **Tidak ada temuan/bug baru** di Step 10 — semua PASS bersih,
+0 console error di seluruh 6 skenario.
+
+Gap yang TETAP tidak dieksekusi (diterima, sesuai verdict Step 9 — bukan diam-diam dilewati):
+`pos_margin_threshold` AC-02-03/04 (butuh sesi POS register penuh, risiko rendah, positive-path
+sudah dibuktikan 2x lewat Tour test), `sale_margin_threshold` AC-01-01 (N/A permanen, tidak ada
+Enterprise environment), AC-01-05 (sudah divalidasi project 17→18, kode tidak berubah).
+
+Siap lanjut ke **Step 11 (UAT Sign-off, gate final — sign-off manual, AI hanya menyiapkan
+checklist)**.
 
 > **Catatan proses (2026-08-26):** sesi ini sempat menjalankan `git branch --show-current`/`git log -1`
 > di `native-source` (`odoo18`) — melanggar larangan permanen Mode Git (git hanya boleh di
@@ -419,7 +455,7 @@ CONFIRMED N/A, tidak perlu dicek ulang.
 | 7 | Data Migration Scripts | — (N/A, port kode saja) | — | — |
 | 8 | Code Review | ✔️ Gate lulus (2026-08-27) | ✔️ Gate lulus (2026-08-27) — `MF-08` diputuskan dipertahankan | ✔️ Gate lulus (2026-08-27) — `MF-10` dibersihkan |
 | 9 | Dev Testing | ✔️ Gate lulus (2026-08-27) | ✔️ Gate lulus (2026-08-27) — `MF-08` dikonfirmasi tetap ada sesuai keputusan user | ✔️ Gate lulus (2026-08-27) — `MF-18` diverifikasi end-to-end via Tour test |
-| 10 | QA Testing | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
+| 10 | QA Testing | ✔️ Gate lulus (2026-08-27) — gap `AC-03-02`/`03-03` tertutup via Playwright | ✔️ Gate lulus (2026-08-27) — dedup UI/Actions menu terverifikasi live | ✔️ Gate lulus (2026-08-27) — gap `AC-05-01`/`06-01` tertutup via Playwright |
 | 11 | UAT Sign-off | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 
 Legenda: ⬜ Belum mulai · 🔄 Sedang dikerjakan · ✅ Draft/selesai ditulis · ✔️ Disetujui/lulus gate.

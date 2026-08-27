@@ -47,20 +47,22 @@ services:
     #   --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons
     #   --stop-after-init
     #   --logfile=/var/log/odoo/odoo.log
-    # Mode D (Tour test headless Chrome asli, Step 6/9) -- aktif sekarang, setelah G1 pass.
-    command: >
-      odoo -d pos_margin_sale_migration_19_test
-      -i pos_margin_threshold,sale_margin_threshold,pin_message
-      --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons
-      --test-enable
-      --test-tags=/pos_margin_threshold,/sale_margin_threshold,/pin_message
-      --stop-after-init
-      --logfile=/var/log/odoo/odoo.log
+    # Mode D (Tour test headless Chrome asli, Step 6/9) -- sudah PASS 2026-08-27, disimpan sebagai referensi.
     # command: >
     #   odoo -d pos_margin_sale_migration_19_test
-    #   -u pos_margin_threshold,sale_margin_threshold,pin_message
+    #   -i pos_margin_threshold,sale_margin_threshold,pin_message
     #   --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons
+    #   --test-enable
+    #   --test-tags=/pos_margin_threshold,/sale_margin_threshold,/pin_message
+    #   --stop-after-init
     #   --logfile=/var/log/odoo/odoo.log
+    # Mode G2 (server tetap hidup, Step 10 QA interaktif) -- aktif sekarang. DB "_qa" terpisah dari
+    # "_test" supaya tidak bentrok/tercampur data test otomatis. Dihapus bersih setelah sesi QA.
+    command: >
+      odoo -d pos_margin_sale_migration_19_qa
+      -i pos_margin_threshold,sale_margin_threshold,pin_message
+      --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons
+      --logfile=/var/log/odoo/odoo.log
 
 volumes:
   db-data:
