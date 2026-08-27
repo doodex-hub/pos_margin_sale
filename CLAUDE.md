@@ -437,6 +437,12 @@ sesuai larangan permanen Mode Git, AI tidak pernah melakukan ini sendiri).
 finding jika tidak blocker akan kita biarkan dulu." Keempat finding ini pre-existing
 (`[DIWARISI-SOURCE]`, bukan gap migrasi 19.0) dan tidak blocking — tidak diperbaiki di project ini,
 tercatat terbuka di `FINDINGS.md` untuk keputusan final di masa depan (bukan diam-diam ditutup).
+**Catatan proses (2026-08-27):** sempat terjadi commit nyasar ke branch lokal `migration/19.0`
+(bukan `migration/19.0_target`) akibat working tree ter-checkout ke branch lain di luar sesi AI —
+dev sudah memindahkan HEAD kembali ke `migration/19.0_target`, dan perubahan (keputusan finding di
+atas) ditulis ulang langsung di branch yang benar. Branch `migration/19.0` yang nyasar (1 commit,
+tidak ada remote tracking, tidak pernah di-push) kemudian di-merge balik ke `migration/19.0_target`
+oleh dev sendiri untuk menyatukan riwayat (2026-08-27).
 
 > **Catatan proses (2026-08-26):** sesi ini sempat menjalankan `git branch --show-current`/`git log -1`
 > di `native-source` (`odoo18`) — melanggar larangan permanen Mode Git (git hanya boleh di
