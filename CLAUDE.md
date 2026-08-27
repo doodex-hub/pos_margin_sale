@@ -89,7 +89,7 @@ sama seperti project 17.0→18.0 sebelumnya** — source dan target adalah dua b
 | Peran | Branch | Catatan |
 |---|---|---|
 | Source (18.0) | `migration/18.0` | Read-only referensi — **AI TIDAK PERNAH `git checkout` ke branch ini** (akan mengganti working tree `target-codebase` yang sedang dipakai). Baca isi file versi 18.0 lewat `git show migration/18.0:<path>` atau `git diff migration/19.0_target migration/18.0 -- <path>`, bukan checkout. Branch ini sudah lulus penuh 11 step migrasi 17.0→18.0 (lihat `git log migration/18.0` dan `FINDINGS.md`/status per-step di riwayatnya) — jadi kode di branch ini adalah baseline 18.0 yang SUDAH terverifikasi, bukan cuma "port kode belum ditest". |
-| Target (19.0) | `migration/19.0_target` | Working branch aktif project ini — semua kerja Step 1-11 terjadi di sini. Dibuat 2026-08-26 via `git checkout -b migration/19.0_target origin/migration/18.0` (Mode Git, isi awal identik `migration/18.0` di commit `545349c`). |
+| Target (19.0) | `migration/19.0` (sebelumnya `migration/19.0_target`, lihat catatan di bawah) | Working branch aktif project ini — semua kerja Step 1-11 terjadi di sini. `migration/19.0_target` dibuat 2026-08-26 via `git checkout -b migration/19.0_target origin/migration/18.0` (Mode Git, isi awal identik `migration/18.0` di commit `545349c`); **2026-08-27, dev menetapkan `migration/19.0` sebagai branch resmi baru** (riwayat `migration/19.0_target` sudah di-merge penuh ke dalamnya, tidak ada history yang hilang). |
 
 **Konsekuensi ke Mode Git:** larangan permanen Mode Git tetap berlaku penuh (tidak ada `push`/merge/
 force-push di manapun). Tidak ada `source-codebase` fisik terpisah — prosedur "Bootstrap Branch
@@ -175,7 +175,7 @@ modul yang sama.
 | 3 | Migration spec (teknis) | `03_MIGRATION_SPEC.md` | Tidak |
 | 4 | Spec completeness review | `04_SPEC_COMPLETENESS_REVIEW.md` | **Ya** — spec harus cover 100% source module |
 | 5 | Acceptance criteria & test plan | `05a_MIGRATION_ACCEPTANCE_CRITERIA.md` + `05b_TEST_PLAN_MIGRATION.md` | Tidak |
-| 6 | Code migration | kode di `target-codebase` (branch `migration/19.0_target`) + `06c_IMPLEMENTATION_LOG.md` | Tidak (disiplin per-fase A1→G2 wajib) |
+| 6 | Code migration | kode di `target-codebase` (branch `migration/19.0`) + `06c_IMPLEMENTATION_LOG.md` | Tidak (disiplin per-fase A1→G2 wajib) |
 | 7 | Data migration scripts | **N/A — port kode saja, tidak dikerjakan** | — |
 | 8 | Code review | `08_CODE_REVIEW.md` | **Ya** |
 | 9 | Dev testing | `09_DEV_TESTING.md` | **Ya** |
@@ -441,8 +441,17 @@ tercatat terbuka di `FINDINGS.md` untuk keputusan final di masa depan (bukan dia
 (bukan `migration/19.0_target`) akibat working tree ter-checkout ke branch lain di luar sesi AI —
 dev sudah memindahkan HEAD kembali ke `migration/19.0_target`, dan perubahan (keputusan finding di
 atas) ditulis ulang langsung di branch yang benar. Branch `migration/19.0` yang nyasar (1 commit,
-tidak ada remote tracking, tidak pernah di-push) kemudian di-merge balik ke `migration/19.0_target`
-oleh dev sendiri untuk menyatukan riwayat (2026-08-27).
+tidak ada remote tracking, tidak pernah di-push) kemudian di-merge balik oleh dev sendiri — SATU
+konflik minor di `CLAUDE.md` (dua paragraf status yang sama-sama valid, tinggal digabung), sudah
+diselesaikan (merge commit `d985050`).
+
+**[KEPUTUSAN USER 2026-08-27] `migration/19.0` ditetapkan sebagai branch resmi project mulai
+sekarang, menggantikan `migration/19.0_target`.** Riwayat `migration/19.0_target` sudah ter-merge
+penuh ke `migration/19.0` (tidak ada commit yang hilang). `migration/19.0_target` tetap ada di
+local/origin sebagai riwayat lama, tidak dihapus, tapi TIDAK lagi dipakai sebagai branch kerja —
+semua step selanjutnya dan referensi `target-codebase` di dokumen ini merujuk ke `migration/19.0`.
+**Belum di-push** (branch baru, tidak ada remote tracking) — dev perlu jalankan sendiri:
+`git push -u origin migration/19.0`.
 
 > **Catatan proses (2026-08-26):** sesi ini sempat menjalankan `git branch --show-current`/`git log -1`
 > di `native-source` (`odoo18`) — melanggar larangan permanen Mode Git (git hanya boleh di
@@ -494,7 +503,7 @@ Legenda: ⬜ Belum mulai · 🔄 Sedang dikerjakan · ✅ Draft/selesai ditulis 
 
 | Folder | Perlu di step | Read-only? | Status |
 |---|---|---|---|
-| `target-codebase` (repo ini, branch `migration/19.0_target`) | Semua step | Tidak | Sudah connect (folder utama) |
+| `target-codebase` (repo ini, branch `migration/19.0`) | Semua step | Tidak | Sudah connect (folder utama) |
 | `migration-tool` | Semua step (baca template/knowledge; tulis ke `migration-records/` saja) | Tulis di `migration-records/` saja | Sudah connect |
 | Source 18.0 | 1, 2, 4, 8 | Ya | **Tidak ada folder terpisah** — baca lewat `git show migration/18.0:<path>` di repo yang sama (lihat §"Adaptasi dual-branch") |
 | `native-target` (Odoo 19.0 Community) | 2 | Ya | **Sudah ada, dikonfirmasi dev 2026-08-26:** `D:\Kuncoro\doodex\repo\enterprise19.0` |
