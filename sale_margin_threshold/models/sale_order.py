@@ -21,7 +21,7 @@ class SaleOrder(models.Model):
         if self.is_rental_order_installed_true:
             return super(SaleOrder, self).action_confirm()  
 
-        skip_check_price = self._context.get('skip_check_price')
+        skip_check_price = self.env.context.get('skip_check_price')
         check_product = self.check_product_price()
         blocking_warning = self.env['ir.config_parameter'].sudo().get_param('post_margin_sale.blocking_transaction_order')
         if len(check_product) > 0 and not skip_check_price:

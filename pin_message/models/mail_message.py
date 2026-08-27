@@ -19,7 +19,7 @@ class Message(models.Model):
             )
         return True
 
-    def _to_store(self, store, fields, /, **kwargs):
+    def _to_store(self, store, fields, **kwargs):
         # 18.0: field ke frontend TIDAK LAGI diambil lewat Chatter.load() dengan
         # messageFields custom (mekanisme itu sudah dihapus, lihat MF-xx) -- pindah ke
         # override _to_store() ini, dipanggil server-side setiap message diserialisasi ke

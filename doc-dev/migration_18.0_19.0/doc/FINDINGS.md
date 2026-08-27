@@ -36,9 +36,9 @@ dipilah pemilik modul saat review batch (konsisten pola `FINDINGS.md` project 17
 | MF-05 [sale_margin_threshold] | Duplikat XML-ID `product_template_inherit_sale_margin_threshold`, KEDUA file dimuat, satu menimpa yang lain | 1 (carry-forward) | `[DIWARISI-SOURCE]` | Sedang | Open |
 | MF-06 [sale_margin_threshold] | Manifest `assets._assets_sale` menunjuk folder `static/src/` yang tidak ada | 1 (carry-forward) | `[DIWARISI-SOURCE]` | Rendah | Open |
 | MF-07 [sale_margin_threshold] | `_register_hook()` memutasi grup `group_sale_margin_action` setiap registry rebuild | 1 (carry-forward) | `[DIWARISI-SOURCE]` | Sedang | Open |
-| MF-08 [sale_margin_threshold] | `action_confirm()` mengasumsikan `self` singleton — pecah di batch-confirm | 1 (carry-forward) | `[DIWARISI-SOURCE][PERLU-KEPUTUSAN]` | **Tinggi** | Open |
+| MF-08 [sale_margin_threshold] | `action_confirm()` mengasumsikan `self` singleton — pecah di batch-confirm | 1 (carry-forward) | `[DIWARISI-SOURCE]` | **Tinggi** | ✅ Keputusan user: dipertahankan (2026-08-27) |
 | MF-09 [pin_message] | Cabang `is_discussion` di `onClickPin()` dead code, dikonfirmasi harmless | 1 (carry-forward) | `[DIWARISI-SOURCE]` | Rendah | Open (accepted) |
-| MF-10 [pin_message] | `console.log(component.message.type)` debug leftover di `pinMessage.js:7` | 1 (carry-forward) | `[DIWARISI-SOURCE][PERLU-KEPUTUSAN]` | Rendah | Open |
+| MF-10 [pin_message] | `console.log(component.message.type)` debug leftover di `pinMessage.js:7` | 1 (carry-forward) | `[DIWARISI-SOURCE]` | Rendah | ✅ RESOLVED (2026-08-27) — dibersihkan atas keputusan user |
 | MF-11 [sale_margin_threshold] | `sale.order.line.tax_id`→`tax_ids` (knowledge base 18→19) — dikonfirmasi TIDAK relevan | 1 | `[GAP-MIGRASI]` (verdict: N/A) | — | ✅ CONFIRMED N/A |
 | MF-12 [pos_margin_threshold] | `Orderline.props.line.shape` dihapus total di 19.0 — patch akan crash saat load | 2 | `[GAP-MIGRASI]` | **Kritis** | Open |
 | MF-13 [pos_margin_threshold] | `getDisplayData()` dihapus + rename massal snake_case→camelCase (`get_order`, `get_product`, dst) — `pay()` override akan crash saat dipanggil | 2 | `[GAP-MIGRASI]` | **Kritis** | Open |
@@ -48,6 +48,11 @@ dipilah pemilik modul saat review batch (konsisten pola `FINDINGS.md` project 17
 | MF-17 [sale_margin_threshold] | `res.groups.users`→`user_ids` — ditemukan lewat G1 (bukan Step 2), install-blocking | 6 (G1) | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED (2026-08-27) |
 | MF-18 [pin_message] | `Store.add()` 19.0 selalu re-entry `_to_store()` (beda dari 18.0) — fix pertama `_to_store` TIDAK CUKUP, infinite recursion, ditemukan lewat G2/Tour test | 6 (G2) | `[GAP-MIGRASI]` | **Kritis** | ✅ RESOLVED (2026-08-27) |
 | MF-19 [pos_margin_threshold] | Test-tour util `point_of_sale` pindah path (`tests/tours/utils/`→`tests/pos/tours/utils/`+`tests/generic_helpers/`) — ditemukan lewat G2, bukan Step 2 | 6 (G2) | `[GAP-MIGRASI]` | Sedang | ✅ RESOLVED (2026-08-27) |
+| MF-20 [sale_margin_threshold] | `security/groups.xml` `implied_ids` diisi `base.module_category_hidden` (kategori, bukan grup) — kemungkinan salah tempel `category_id` | 8 | `[DIWARISI-SOURCE][PERLU-KEPUTUSAN]` | Sedang | Open |
+| MF-21 [sale_margin_threshold] | `_compute_warning` (`is_less_minimum_sale`) tidak punya `@api.depends` — risiko cache stale | 8 | `[DIWARISI-SOURCE][PERLU-KEPUTUSAN]` | Sedang | Open |
+| MF-22 [pos_margin_threshold][sale_margin_threshold] | `self._context` — deprecated eksplisit di 19.0 core (`@api.deprecated`), 5 lokasi lintas 2 modul | 8 | `[GAP-MIGRASI]` | Rendah | ✅ RESOLVED (2026-08-27) |
+| MF-23 [pos_margin_threshold] | `_compute_warning` (`is_less_minimum_sale`) di `product.product` tidak punya `@api.depends` — sama seperti `MF-21`, instance terpisah di modul lain | 8 | `[DIWARISI-SOURCE][PERLU-KEPUTUSAN]` | Sedang | Open |
+| MF-24 [pos_margin_threshold] | `views/products.xml` `list_price` di-`position="replace"` bukan `attributes` — diam-diam menghapus `options`/`optional`/`decoration-muted` bawaan core | 8 | `[DIWARISI-SOURCE][PERLU-KEPUTUSAN]` | Sedang | Open |
 
 ---
 
@@ -171,7 +176,11 @@ mengevaluasi record pertama di `self`.
 confirm, kalau skenario itu pernah terjadi di produksi.
 **Rekomendasi:** Perbaiki (`for order in self:`) atau pertahankan identik — butuh keputusan eksplisit
 user karena ini bug prioritas tinggi, bukan quirk kosmetik.
-**Keputusan pemilik modul:** *(kosong — BLOCKING keputusan sebelum Step 3/6 modul ini)*
+**Keputusan pemilik modul:** ✅ **Dijawab user (2026-08-27): dipertahankan untuk saat ini** ("biarkan
+dulu, pastikan tercatat di finding") — TIDAK diperbaiki di project migrasi ini. Dikonfirmasi ulang
+Step 8 (code review): core `sale.order.action_confirm()` sendiri tidak pernah membatasi diri ke
+singleton di 18.0 maupun 19.0, jadi bug ini genuinely bisa terpicu kalau batch-confirm dari list view
+pernah dipakai di produksi — risiko tetap terbuka, keputusan disengaja bukan kelalaian.
 
 ### MF-09 [pin_message] — Cabang `is_discussion` di `onClickPin()` dead code
 **Ditemukan di:** Step 1 (2026-08-26), carry-forward `17-18/MF-09`, dikonfirmasi harmless Step 8
@@ -197,7 +206,9 @@ di seluruh sistem (bukan hanya pesan yang lolos kondisi pin).
 **Rekomendasi:** Housekeeping trivial (hapus baris), atau pertahankan konsisten prinsip "jangan
 perbaiki bug lama tanpa izin" — butuh keputusan eksplisit user karena walau kecil, ini tetap
 perubahan kode di luar scope port.
-**Keputusan pemilik modul:** *(kosong)*
+**Keputusan pemilik modul:** ✅ **Dijawab user (2026-08-27): bersihkan** — baris `console.log`
+dihapus dari `pinMessage.js:7` (Step 8, di luar 3 perbaikan wajib migrasi, dikerjakan atas
+persetujuan eksplisit terpisah).
 
 ### MF-11 [sale_margin_threshold] — `sale.order.line.tax_id`→`tax_ids` — dikonfirmasi N/A
 **Ditemukan di:** Step 1 (2026-08-26).
@@ -274,6 +285,92 @@ terdaftar → `odoo.isTourReady(...)` untuk tour itu tidak pernah true.
 **Dampak:** Sedang — hanya mempengaruhi test, bukan kode produksi; tapi tanpa fix ini TIDAK ADA
 bukti runtime bahwa fitur inti modul (`DIFF-06`..`09`) benar-benar berfungsi.
 **Status:** ✅ RESOLVED (2026-08-27) — divalidasi 2 Tour test browser asli PASS.
+
+### MF-20 [sale_margin_threshold] — `security/groups.xml` `implied_ids` diisi kategori, bukan grup
+**Ditemukan di:** Step 8, code review (2026-08-27) — agent `odoo-code-reviewer`, TIDAK terkait
+perubahan migrasi (file ini tidak disentuh Step 6), murni ditemukan lewat review menyeluruh modul.
+**Tag:** `[DIWARISI-SOURCE][PERLU-KEPUTUSAN]`
+**Lokasi:** `sale_margin_threshold/security/groups.xml:5`
+(`<field name="implied_ids" eval="[(4, ref('base.module_category_hidden'))]"/>`).
+**Deskripsi:** `res.groups.implied_ids` adalah Many2many ke `res.groups` (grup lain yang otomatis
+ikut diberikan) — tapi nilai yang di-set adalah `base.module_category_hidden`, sebuah record
+`ir.module.category` (kategori), bukan `res.groups`. Kemungkinan besar copy-paste keliru dari
+`category_id` (field yang benar-benar dipakai untuk menyembunyikan grup dari UI Settings).
+**Dampak:** Tergantung apakah `res_groups_implied_rel` menegakkan FK ke `res.groups.id` — bisa
+`IntegrityError` saat install (kalau id kategori itu tidak match row `res.groups` manapun), atau
+diam-diam membuat relasi "implies" ke grup lain yang kebetulan berbagi id numerik yang sama (bug
+senyap, lebih berbahaya). Sudah ada sejak SEBELUM migrasi 19.0 ini (bukan gap migrasi), belum pernah
+tercatat sebelumnya di `FINDINGS.md` project 17→18 maupun ini.
+**Rekomendasi:** klarifikasi ke user apakah maksud aslinya adalah `category_id` (sembunyikan grup
+dari Settings) — kalau ya, ini bug lama yang perlu diperbaiki (dengan persetujuan eksplisit,
+bukan bagian scope port).
+**Keputusan pemilik modul:** *(kosong)*
+
+### MF-21 [sale_margin_threshold] — `is_less_minimum_sale` tidak punya `@api.depends`
+**Ditemukan di:** Step 8, code review (2026-08-27) — sama seperti `MF-20`, tidak terkait perubahan
+migrasi, murni ditemukan lewat review menyeluruh.
+**Tag:** `[DIWARISI-SOURCE][PERLU-KEPUTUSAN]`
+**Lokasi:** `sale_margin_threshold/models/product.py:82-84` (`_compute_warning`, method di belakang
+field `is_less_minimum_sale`).
+**Deskripsi:** Method compute ini TIDAK didekorasi `@api.depends(...)` — ORM Odoo tidak tahu harus
+invalidasi/recompute field ini saat `lst_price`/`minimum_sale_price` berubah, sehingga nilai cache
+bisa basi dalam transaksi/request yang sama (mis. setelah `minimum_sale_price` recompute akibat
+`margin_sale` ditulis).
+**Dampak:** Sedang — field ini dipakai untuk decoration merah di UI; kalau stale, warna
+peringatan bisa tidak update sampai reload penuh.
+**Rekomendasi:** klarifikasi ke user apakah ini bug lama yang perlu diperbaiki (tambah
+`@api.depends('lst_price', 'minimum_sale_price')`) — di luar scope port kecuali disetujui eksplisit.
+**Keputusan pemilik modul:** *(kosong)*
+
+### MF-22 [pos_margin_threshold][sale_margin_threshold] — `self._context` deprecated eksplisit di 19.0
+**Ditemukan di:** Step 8, code review (2026-08-27) — agent `odoo-code-reviewer`, modul
+`pos_margin_threshold` (`wizard/wizard_margin_product.py`). Genuinely `[GAP-MIGRASI]` (beda dari
+`MF-20`/`21`/`23`/`24` yang pre-existing) karena deprecation-nya BARU di 19.0.
+**Tag:** `[GAP-MIGRASI]`
+**Lokasi:** `pos_margin_threshold/wizard/wizard_margin_product.py:16,24`,
+`sale_margin_threshold/wizard/wizard_margin_product.py:16,24` (wizard byte-identik, lihat `MF-03`),
+`sale_margin_threshold/models/sale_order.py:24`, `sale_margin_threshold/wizard/sale_confirmation.py:11-12`.
+**Deskripsi:** `BaseModel._context` di core 19.0 (`odoo/orm/models.py`) sekarang didekorasi
+`@api.deprecated("Deprecated since 19.0, use self.env.context directly")` — tetap berfungsi (masih
+mengembalikan `self.env.context`), tapi memancarkan `DeprecationWarning` di setiap akses. Bukan
+error/crash, tapi genuinely gap kompatibilitas 19.0 yang tidak tertangkap Step 2/3 (fokus Step 2 ke
+area lain).
+**Dampak:** Rendah saat ini (tidak ada perubahan behavior), tapi berisiko dihapus total di versi
+Odoo berikutnya.
+**Rekomendasi:** Ganti semua `self._context` jadi `self.env.context` — mekanis, tidak ada perubahan
+business logic.
+**Status:** ✅ RESOLVED (2026-08-27) — 5 lokasi diperbaiki lintas 2 modul (termasuk
+`sale_margin_threshold/models/sale_order.py`/`wizard/sale_confirmation.py` yang sudah sempat dicatat
+sebagai "Info, tidak perlu aksi" di review awal `sale_margin_threshold` — dikoreksi setelah temuan
+`pos_margin_threshold` mengonfirmasi ini genuinely deprecated, bukan cuma gaya penulisan).
+
+### MF-23 [pos_margin_threshold] — `is_less_minimum_sale` (`product.product`) tidak punya `@api.depends`
+**Ditemukan di:** Step 8, code review (2026-08-27) — instance terpisah dari `MF-21` (modul lain, model
+sama secara independen).
+**Tag:** `[DIWARISI-SOURCE][PERLU-KEPUTUSAN]`
+**Lokasi:** `pos_margin_threshold/models/product.py:62,69-71` (`_compute_warning`).
+**Deskripsi:** Sama persis pola `MF-21` — tidak ada `@api.depends(...)`, risiko cache stale.
+**Dampak:** Sedang — sama seperti `MF-21`.
+**Rekomendasi:** Keputusan user sebaiknya SATU untuk kedua modul (`MF-21` + `MF-23`), karena
+polanya identik.
+**Keputusan pemilik modul:** *(kosong)*
+
+### MF-24 [pos_margin_threshold] — `list_price` di-`position="replace"`, menghapus atribut core
+**Ditemukan di:** Step 8, code review (2026-08-27).
+**Tag:** `[DIWARISI-SOURCE][PERLU-KEPUTUSAN]`
+**Lokasi:** `pos_margin_threshold/views/products.xml:62-64`.
+**Deskripsi:** `<field name="list_price" position="replace">` mengganti TOTAL definisi field
+`list_price` core (`options="{'currency_field': 'currency_id'}"`, `optional="show"`,
+`decoration-muted="not sale_ok"`) dengan versi baru yang HANYA punya `decoration-danger`+`widget`.
+Kalau pakai `position="attributes"` (cuma menambah `decoration-danger` di atas atribut yang sudah
+ada), semua atribut core tetap terjaga.
+**Dampak:** Sedang — tampilan mata uang multi-currency (`currency_field`) dan opsi kolom
+(`optional="show"`) hilang dari field ini; `decoration-muted` (produk tidak bisa dijual) juga hilang.
+Sudah ada sejak SEBELUM migrasi ini (bukan gap 19.0), belum pernah tercatat sebelumnya.
+**Rekomendasi:** klarifikasi ke user — kemungkinan besar bug lama yang perlu diperbaiki
+(`position="attributes"` alih-alih `replace`), tapi tetap perlu persetujuan eksplisit sebelum
+diubah (di luar scope port).
+**Keputusan pemilik modul:** *(kosong)*
 
 ### MF-12 [pos_margin_threshold] — `Orderline.props.line.shape` dihapus total di 19.0
 **Ditemukan di:** Step 2 (2026-08-26), agent riset diff-analysis, cross-check langsung `odoo18` vs `enterprise19.0`.

@@ -341,10 +341,34 @@ base (belum direview curation).
 sempat berubah sendiri (klaim pgvector) — tetap dibiarkan `postgres:15` (terbukti benar, semua test
 di atas pakai image itu).
 
-Siap lanjut ke **Step 8 (Code Review, gate)** — Step 7 N/A (port kode saja). Rekomendasi: sebelum
-Step 8, minta user memutuskan item `[PERLU-KEPUTUSAN]` yang masih terbuka (`MF-08` batch-confirm,
-`MF-10` console.log, `MF-03`/`MF-05` konsolidasi/klarifikasi) — Step 8 code review akan lebih
-bermakna kalau keputusan ini sudah diambil, bukan menunggu sampai akhir.
+**✔️ GATE STEP 8 (Code Review) LULUS untuk ketiga modul (2026-08-27).** Dikerjakan lewat 3 agent
+`odoo-code-reviewer` paralel (per modul), cross-check langsung ke `enterprise19.0`/`odoo18` untuk
+tabrakan nama method/field (dua arah, WAJIB per checklist). **Tidak ada 🔴 Critical baru di ketiga
+modul.**
+
+**Keputusan user yang dijawab sesi ini (2026-08-27):**
+- `MF-08` [sale_margin_threshold] — **dipertahankan** ("biarkan dulu, pastikan tercatat di finding").
+- `MF-10` [pin_message] — **dibersihkan** (`console.log` dihapus dari `pinMessage.js`).
+- `docker-compose.yml` pgvector — dikonfirmasi user sebagai kemungkinan proses luar, tetap
+  `postgres:15` (sudah benar sebelumnya).
+
+**Temuan baru dari review Step 8 (di luar 4 fix G1/G2):**
+- `MF-22` [pos_margin_threshold][sale_margin_threshold] — `self._context` deprecated eksplisit di
+  core 19.0 (`@api.deprecated`). **Diperbaiki** di 5 lokasi lintas 2 modul (`wizard_margin_product.py`
+  ×2, `sale_order.py`, `sale_confirmation.py`) — mekanis, tanpa perubahan behavior.
+- `MF-20` [sale_margin_threshold] — `security/groups.xml` `implied_ids` diisi kategori bukan grup
+  (kemungkinan salah tempel `category_id`) — **pre-existing, belum ada keputusan user.**
+- `MF-21`/`MF-23` [sale_margin_threshold]/[pos_margin_threshold] — `_compute_warning`
+  (`is_less_minimum_sale`) tanpa `@api.depends`, instance terpisah di KEDUA modul — **pre-existing,
+  belum ada keputusan user.**
+- `MF-24` [pos_margin_threshold] — `list_price` di-`position="replace"` bukan `attributes`, diam-diam
+  menghapus atribut core (`options`/`optional`/`decoration-muted`) — **pre-existing, belum ada
+  keputusan user.**
+
+Setelah SEMUA fix Step 8 (`MF-10`, `MF-22`), test suite penuh (G2) dijalankan ulang dari database
+bersih: **0 failed, 0 error dari 22 test** — tidak ada regresi.
+
+Siap lanjut ke **Step 9 (Dev Testing, gate)** — Step 7 N/A (port kode saja).
 
 > **Catatan proses (2026-08-26):** sesi ini sempat menjalankan `git branch --show-current`/`git log -1`
 > di `native-source` (`odoo18`) — melanggar larangan permanen Mode Git (git hanya boleh di
@@ -383,7 +407,7 @@ CONFIRMED N/A, tidak perlu dicek ulang.
 | 5 | Acceptance Criteria & Test Plan | ✅ Selesai (2026-08-26) | ✅ Selesai (2026-08-26) | ✅ Selesai (2026-08-26) |
 | 6 | Code Migration | ✅ Kode selesai, G1+G2 PASS (2 fix tambahan: `MF-19`) | ✅ Kode selesai, G1 PASS (2 fix tambahan: `MF-16`/`17`), G2 PASS | ✅ Kode selesai, G1+G2 PASS (1 fix kritis tambahan: `MF-18`) |
 | 7 | Data Migration Scripts | — (N/A, port kode saja) | — | — |
-| 8 | Code Review | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
+| 8 | Code Review | ✔️ Gate lulus (2026-08-27) | ✔️ Gate lulus (2026-08-27) — `MF-08` diputuskan dipertahankan | ✔️ Gate lulus (2026-08-27) — `MF-10` dibersihkan |
 | 9 | Dev Testing | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 10 | QA Testing | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 11 | UAT Sign-off | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |

@@ -31,11 +31,11 @@ step. Lihat `migration-tool/templates/PROMPT_LOG.md` untuk definisi klasifikasi 
 | 5 — Acceptance Criteria & Test Plan | 1 | | "LANJUT" — AC diturunkan dari BSL-NNN baseline spec (bukan migration spec), 05a+05b ketiga modul. pin_message dapat 1 requirement test baru (regression _to_store generik). |
 | 6 — Code Migration (semua fase A-G2) | 4 | | "baik, lakukan" -> kode Fase A1-A5/B1/C1/E ketiga modul -> "buat saja, kamu jalankan docker" -> G1 install-test 3x percobaan (2 fix `sale_margin_threshold`: `groups_id`->`group_ids`, `users`->`user_ids`) -> G1 PASS -> G2 test-enable+Tour test (2 fix kritis: `pin_message` infinite recursion `Store.add()`, `pos_margin_threshold` test-tour util path) -> **G1+G2 PASS ketiga modul, 0 failed/0 error dari 22 test**. |
 | 7 — Data Migration Scripts | | | — (N/A, port kode saja) |
-| 8 — Code Review | | | |
+| 8 — Code Review | 3 | | "LANJUT" -> 3 agent odoo-code-reviewer paralel -> user jawab MF-08 (dipertahankan)/MF-10 (bersihkan)/docker-compose (konfirmasi sudah benar) -> fix MF-22 (self._context, 5 lokasi) + MF-10 cleanup -> re-run test bersih, 0 failed/0 error -> **gate LULUS ketiga modul**. 4 finding baru (MF-20/21/23/24) dicatat untuk keputusan user, tidak blocking. |
 | 9 — Dev Testing | | | |
 | 10 — QA Testing | | | |
 | 11 — UAT Sign-off | | | |
-| **Total** | 14 | 0 | |
+| **Total** | 17 | 0 | |
 
 ## Catatan Definisi
 

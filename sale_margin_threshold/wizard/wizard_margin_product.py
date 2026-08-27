@@ -13,7 +13,7 @@ class WizardMarginProduct(models.TransientModel):
 
 
     def _compute_product_model(self):
-        active_model = self._context.get('active_model')
+        active_model = self.env.context.get('active_model')
         for rec in self:
             if active_model == 'product.template':
                 rec.is_product = True
@@ -21,7 +21,7 @@ class WizardMarginProduct(models.TransientModel):
                 rec.is_product = False
 
     def action_assing_margin(self):
-        active_model = self._context.get('active_model')
+        active_model = self.env.context.get('active_model')
         if active_model == 'product.template':
             for product in self.product_template_ids:
                 product.margin_sale = self.margin
