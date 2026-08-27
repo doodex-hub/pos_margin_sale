@@ -281,7 +281,24 @@ gate).** AC diturunkan langsung dari `01b_BASELINE_SPEC.md` (BSL-NNN), bukan dar
   project 17→18): regression test eksplisit "chatter model apapun tidak `TypeError`" untuk
   membuktikan blast radius `MF-14` benar-benar tertutup, bukan cuma tour pin yang PASS.
 
-Siap lanjut ke **Step 6 (Code Migration)** — fase A1 dulu (Applicability Check), per modul.
+**Step 6 (Code Migration) — kode SELESAI ditulis untuk ketiga modul (2026-08-26), G1/G2 (install
+test + validasi runtime) BELUM DIJALANKAN.** Fase A1-A5, B1, C1, E (yang relevan per Applicability
+Check) sudah dikerjakan dan dicatat di `06_implementation/<modul>/06c_IMPLEMENTATION_LOG.md`.
+- **`pin_message`:** `models/mail_message.py` (`_to_store` signature, `MF-14`) dan
+  `static/src/js/pinMessage.js` (`messageActionsRegistry` rewrite total, `MF-15`) sudah diperbaiki.
+  `console.log` (`MF-10`) SENGAJA dipertahankan (belum ada keputusan user).
+- **`pos_margin_threshold`:** `static/src/store/models/models.js` (hapus patch `props.line.shape`,
+  ganti `getDisplayData()` jadi 2 getter baru di `PosOrderline`) dan `pos_store.js` (3 import path +
+  rename method core ke camelCase) sudah diperbaiki.
+- **`sale_margin_threshold`:** hanya bump versi manifest, tidak ada kode lain yang diubah (sesuai
+  Step 3).
+
+**BLOCKER untuk lanjut ke G1/G2/Step 9:** `docker-env/docker-compose.yml` masih image 18.0 dari
+project sebelumnya, belum di-bump ke 19.0. Tidak ada image Docker Hub publik `odoo:19.0` yang
+dikonfirmasi tersedia — kemungkinan perlu build image sendiri dari `native-target` (`enterprise19.0`)
+atau dev punya sumber lain. **Perlu keputusan dev:** mode eksekusi G1 (A/B/C, lihat
+`06a_CODE_MIGRATION_PHASES.md`) dan sumber image 19.0, sebelum instalasi/testing nyata bisa
+dijalankan.
 
 > **Catatan proses (2026-08-26):** sesi ini sempat menjalankan `git branch --show-current`/`git log -1`
 > di `native-source` (`odoo18`) — melanggar larangan permanen Mode Git (git hanya boleh di
@@ -318,7 +335,7 @@ CONFIRMED N/A, tidak perlu dicek ulang.
 | 3 | Migration Spec | ✅ Selesai (2026-08-26) | ✅ Selesai (2026-08-26) | ✅ Selesai (2026-08-26) |
 | 4 | Spec Completeness Review | ✔️ Gate lulus (2026-08-26) | ✔️ Gate lulus (2026-08-26) | ✔️ Gate lulus (2026-08-26) |
 | 5 | Acceptance Criteria & Test Plan | ✅ Selesai (2026-08-26) | ✅ Selesai (2026-08-26) | ✅ Selesai (2026-08-26) |
-| 6 | Code Migration | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
+| 6 | Code Migration | 🔄 Kode selesai, G1/G2 belum jalan | 🔄 Kode selesai (cuma version bump), G1/G2 belum jalan | 🔄 Kode selesai, G1/G2 belum jalan |
 | 7 | Data Migration Scripts | — (N/A, port kode saja) | — | — |
 | 8 | Code Review | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 9 | Dev Testing | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |

@@ -1,6 +1,6 @@
 {
     'name': 'Pin Message in Chatter',
-    'version': '18.0.1.0',
+    'version': '19.0.1.0',
     'summary': 'Pin and manage important messages or log notes in the chatter',
     'description': """This module allows users to pin important messages""",
     'author': "Doodex",

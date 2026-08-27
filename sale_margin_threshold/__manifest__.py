@@ -14,7 +14,7 @@
     'website': "https://www.doodex.net",
     'license': "AGPL-3",
     'category': 'Sales',
-    'version': '18.0.1.0',
+    'version': '19.0.1.0',
 
     'depends': [
         'base', 
