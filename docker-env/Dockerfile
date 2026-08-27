@@ -1,7 +1,7 @@
 # Instantiated from migration-tool/templates/Dockerfile.template
-# Target: odoo:18.0 — needed because pos_margin_threshold and pin_message have
+# Target: odoo:19.0 — needed because pos_margin_threshold and pin_message have
 # Fase E/F (Owl/JS) applicable and get Tour tests written for Step 6/9 (Mode D).
-FROM odoo:18.0
+FROM odoo:19.0
 USER root
 RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg ca-certificates \
     && wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg \

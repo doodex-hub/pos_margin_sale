@@ -44,6 +44,8 @@ dipilah pemilik modul saat review batch (konsisten pola `FINDINGS.md` project 17
 | MF-13 [pos_margin_threshold] | `getDisplayData()` dihapus + rename massal snake_case→camelCase (`get_order`, `get_product`, dst) — `pay()` override akan crash saat dipanggil | 2 | `[GAP-MIGRASI]` | **Kritis** | Open |
 | MF-14 [pin_message] | `mail.message._to_store()` — `fields` jadi positional wajib, override modul akan `TypeError` di SETIAP pengiriman pesan ke frontend | 2 | `[GAP-MIGRASI]` | **Kritis** | Open |
 | MF-15 [pin_message] | `messageActionsRegistry` payload shape berubah total (`title`→`name`, `onClick`→`onSelected`, argumen jadi objek tanpa `.props`) | 2 | `[GAP-MIGRASI]` | **Kritis** | Open |
+| MF-16 [sale_margin_threshold] | `ir.actions.server.groups_id`→`group_ids` — ditemukan lewat G1 (bukan Step 2), install-blocking | 6 (G1) | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED (2026-08-27) |
+| MF-17 [sale_margin_threshold] | `res.groups.users`→`user_ids` — ditemukan lewat G1 (bukan Step 2), install-blocking | 6 (G1) | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED (2026-08-27) |
 
 ---
 
@@ -205,6 +207,34 @@ base project migrasi 18→19 lain (`advanced_sales_analysis`) TIDAK relevan untu
 ada referensi ke field ini sama sekali.
 **Dampak:** Tidak ada.
 **Status:** ✅ CONFIRMED N/A (2026-08-26) — tidak perlu dicek ulang di Step 2 kecuali kode berubah.
+
+### MF-16 [sale_margin_threshold] — `ir.actions.server.groups_id` → `group_ids`
+**Ditemukan di:** Step 6, G1 percobaan #1 (2026-08-27) — **TIDAK ketahuan di Step 2/3/4** (riset Step
+2 fokus ke `point_of_sale`/`mail`/`sale`, tidak mencakup `base`/`ir.actions` untuk modul ini).
+**Tag:** `[GAP-MIGRASI]`
+**Ref:** `06_implementation/sale_margin_threshold/06c_IMPLEMENTATION_LOG.md` Fase C1, "Riwayat
+Percobaan G1" #1.
+**Lokasi:** `sale_margin_threshold/views/products.xml:74,85` (`product_template_margin_sale_action_server`,
+`product_product_margin_sale_action_server`).
+**Deskripsi:** Core 19.0 me-rename field `ir.actions.server.groups_id` (dan `ir.actions.act_window.groups_id`)
+jadi `group_ids` (`odoo/addons/base/models/ir_actions.py`). Menyebabkan `ValueError: Invalid field
+'groups_id' in 'ir.actions.server'` — instalasi gagal total (`ParseError`).
+**Dampak:** Kritis sebelum fix — install-blocking. Setelah fix: tidak ada dampak, nilai tidak berubah.
+**Status:** ✅ RESOLVED (2026-08-27) — rename mekanis, divalidasi G1 percobaan #3 PASS.
+
+### MF-17 [sale_margin_threshold] — `res.groups.users` → `user_ids`
+**Ditemukan di:** Step 6, G1 percobaan #2 (2026-08-27) — TIDAK ketahuan di Step 2/3/4, sama alasannya
+seperti `MF-16`.
+**Tag:** `[GAP-MIGRASI]`
+**Ref:** `06_implementation/sale_margin_threshold/06c_IMPLEMENTATION_LOG.md` Fase A5, "Riwayat
+Percobaan G1" #2.
+**Lokasi:** `sale_margin_threshold/models/product.py:128,130,131` (`_register_hook`),
+`sale_margin_threshold/tests/test_cross_module.py:31,33`.
+**Deskripsi:** Core 19.0 me-rename field `res.groups.users` jadi `user_ids` (relation table sama,
+`res_groups_users_rel`) — `odoo/addons/base/models/res_groups.py`. Menyebabkan `AttributeError:
+'res.groups' object has no attribute 'users'` — registry gagal dibangun, instalasi gagal total.
+**Dampak:** Kritis sebelum fix. Setelah fix: tidak ada dampak, logic tidak berubah.
+**Status:** ✅ RESOLVED (2026-08-27) — rename mekanis, divalidasi G1 percobaan #3 PASS.
 
 ### MF-12 [pos_margin_threshold] — `Orderline.props.line.shape` dihapus total di 19.0
 **Ditemukan di:** Step 2 (2026-08-26), agent riset diff-analysis, cross-check langsung `odoo18` vs `enterprise19.0`.

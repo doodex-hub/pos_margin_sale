@@ -125,8 +125,8 @@ class ProductProduct(models.Model):
             ], limit=1)
             
             if pos_margin_installed:
-                group.users = [(5, 0, 0)]  # Remove all users
+                group.user_ids = [(5, 0, 0)]  # Remove all users
             else:
-                internal_users = self.env.ref('base.group_user').users
-                group.users = [(6, 0, internal_users.ids)]
+                internal_users = self.env.ref('base.group_user').user_ids
+                group.user_ids = [(6, 0, internal_users.ids)]
     

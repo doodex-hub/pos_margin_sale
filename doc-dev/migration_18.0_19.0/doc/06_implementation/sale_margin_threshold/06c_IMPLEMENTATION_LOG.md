@@ -27,10 +27,10 @@ Sumber: `01a_MIGRATION_INTAKE.md` §2b.
 |---|---|---|
 | A1 | ✅ | 2026-08-26 |
 | A2 | N/A — tidak ada `<tree>` tersisa | 2026-08-26 |
-| G1 (checkpoint Fase A) | ⏳ Belum dijalankan | — |
+| G1 (checkpoint Fase A) | ✅ **Pass** (setelah 2 fix baru, lihat "Riwayat Percobaan G1") | 2026-08-27 |
 | A3 | N/A — ACL wizard sudah ada sejak 17→18 | 2026-08-26 |
 | A4 | ✅ | 2026-08-26 |
-| A5 | ✅ — tidak ada perubahan diperlukan (dikonfirmasi Step 2/3) | 2026-08-26 |
+| A5 | ✅ — **2 fix baru ditemukan lewat G1** (`groups_id`→`group_ids`, `users`→`user_ids`), lihat entri di bawah | 2026-08-27 |
 | B1 | ✅ | 2026-08-26 |
 | B2 | N/A | — |
 | C1 | ✅ — semua `inherit_id` target dikonfirmasi stabil (Step 4) | 2026-08-26 |
@@ -43,11 +43,16 @@ Sumber: `01a_MIGRATION_INTAKE.md` §2b.
 
 ## Riwayat Percobaan G1 (Install Test)
 
-**Belum dijalankan** — sama seperti dua modul lain, menunggu environment Docker 19.0.
+Mode C (AI jalankan langsung, Claude Code CLI, `docker compose up`), image `odoo:19.0` (sudah ada
+lokal, tidak perlu build dari `native-target`). Dua percobaan GAGAL menemukan gap baru yang tidak
+ketahuan di Step 2 (fokus Step 2 sepenuhnya JS/Python `point_of_sale`/`mail`, tidak menyentuh
+`ir.actions.server`/`res.groups` core `base`) — percobaan ketiga PASS bersih.
 
 | # | Dijalankan setelah fase | Mode | Hasil | Error (kalau fail) | Tanggal |
 |---|---|---|---|---|---|
-| 1 | A2 | — | ⏳ Belum dijalankan | — | — |
+| 1 | A5 (ketiga modul) | C | ❌ Fail | `ValueError: Invalid field 'groups_id' in 'ir.actions.server'` — parsing `sale_margin_threshold/views/products.xml:70`. Core 19.0 rename `groups_id`→`group_ids` di `ir.actions.server`/`ir.actions.act_window` (`odoo/addons/base/models/ir_actions.py`), dikonfirmasi bukan quirk 18.0 (18.0 juga pakai `groups_id`, jadi ini genuinely rename 19.0). | 2026-08-27 |
+| 2 | A5 (ketiga modul, setelah fix #1) | C | ❌ Fail | `AttributeError: 'res.groups' object has no attribute 'users'` di `sale_margin_threshold/models/product.py:128` (`_register_hook`). Core 19.0 rename `res.groups.users`→`user_ids` (`odoo/addons/base/models/res_groups.py`), relation table sama (`res_groups_users_rel`). | 2026-08-27 |
+| 3 | A5 (ketiga modul, setelah fix #1+#2) | C | ✅ **Pass** | — semua 68 modul (termasuk ketiga modul target) load bersih, "Registry loaded in 33.878s", tidak ada error/warning. | 2026-08-27 |
 
 ---
 
@@ -77,17 +82,24 @@ N/A — ACL sudah lengkap sejak 17→18, tidak ada model baru.
 ## [Fase A5] Python API Compatibility
 
 - **Scope:** `models/sale_order.py`, `models/product.py`, `models/res_config_settings.py`,
-  `wizard/sale_confirmation.py`, `wizard/wizard_margin_product.py`
-- **Item spec (ref):** `03_MIGRATION_SPEC.md` §1 ("tidak ada perubahan kode wajib").
-- **Aksi:** diverifikasi ulang — TIDAK ADA perubahan kode. Semua temuan Step 2
-  (`ir.module.module` class rename, `_register_hook` pindah file internal, `action_confirm` batch
-  semantics unchanged, `self._context` tetap valid) bersifat kosmetik/internal, tidak mempengaruhi
-  cara modul ini menulis override.
+  `wizard/sale_confirmation.py`, `wizard/wizard_margin_product.py`, `tests/test_cross_module.py`
+- **Item spec (ref):** `03_MIGRATION_SPEC.md` §1 ("tidak ada perubahan kode wajib") — **KOREKSI:
+  spec ini TERBUKTI TIDAK LENGKAP, ditemukan lewat G1 percobaan #2 (bukan Step 2/3)**, lihat
+  "Temuan di Luar Spec" di bawah.
+- **Aksi:**
+  - `models/product.py:128,130,131` (`_register_hook`): `group.users` → `group.user_ids` (2 lokasi),
+    `self.env.ref('base.group_user').users` → `.user_ids` — core 19.0 me-rename field
+    `res.groups.users` jadi `user_ids` (`odoo/addons/base/models/res_groups.py`, relation table SAMA:
+    `res_groups_users_rel`).
+  - `tests/test_cross_module.py:31,33` (`group.users.ids` → `group.user_ids.ids`, 2 lokasi) —
+    supaya test tetap valid terhadap field baru, LOGIC assertion tidak diubah.
 - **Secara eksplisit TIDAK dilakukan:** `MF-08` (batch-confirm singleton bug) TIDAK diperbaiki —
-  masih menunggu keputusan eksplisit user (belum dijawab), dipertahankan identik sesuai default
-  "port kode saja".
-- **Risiko:** LOW
-- **Status:** ✅ Selesai (tidak ada perubahan diperlukan)
+  masih menunggu keputusan eksplisit user, dipertahankan identik sesuai default "port kode saja".
+  Semua temuan Step 2 lain (`ir.module.module` class rename, `_register_hook` pindah file internal,
+  `action_confirm` batch semantics unchanged, `self._context` tetap valid) dikonfirmasi memang tidak
+  butuh perubahan — TIDAK disentuh.
+- **Risiko:** LOW (perbaikan mekanis, sudah divalidasi G1 percobaan #3 — PASS)
+- **Status:** ✅ Selesai
 
 ## [Fase B1] Model Risiko Rendah
 
@@ -102,13 +114,20 @@ N/A — dikonfirmasi Applicability Check.
 
 - **Scope:** `views/products.xml`, `views/product_template_views.xml`, `views/res_config_settings.xml`,
   `views/sale_order.xml`
-- **Aksi:** diverifikasi ulang — kelima `inherit_id` target (`product.product_template_form_view`,
-  `product.product_template_only_form_view`, `product.product_variant_easy_edit_view`,
-  `sale.res_config_settings_view_form`, `sale.view_order_form`) dikonfirmasi stabil di 19.0 (Step 4).
+- **Aksi:**
+  - `inherit_id` target: kelima target (`product.product_template_form_view`,
+    `product.product_template_only_form_view`, `product.product_variant_easy_edit_view`,
+    `sale.res_config_settings_view_form`, `sale.view_order_form`) dikonfirmasi stabil di 19.0
+    (Step 4) — tidak diubah.
+  - `views/products.xml:74,85` (`product_template_margin_sale_action_server`,
+    `product_product_margin_sale_action_server`, dua record `ir.actions.server`): field
+    `groups_id` → `group_ids` — **ditemukan lewat G1 percobaan #1 (bukan Step 2/4)**, core 19.0
+    me-rename field ini (`odoo/addons/base/models/ir_actions.py`). NILAI (`eval="[(4,
+    ref('group_sale_margin_action'))]"`) TIDAK diubah, cuma nama field.
 - **Secara eksplisit TIDAK dilakukan:** `MF-05` (duplikat XML-ID, satu record menimpa yang lain)
   TIDAK diperbaiki — dikonfirmasi tetap ada identik di 19.0, menunggu klarifikasi user.
-- **Risiko:** LOW
-- **Status:** ✅ Selesai (tidak ada perubahan kode diperlukan)
+- **Risiko:** LOW (mekanis, divalidasi G1 percobaan #3 — PASS)
+- **Status:** ✅ Selesai
 
 ## [Fase C2] Semantik XML & Konsistensi UX
 
@@ -138,9 +157,16 @@ N/A — otomatis N/A karena Fase E N/A.
 
 ## Temuan di Luar Spec (kalau ada)
 
-- [x] Tidak ada.
+- [x] **Ada** — `03_MIGRATION_SPEC.md` menyatakan "tidak ada perubahan kode wajib", tapi G1
+  menemukan 2 gap yang TIDAK terdeteksi Step 2/3/4: `ir.actions.server.groups_id`→`group_ids` dan
+  `res.groups.users`→`user_ids`. Keduanya di model `base` core (bukan `point_of_sale`/`mail`/`sale`
+  yang jadi fokus riset Step 2) — Step 2 tidak mencakup diff `base`/`ir.actions`/`res.groups` secara
+  spesifik untuk modul ini. **Tidak perlu balik ke Step 3/4 untuk update spec** (dampaknya kecil,
+  fix mekanis, sudah divalidasi langsung lewat G1 PASS) — tapi dicatat di sini + `FINDINGS.md`
+  (`MF-16`, `MF-17`) supaya jejak lengkap, konsisten prinsip "faktual, bukan diam-diam diperbaiki".
 
 ## Kontribusi ke Knowledge Base
 
-- [x] Tidak ada temuan baru dari implementasi modul ini — sesuai prediksi Step 2/3, tidak ada kode
-  yang perlu diubah.
+- [x] **Ada** — `res.groups.users`→`user_ids` (baru, belum tercatat) dan konfirmasi ketiga
+  `ir.actions.server.groups_id`→`group_ids` (sudah ada di knowledge base, dikonfirmasi kena lagi).
+  Dicatat ke `migration-records/pos-margin-sale_18.0_19.0/SUMMARY.md` §"Temuan kandidat Step 6/G1".

@@ -28,9 +28,9 @@ class TestCrossModuleGroupDedup(TransactionCase):
             )
 
         _logger.info("BACKFILL F-04: pos_margin_threshold installed=True, "
-                     "group_sale_margin_action.users=%s", group.users.ids)
+                     "group_sale_margin_action.user_ids=%s", group.user_ids.ids)
         self.assertFalse(
-            group.users.ids,
+            group.user_ids.ids,
             "F-04: group_sale_margin_action harus KOSONG saat pos_margin_threshold terinstall "
             "(_register_hook menghapus semua user) -- kalau assertion ini gagal, hipotesis F-04 "
             "arah ini TERBUKTI SALAH, update FINDINGS.md."

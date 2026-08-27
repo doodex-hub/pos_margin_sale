@@ -293,12 +293,30 @@ Check) sudah dikerjakan dan dicatat di `06_implementation/<modul>/06c_IMPLEMENTA
 - **`sale_margin_threshold`:** hanya bump versi manifest, tidak ada kode lain yang diubah (sesuai
   Step 3).
 
-**BLOCKER untuk lanjut ke G1/G2/Step 9:** `docker-env/docker-compose.yml` masih image 18.0 dari
-project sebelumnya, belum di-bump ke 19.0. Tidak ada image Docker Hub publik `odoo:19.0` yang
-dikonfirmasi tersedia — kemungkinan perlu build image sendiri dari `native-target` (`enterprise19.0`)
-atau dev punya sumber lain. **Perlu keputusan dev:** mode eksekusi G1 (A/B/C, lihat
-`06a_CODE_MIGRATION_PHASES.md`) dan sumber image 19.0, sebelum instalasi/testing nyata bisa
-dijalankan.
+**[RESOLVED 2026-08-27] Environment Docker 19.0:** image `odoo:19.0` SUDAH ADA lokal di mesin dev
+(tidak perlu build dari `native-target`). Dev eksplisit setuju Mode C (AI jalankan langsung).
+`docker-env/Dockerfile` (`FROM odoo:19.0`) dan `docker-compose.yml` (nama project/db `..._19`, port
+`8079`) sudah di-update.
+
+**✅ G1 (Install Test) LULUS untuk ketiga modul (2026-08-27), setelah 3 percobaan.** Dua percobaan
+pertama GAGAL menemukan 2 gap baru yang TIDAK ketahuan di Step 2 (`sale_margin_threshold`,
+area `base`/`ir.actions`/`res.groups` — di luar fokus riset Step 2 yang cuma `point_of_sale`/`mail`/
+`sale`): `ir.actions.server.groups_id`→`group_ids` (`MF-16`, sudah ada di knowledge base sebelumnya,
+sekarang konfirmasi ke-3) dan `res.groups.users`→`user_ids` (`MF-17`, BARU, dicatat ke
+`migration-records/pos-margin-sale_18.0_19.0/SUMMARY.md`). Keduanya diperbaiki, percobaan #3
+**PASS bersih** — 68 modul (termasuk ketiga modul target) load tanpa error.
+
+**Catatan integritas file (2026-08-27):** selama G1 berjalan, `docker-compose.yml` sempat berubah
+sendiri di luar sesi ini (image db diganti `pgvector/pgvector:pg15` dengan klaim "wajib untuk
+Odoo 19"). **Klaim ini terbukti SALAH** — G1 di atas PASS memakai `postgres:15` biasa. Dev belum
+mengonfirmasi apakah itu editan dev sendiri dari sesi/terminal lain. Dikembalikan ke `postgres:15`
+oleh AI (bukan didiamkan) karena bertentangan langsung dengan bukti test yang baru dijalankan —
+kalau ternyata ada alasan sah untuk `pgvector` yang belum diketahui AI, klarifikasi dulu sebelum
+diubah lagi.
+
+Siap lanjut ke Step 9-style validation (test-enable penuh + Tour test) sebagai bagian G2/Step 6
+lanjutan, untuk memverifikasi fix `MF-12`/`MF-13`/`MF-14`/`MF-15` benar-benar berfungsi (bukan
+cuma tidak crash saat install).
 
 > **Catatan proses (2026-08-26):** sesi ini sempat menjalankan `git branch --show-current`/`git log -1`
 > di `native-source` (`odoo18`) — melanggar larangan permanen Mode Git (git hanya boleh di
