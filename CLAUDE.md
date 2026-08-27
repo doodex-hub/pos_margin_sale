@@ -368,7 +368,17 @@ modul.**
 Setelah SEMUA fix Step 8 (`MF-10`, `MF-22`), test suite penuh (G2) dijalankan ulang dari database
 bersih: **0 failed, 0 error dari 22 test** — tidak ada regresi.
 
-Siap lanjut ke **Step 9 (Dev Testing, gate)** — Step 7 N/A (port kode saja).
+**✔️ GATE STEP 9 (Dev Testing) LULUS untuk ketiga modul (2026-08-27).** Audit kesiapan test wajib
+(9a, AST-based, bukan `grep -c`) dijalankan untuk SEMUA 22 method test lintas 3 modul — **tidak ada
+satu pun stub**, semua "Lengkap" (ada assert/logika verifikasi nyata). Cross-check log "Starting
+X.Y" mengonfirmasi jumlah method yang genuinely tereksekusi cocok dengan audit AST.
+
+Gap test carry-forward (dari project 17→18, risiko rendah, tidak eskalasi): `pos_margin_threshold`
+AC-02-03/04 (butuh sesi POS register penuh), `sale_margin_threshold` AC-01-01 (rental, N/A permanen
+tanpa Enterprise environment nyata), `pin_message` AC-05-01/06-01 (Discuss-channel, reload
+round-trip) — semua direncanakan Step 10 seperti pola project sebelumnya.
+
+Siap lanjut ke **Step 10 (QA Testing, gate)**.
 
 > **Catatan proses (2026-08-26):** sesi ini sempat menjalankan `git branch --show-current`/`git log -1`
 > di `native-source` (`odoo18`) — melanggar larangan permanen Mode Git (git hanya boleh di
@@ -408,7 +418,7 @@ CONFIRMED N/A, tidak perlu dicek ulang.
 | 6 | Code Migration | ✅ Kode selesai, G1+G2 PASS (2 fix tambahan: `MF-19`) | ✅ Kode selesai, G1 PASS (2 fix tambahan: `MF-16`/`17`), G2 PASS | ✅ Kode selesai, G1+G2 PASS (1 fix kritis tambahan: `MF-18`) |
 | 7 | Data Migration Scripts | — (N/A, port kode saja) | — | — |
 | 8 | Code Review | ✔️ Gate lulus (2026-08-27) | ✔️ Gate lulus (2026-08-27) — `MF-08` diputuskan dipertahankan | ✔️ Gate lulus (2026-08-27) — `MF-10` dibersihkan |
-| 9 | Dev Testing | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
+| 9 | Dev Testing | ✔️ Gate lulus (2026-08-27) | ✔️ Gate lulus (2026-08-27) — `MF-08` dikonfirmasi tetap ada sesuai keputusan user | ✔️ Gate lulus (2026-08-27) — `MF-18` diverifikasi end-to-end via Tour test |
 | 10 | QA Testing | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 11 | UAT Sign-off | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 
