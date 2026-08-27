@@ -8,9 +8,11 @@
 **Modul:** `pos_margin_threshold`, `sale_margin_threshold`, `pin_message` (satu file, prefix modul di
 tiap judul finding)
 **Migrasi:** 17.0 → 18.0
-**Terakhir update:** 2026-08-26 (Step 9 lanjutan — `MF-21` di-RESOLVE dengan fix kode atas keputusan
-dev eksplisit [Prancis tidak boleh jadi syarat deployment], `sale_order.py` tidak lagi punya
-dependency ke `fr_FR`; total 24 finding, 9 diwarisi backfill)
+**Terakhir update:** 2026-08-27 (pasca-Step 11, dari smoke test manual user di instance sendiri —
+3 finding baru `pin_message`: `MF-25` (ikon tombol pin inline render kotak kosong, bug lama 17.0,
+diperbaiki atas persetujuan eksplisit user), `MF-26` (konvensi class ikon action-menu 18.0 wajib
+pakai prefix family), `MF-27` (`message.type`/`message.model` di-rename di 18.0 — SELURUH filter
+jenis-pesan tombol pin mati silent); total 27 finding, 10 diwarisi backfill)
 
 ---
 
@@ -64,6 +66,9 @@ backfill, buat `MF-NNN` yang mereferensikan `F-NNN` aslinya secara eksplisit (ta
 | MF-22 | `pin_message/chatter.js` — `load()` full-override memanggil `this.threadService.fetchData(thread, requestList, options)`, service+signature ini sudah tidak ada di 18.0 | pin_message | 6 | `[GAP-MIGRASI]` | **Tinggi** — crash total begitu chatter mount | ✅ **RESOLVED** — override dihapus (extend, bukan replace), terkonfirmasi Tour test nyata "tour succeeded" |
 | MF-23 | `is_pinned` tidak lagi bisa "diminta" lewat field-list custom di `Chatter.load()` — field kustom ke frontend mail sekarang lewat `mail.message._to_store()` (per-model, seperti pola POS `_load_pos_data_fields`, `MF-18`) | pin_message | 6 | `[GAP-MIGRASI]` | Tinggi (silent, field tidak pernah sampai ke frontend tanpa fix) | ✅ **RESOLVED** — `mail.message._to_store()` di-extend, tambah `store.add(message, {'is_pinned': ...})`, terkonfirmasi Tour test |
 | MF-24 | `pinMessage.js` — `component.canAddReaction` (getter component 17.0) dipindah jadi method `message.canAddReaction(thread)` di 18.0 — `condition` action "pins" selalu `false`, entry menu Pin tidak pernah render | pin_message | 8 | `[GAP-MIGRASI]` | **Tinggi** (silent, action-menu "Pin" tidak pernah muncul, sejak awal migrasi tanpa disadari) | ✅ **RESOLVED** — `condition` diubah jadi `component.message.canAddReaction(component.props.thread)`, terkonfirmasi re-run test suite penuh (kedua Tour test tetap "tour succeeded") |
+| MF-25 | Tombol pin inline render kotak kosong saat pesan belum dipin — class `fa-thumb-tack-o` tidak ada di Font Awesome 4.7 yang dibundel Odoo | pin_message | Pasca-11 (smoke manual user) | `[DIWARISI-SOURCE]` | Rendah (kosmetik, fungsi pin tetap jalan) | ✅ **RESOLVED** (2026-08-27) — atas persetujuan eksplisit user; state belum-dipin diganti `fa-thumb-tack text-muted` |
+| MF-26 | `pinMessage.js` `icon: "fa-thumb-tack"` — 18.0 mengharuskan class ikon action-menu lengkap dengan prefix family (`"fa fa-thumb-tack"`), tanpa itu glyph render sebagai kotak kosong | pin_message | Pasca-11 (smoke manual user) | `[GAP-MIGRASI]` | Rendah (kosmetik) — tapi baru KELIHATAN setelah `MF-24` di-fix | ✅ **RESOLVED** (2026-08-27) — `icon` diubah jadi `"fa fa-thumb-tack"`, konvensi dikonfirmasi terhadap source core 17.0 vs 18.0 |
+| MF-27 | `message.type` → `message_type` dan `message.model` → `message.thread.model` di 18.0 — SELURUH filter jenis-pesan tombol pin (inline DAN action-menu) mati silent, tombol muncul di semua pesan termasuk notifikasi sistem | pin_message | Pasca-11 (smoke manual user) | `[GAP-MIGRASI]` | **Sedang-Tinggi** (silent, perilaku beda dari 17.0 tanpa error apapun) | ✅ **RESOLVED** (2026-08-27) — 6 referensi diperbaiki di `pinnedMessages.xml` + `pinMessage.js` |
 
 ---
 
@@ -376,6 +381,61 @@ Dicek `docker run --rm odoo:17.0`/`odoo:18.0` grep langsung `mail/static/src/dis
 **Dampak:** Entry menu "Pin" (ikon thumbtack di action bar pesan, sequence 15) tidak pernah render untuk pesan manapun — tapi tour test yang sudah ada (`pin_message_toggle_pin_tour`) tidak pernah menangkap ini karena tour tsb sengaja pakai tombol inline (`pinnedMessages.xml`, method `onMessagePin()`, jalur terpisah yang tidak lewat registry ini) — dipilih saat penulisan tour justru karena action-menu button "tidak pernah ketemu/timeout" (lihat `06c_IMPLEMENTATION_LOG.md` `pin_message` Fase E/F), yang saat itu disangka flakiness timing Tour, padahal akar masalahnya tombolnya memang tidak pernah dirender sama sekali oleh aplikasi, di context manapun.
 **Status:** ✅ **RESOLVED dan TERVERIFIKASI** — `condition` diubah jadi `component.message.canAddReaction(component.props.thread)` (mengikuti persis idiom core sendiri; `component.message` adalah getter yang sudah ada dan tetap valid di 18.0, `return this.props.message`). Re-run test suite penuh setelah fix: kedua Tour test (`pos_margin_threshold`, `pin_message`) tetap "tour succeeded", `0 failed, 1 error(s) of 19 tests` (1 error tetap `MF-21`, tidak terkait).
 **Keputusan pemilik modul:** Tidak perlu — perbaikan wajib kompatibilitas (API getter→method core), bukan perubahan behavior yang disengaja.
+
+---
+
+### MF-25 — Tombol pin inline render kotak kosong (`fa-thumb-tack-o` tidak ada di Font Awesome 4.7) — RESOLVED
+**Ditemukan di:** Pasca-Step 11 (2026-08-27), lewat smoke test manual user di instance sendiri — user melihat ikon tombol pin di chatter tampil sebagai kotak kosong, bukan ikon thumbtack
+**Tag:** `[DIWARISI-SOURCE]` (bug lama 17.0, BUKAN regresi migrasi)
+**Prioritas:** Rendah — murni kosmetik; klik tombolnya tetap mem-pin pesan dengan benar (badge "Pinned Messages" muncul, ikon berubah jadi thumbtack biru)
+**Lokasi:** `pin_message/static/src/xml/pinnedMessages.xml` (state `is_pinned == false` pada tombol pin inline)
+**Deskripsi:** Template merender `fa-thumb-tack text-primary` untuk state sudah-dipin dan `fa-thumb-tack-o` untuk belum-dipin. Font Awesome 4.7 (versi yang dibundel Odoo) **tidak punya varian outline** untuk thumb-tack — hanya `fa-thumb-tack` solid. Class yang tidak dikenal tidak memetakan ke karakter apapun di font, sehingga browser menggambar kotak kosong (tofu glyph). State sudah-dipin selalu tampil normal karena class-nya valid.
+**Kenapa lolos sampai Step 11:** selector Tour test (`button:has(.fa-thumb-tack-o)`) mencocokkan **nama class** di DOM, bukan apakah glyph-nya benar-benar tergambar — jadi "tour succeeded" tetap valid dan tidak pernah bisa menangkap kelas bug ini. Verifikasi Step 10 (Chrome asli) memakai jalur Discuss/action-menu dan tidak mengasersi bentuk ikon tombol inline.
+**Bukti bahwa ini bug lama, bukan regresi:** `git show origin/dev/17.0_source:pin_message/static/src/xml/pinnedMessages.xml` — baris ikon **identik** dengan versi 18.0 sebelum fix ini; kotak kosong yang sama juga muncul di 17.0.
+**Fix:** state belum-dipin diubah dari `fa-thumb-tack-o` jadi `fa-thumb-tack text-muted` (ikon solid yang sama, diredupkan) — kontras visual pinned/unpinned tetap ada tanpa bergantung pada glyph yang tidak eksis. Selector Tour `pin_message_toggle_pin_tour` ikut disesuaikan ke `.fa-thumb-tack.text-muted` supaya tetap membedakan kedua state.
+**Kenapa ini tidak melanggar aturan "port apa adanya":** perubahan tampilan diminta+disetujui user secara eksplisit (chat, 2026-08-27) setelah ia melihat sendiri gejalanya — bukan inisiatif AI memperbaiki bug 17.0. Tidak ada business logic/workflow yang berubah.
+**Catatan jebakan saat fix (jangan diulang):** komentar penjelas yang ditulis di file ini sempat memakai `--` di dalam `<!-- -->`, yang ilegal di XML. Akibatnya `Invalid XML template: Double hyphen within comment` → SELURUH bundle `web.assets_web` gagal dimuat → seluruh backend blank dengan `Missing template: "web.WebClient"`. Hindari `--` di komentar QWeb.
+**Verifikasi:** ⚠️ **BELUM di-run ulang di Docker** (Docker daemon tidak aktif saat fix dibuat) — user mengonfirmasi VISUAL di browser instance-nya sendiri bahwa ikon sudah tampil benar. Re-run `docker compose up` di `docker-env/` masih perlu untuk memastikan `pin_message_toggle_pin_tour` tetap "tour succeeded" dengan selector baru.
+**Status:** ✅ **RESOLVED (kode + konfirmasi visual user)** — menunggu re-run test suite.
+**Keputusan pemilik modul:** ✅ User memilih fix (2026-08-27) — opsi "state belum-dipin pakai thumbtack redup, sudah-dipin tetap biru".
+
+---
+
+### MF-26 — `pinMessage.js`: class ikon action-menu 18.0 wajib menyertakan prefix family (`"fa fa-thumb-tack"`) — RESOLVED
+**Ditemukan di:** Pasca-Step 11 (2026-08-27), lewat smoke test manual user — user melihat DUA tombol pin pada satu pesan: satu tampil benar (tombol inline, sudah di-fix `MF-25`), satu masih kotak kosong (entry action-menu)
+**Tag:** `[GAP-MIGRASI]`
+**Prioritas:** Rendah (kosmetik) — tapi berkerabat langsung dengan `MF-24`
+**Lokasi:** `pin_message/static/src/js/pinMessage.js` (`icon` pada `messageActionsRegistry.add("pins", ...)`)
+**Deskripsi:** Odoo mengubah konvensi nilai `icon` di `messageActionsRegistry` antara 17.0 dan 18.0 — dikonfirmasi langsung terhadap source core kedua versi (`addons/mail/static/src/core/common/message_actions.js`):
+- **17.0:** `icon: "fa-reply"`, `icon: "fa-pencil"`, `icon: "fa-star-o"` — class base `fa` disuplai template core saat render.
+- **18.0:** `icon: "fa fa-reply"`, `icon: "fa fa-pencil"`, `icon: "oi oi-smile-add"` — class family WAJIB ikut di nilai `icon` (template merender nilainya apa adanya).
+
+Modul ini mewarisi gaya 17.0 (`icon: "fa-thumb-tack"`). Tanpa class base `fa`, `font-family: FontAwesome` tidak pernah diterapkan ke elemen — karakter ikon tetap disisipkan lewat `::before` tapi dirender dengan font teks biasa, hasilnya kotak kosong. Mekanisme sama dengan `MF-25`, penyebab berbeda (`MF-25`: class tidak eksis; `MF-26`: class eksis tapi kehilangan family).
+**Kenapa baru ketahuan sekarang:** entry action-menu ini TIDAK PERNAH dirender di 18.0 sampai `MF-24` diperbaiki (`condition` selalu `false`) — jadi ikonnya yang rusak mustahil terlihat siapapun, termasuk oleh Tour `pin_message_action_menu_pin_visible_tour` (Step 9) yang mengasersi tombolnya ADA/bisa diklik, bukan bentuk glyph-nya.
+**Catatan: dua tombol pin itu memang perilaku asli 17.0, bukan bug.** Modul ini sengaja menyediakan dua entry point terpisah: tombol inline di sebelah nama pengirim (`pinnedMessages.xml`, method `onMessagePin()`) dan entry di action bar/menu "..." (`pinMessage.js`, registry `pins`). Keduanya ada di 17.0 dan dipertahankan identik — tidak dihapus/digabung.
+**Fix:** `icon: "fa fa-thumb-tack"`.
+**Verifikasi:** ⚠️ **BELUM di-run ulang di Docker** — user mengonfirmasi visual di browser bahwa ikon kedua sudah tampil sebagai thumbtack. Perlu re-run kedua Tour `pin_message`.
+**Status:** ✅ **RESOLVED (kode + konfirmasi visual user)**
+**Keputusan pemilik modul:** Tidak perlu — perbaikan wajib kompatibilitas (konvensi class core berubah), tampilan yang dituju identik 17.0.
+
+---
+
+### MF-27 — `message.type` → `message_type` dan `message.model` → `message.thread.model` di 18.0: seluruh filter jenis-pesan tombol pin mati silent — RESOLVED
+**Ditemukan di:** Pasca-Step 11 (2026-08-27), lewat smoke test manual user — user mengirim screenshot pesan notifikasi OdooBot (perubahan email alias, tipe `notification`) yang MENAMPILKAN tombol pin, padahal jenis pesan itu seharusnya dikecualikan
+**Tag:** `[GAP-MIGRASI]`
+**Prioritas:** **Sedang-Tinggi** — silent (tidak ada error apapun), tapi perilaku yang terlihat user genuinely BEDA dari 17.0
+**Lokasi:** `pin_message/static/src/xml/pinnedMessages.xml` (`t-if` pada tombol pin inline), `pin_message/static/src/js/pinMessage.js` (`condition` registry `pins`)
+**Deskripsi:** Kedua entry point pin memfilter jenis pesan dengan membaca `message.type` (dan `message.model` di sisi XML). Dikonfirmasi terhadap source core (`addons/mail/static/src/core/common/message_model.js`) kedua versi:
+- **17.0:** model `Message` punya field `type` (dipetakan dari `message_type` server di `update()`: `const { message_type: type = this.type, ... } = data`) dan field `model`.
+- **18.0:** `type` **dihapus total**, diganti `message_type` (nama server, tanpa aliasing); `model` juga hilang — thread terkait sekarang record relasi `thread = Record.one("Thread")`, model-nya diakses `message.thread.model`. Core 18.0 sendiri konsisten memakai `message.message_type` (mis. `condition` action `copy-link`/`canReplyTo`).
+
+Karena `message.type` selalu `undefined` di 18.0, SEMUA perbandingan `!== 'notification'` / `'auto_comment'` / `'user_notification'` otomatis `true`, dan `message.model !== 'mail.activity.thread'` juga selalu `true`. Efeknya seluruh filter itu tidak berfungsi — hanya `is_discussion` dan `subtype_description` (dua field yang masih ada di 18.0) yang benar-benar masih menyaring.
+**Dampak:** Tombol pin muncul di jenis pesan yang di 17.0 dikecualikan — notifikasi sistem, auto-comment, user notification, dan pesan di thread `mail.activity.thread`. Bukan crash, tidak ada error console; user cuma melihat tombol pin di tempat yang seharusnya bersih.
+**Kenapa Step 9/10 tidak menangkapnya:** kedua Tour `pin_message` dan sesi QA Chrome asli hanya memakai **log note biasa** (`comment`/`is_note`) — jenis pesan yang memang lolos filter di 17.0 MAUPUN 18.0, jadi hasilnya identik dan perbedaannya tidak pernah terekspos. Yang menemukan ini adalah user, karena ia melihat chatter berisi pesan notifikasi OdooBot nyata (data demo/real), bukan pesan yang dibuat khusus oleh test.
+**Fix:** 6 referensi diperbaiki — 3 `props.message.type` → `props.message.message_type` dan 1 `props.message.model` → `props.message.thread?.model` di `pinnedMessages.xml`; 3 `component.message.type` → `component.message.message_type` di `pinMessage.js` (termasuk argumen `console.log` sisa debug `MF-10`, supaya tidak menunjuk field mati). Optional chaining pada `thread?.model` dipakai supaya semantiknya tetap sama dengan 17.0 saat thread belum ter-resolve (dulu `undefined !== 'mail.activity.thread'` juga `true`).
+**Verifikasi:** ⚠️ **BELUM di-run ulang di Docker.** Yang perlu dicek setelah re-run: (a) kedua Tour `pin_message` tetap "tour succeeded" (log note tetap boleh dipin), (b) tombol pin TIDAK muncul lagi di pesan notifikasi OdooBot di chatter.
+**Status:** ✅ **RESOLVED (kode)** — menunggu verifikasi.
+**Keputusan pemilik modul:** Tidak perlu — perbaikan wajib kompatibilitas (field core di-rename), memulihkan perilaku filter agar identik 17.0.
 
 ---
 
