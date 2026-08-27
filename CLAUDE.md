@@ -413,8 +413,24 @@ Gap yang TETAP tidak dieksekusi (diterima, sesuai verdict Step 9 — bukan diam-
 sudah dibuktikan 2x lewat Tour test), `sale_margin_threshold` AC-01-01 (N/A permanen, tidak ada
 Enterprise environment), AC-01-05 (sudah divalidasi project 17→18, kode tidak berubah).
 
-Siap lanjut ke **Step 11 (UAT Sign-off, gate final — sign-off manual, AI hanya menyiapkan
-checklist)**.
+**Step 11 (UAT Sign-off) — checklist SUDAH DITULIS untuk ketiga modul (2026-08-27), sign-off BELUM
+dilakukan (menunggu eksekusi manusia, sesuai desain step ini).** `11_UAT_CHECKLIST.md` ditulis
+dalam bahasa awam (bukan istilah AC/BSL), skenario T-01 dst. diturunkan dari AC risiko
+tinggi/utama tiap modul, kolom Actual/Status SENGAJA dikosongkan — **AI TIDAK BOLEH mengisinya**,
+harus dijalankan tangan sendiri oleh PM/FA/User. Item penting per modul:
+- `pos_margin_threshold`: 3 skenario (margin per-produk, assign massal, enforcement POS) + catatan
+  mode blocking penuh perlu setting tambahan.
+- `sale_margin_threshold`: 3 skenario + **1 item "Review Item Out-of-Scope" wajib dibaca user**
+  (`MF-08` batch-confirm, dipertahankan sesuai keputusan dev, bukan bug baru).
+- `pin_message`: 4 skenario + 1 precondition "sanity check paling kritis" (chatter bisa dibuka di
+  semua jenis halaman) mengingat modul ini sempat berisiko tinggi selama migrasi.
+
+**Project ini SELESAI dari sisi kerja AI** — 10 dari 11 step tuntas (step 7 N/A by design). Yang
+tersisa murni aksi manusia: (1) jalankan `11_UAT_CHECKLIST.md` ketiga modul dengan tangan sendiri,
+(2) isi sign-off, (3) putuskan 4 finding pre-existing yang masih terbuka (`MF-20`/`21`/`23`/`24`,
+lihat `FINDINGS.md` — tidak blocking, tapi sebaiknya diputuskan sebelum go-live produksi), (4) kalau
+disetujui, `git push`/merge `migration/19.0_target` (AI tidak pernah melakukan ini sendiri, sesuai
+larangan permanen Mode Git).
 
 > **Catatan proses (2026-08-26):** sesi ini sempat menjalankan `git branch --show-current`/`git log -1`
 > di `native-source` (`odoo18`) — melanggar larangan permanen Mode Git (git hanya boleh di
