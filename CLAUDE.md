@@ -314,9 +314,37 @@ oleh AI (bukan didiamkan) karena bertentangan langsung dengan bukti test yang ba
 kalau ternyata ada alasan sah untuk `pgvector` yang belum diketahui AI, klarifikasi dulu sebelum
 diubah lagi.
 
-Siap lanjut ke Step 9-style validation (test-enable penuh + Tour test) sebagai bagian G2/Step 6
-lanjutan, untuk memverifikasi fix `MF-12`/`MF-13`/`MF-14`/`MF-15` benar-benar berfungsi (bukan
-cuma tidak crash saat install).
+**✅ G2 (Tour Test, `--test-enable` penuh) LULUS untuk ketiga modul (2026-08-27), setelah 2 fix
+KRITIS tambahan yang TIDAK ketahuan G1 maupun Step 2/3/4** — hasil akhir: **0 failed, 0 error dari
+22 test**, termasuk SEMUA 4 Tour test browser asli (2 `pos_margin_threshold`, 2 `pin_message`), naik
+dari kegagalan total sebelumnya.
+
+- **`pin_message` (`MF-18`, kritis):** fix pertama `_to_store()` (Step 6 awal, cuma tambah parameter
+  `fields`) TERNYATA TIDAK CUKUP — baris `store.add(message, {'is_pinned': ...})` di DALAM
+  `_to_store()` sendiri menyebabkan **infinite recursion** (`RecursionError`) di 19.0, karena
+  `Store.add()` 19.0 (beda dari 18.0) TIDAK punya jalur pintas dict-value — SELALU re-entry
+  `_to_store()`. Blast radius: chatter/Discuss APAPUN, bukan cuma fitur pin. Fix: ganti jadi
+  `store.add_records_fields(self, ['is_pinned'])` (API 19.0 yang eksplisit didesain untuk kasus ini).
+  Waktu eksekusi test turun dari 122s (macet di loop) jadi 4.22s (pass) — bukti nyata ini genuinely
+  infinite-loop.
+- **`pos_margin_threshold` (`MF-19`, sedang):** Tour test gagal load karena `static/tests/tours/margin_threshold_tour.js`
+  mengimpor util test dari path LAMA (`tests/tours/utils/...`) yang di 19.0 pindah jadi
+  `tests/pos/tours/utils/...` (+ `dialog_util` pindah lebih jauh ke `tests/generic_helpers/`) — bukan
+  bug di `models.js`/`pos_store.js` (yang justru TERBUKTI BENAR begitu tour bisa jalan). Ini
+  area yang tidak dicek Step 2 (fokus ke kode produksi, bukan test-tour util).
+
+Keduanya + 2 fix `sale_margin_threshold` dari G1 (`MF-16`/`17`) sudah dicatat ke `FINDINGS.md` dan
+`migration-tool/migration-records/pos-margin-sale_18.0_19.0/SUMMARY.md` sebagai kandidat knowledge
+base (belum direview curation).
+
+**Catatan integritas file, ditindaklanjuti:** dev belum konfirmasi soal `docker-compose.yml` yang
+sempat berubah sendiri (klaim pgvector) — tetap dibiarkan `postgres:15` (terbukti benar, semua test
+di atas pakai image itu).
+
+Siap lanjut ke **Step 8 (Code Review, gate)** — Step 7 N/A (port kode saja). Rekomendasi: sebelum
+Step 8, minta user memutuskan item `[PERLU-KEPUTUSAN]` yang masih terbuka (`MF-08` batch-confirm,
+`MF-10` console.log, `MF-03`/`MF-05` konsolidasi/klarifikasi) — Step 8 code review akan lebih
+bermakna kalau keputusan ini sudah diambil, bukan menunggu sampai akhir.
 
 > **Catatan proses (2026-08-26):** sesi ini sempat menjalankan `git branch --show-current`/`git log -1`
 > di `native-source` (`odoo18`) — melanggar larangan permanen Mode Git (git hanya boleh di
@@ -353,7 +381,7 @@ CONFIRMED N/A, tidak perlu dicek ulang.
 | 3 | Migration Spec | ✅ Selesai (2026-08-26) | ✅ Selesai (2026-08-26) | ✅ Selesai (2026-08-26) |
 | 4 | Spec Completeness Review | ✔️ Gate lulus (2026-08-26) | ✔️ Gate lulus (2026-08-26) | ✔️ Gate lulus (2026-08-26) |
 | 5 | Acceptance Criteria & Test Plan | ✅ Selesai (2026-08-26) | ✅ Selesai (2026-08-26) | ✅ Selesai (2026-08-26) |
-| 6 | Code Migration | 🔄 Kode selesai, G1/G2 belum jalan | 🔄 Kode selesai (cuma version bump), G1/G2 belum jalan | 🔄 Kode selesai, G1/G2 belum jalan |
+| 6 | Code Migration | ✅ Kode selesai, G1+G2 PASS (2 fix tambahan: `MF-19`) | ✅ Kode selesai, G1 PASS (2 fix tambahan: `MF-16`/`17`), G2 PASS | ✅ Kode selesai, G1+G2 PASS (1 fix kritis tambahan: `MF-18`) |
 | 7 | Data Migration Scripts | — (N/A, port kode saja) | — | — |
 | 8 | Code Review | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 9 | Dev Testing | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |

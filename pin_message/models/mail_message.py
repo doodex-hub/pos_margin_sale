@@ -28,5 +28,9 @@ class Message(models.Model):
         # opsional) -- diteruskan apa adanya ke super(), tidak pernah dipakai langsung
         # di sini karena is_pinned selalu ditambahkan tanpa syarat.
         super()._to_store(store, fields, **kwargs)
-        for message in self:
-            store.add(message, {'is_pinned': message.is_pinned})
+        # 19.0: store.add(message, {...}) sekarang selalu re-entry ke _to_store() (tidak ada
+        # lagi jalur pintas "raw values dict" seperti 18.0) -- akan infinite-recurse kalau
+        # dipanggil dari sini. store.add_records_fields() adalah API 19.0 yang eksplisit
+        # dibuat untuk menambah field dari dalam _to_store() tanpa re-trigger (dipakai core
+        # sendiri, mis. mail_message.py/discuss_channel.py).
+        store.add_records_fields(self, ['is_pinned'])

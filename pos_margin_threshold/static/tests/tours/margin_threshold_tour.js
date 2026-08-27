@@ -5,10 +5,14 @@
 // lets the cashier proceed. This exercises the migrated PosStore.pay() patch end-to-end
 // (dialog service, ask()/AlertDialog — see 06c_IMPLEMENTATION_LOG.md Fase E).
 
-import * as Chrome from "@point_of_sale/../tests/tours/utils/chrome_util";
-import * as Dialog from "@point_of_sale/../tests/tours/utils/dialog_util";
-import * as ProductScreen from "@point_of_sale/../tests/tours/utils/product_screen_util";
-import * as PaymentScreen from "@point_of_sale/../tests/tours/utils/payment_screen_util";
+// 19.0: test-tour util files moved -- chrome_util/product_screen_util/payment_screen_util
+// dari "tests/tours/utils/" ke "tests/pos/tours/utils/"; dialog_util pindah keluar dari
+// "tours/" sepenuhnya ke "tests/generic_helpers/" (dipakai bersama modul lain, bukan spesifik
+// POS lagi). Nama export (startPoS, confirm, isShown, dst) tidak berubah.
+import * as Chrome from "@point_of_sale/../tests/pos/tours/utils/chrome_util";
+import * as Dialog from "@point_of_sale/../tests/generic_helpers/dialog_util";
+import * as ProductScreen from "@point_of_sale/../tests/pos/tours/utils/product_screen_util";
+import * as PaymentScreen from "@point_of_sale/../tests/pos/tours/utils/payment_screen_util";
 import { registry } from "@web/core/registry";
 
 registry.category("web_tour.tours").add("pos_margin_threshold_below_minimum_confirm_tour", {

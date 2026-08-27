@@ -40,22 +40,22 @@ services:
     # fr_FR sama sekali), jadi flag ini TIDAK PERNAH perlu dipasang lagi. Riwayat: memasangnya
     # permanen dulu sempat bikin SELURUH UI POS (dialog, format angka "1,00" vs "1.00") ikut
     # ter-render Prancis, merusak assertion Tour test modul lain yang tidak terkait sama sekali.
-    # G1 (install test polos) -- aktif sekarang, dijalankan dulu sebelum test-enable penuh.
-    command: >
-      odoo -d pos_margin_sale_migration_19_test
-      -i pos_margin_threshold,sale_margin_threshold,pin_message
-      --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons
-      --stop-after-init
-      --logfile=/var/log/odoo/odoo.log
-    # Mode D (Tour test headless Chrome asli, Step 6/9) -- uncomment setelah G1 pass.
+    # G1 (install test polos) -- sudah PASS 2026-08-27, disimpan sebagai referensi di bawah.
     # command: >
     #   odoo -d pos_margin_sale_migration_19_test
     #   -i pos_margin_threshold,sale_margin_threshold,pin_message
     #   --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons
-    #   --test-enable
-    #   --test-tags=/pos_margin_threshold,/sale_margin_threshold,/pin_message
     #   --stop-after-init
     #   --logfile=/var/log/odoo/odoo.log
+    # Mode D (Tour test headless Chrome asli, Step 6/9) -- aktif sekarang, setelah G1 pass.
+    command: >
+      odoo -d pos_margin_sale_migration_19_test
+      -i pos_margin_threshold,sale_margin_threshold,pin_message
+      --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons
+      --test-enable
+      --test-tags=/pos_margin_threshold,/sale_margin_threshold,/pin_message
+      --stop-after-init
+      --logfile=/var/log/odoo/odoo.log
     # command: >
     #   odoo -d pos_margin_sale_migration_19_test
     #   -u pos_margin_threshold,sale_margin_threshold,pin_message

@@ -46,6 +46,8 @@ dipilah pemilik modul saat review batch (konsisten pola `FINDINGS.md` project 17
 | MF-15 [pin_message] | `messageActionsRegistry` payload shape berubah total (`title`→`name`, `onClick`→`onSelected`, argumen jadi objek tanpa `.props`) | 2 | `[GAP-MIGRASI]` | **Kritis** | Open |
 | MF-16 [sale_margin_threshold] | `ir.actions.server.groups_id`→`group_ids` — ditemukan lewat G1 (bukan Step 2), install-blocking | 6 (G1) | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED (2026-08-27) |
 | MF-17 [sale_margin_threshold] | `res.groups.users`→`user_ids` — ditemukan lewat G1 (bukan Step 2), install-blocking | 6 (G1) | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED (2026-08-27) |
+| MF-18 [pin_message] | `Store.add()` 19.0 selalu re-entry `_to_store()` (beda dari 18.0) — fix pertama `_to_store` TIDAK CUKUP, infinite recursion, ditemukan lewat G2/Tour test | 6 (G2) | `[GAP-MIGRASI]` | **Kritis** | ✅ RESOLVED (2026-08-27) |
+| MF-19 [pos_margin_threshold] | Test-tour util `point_of_sale` pindah path (`tests/tours/utils/`→`tests/pos/tours/utils/`+`tests/generic_helpers/`) — ditemukan lewat G2, bukan Step 2 | 6 (G2) | `[GAP-MIGRASI]` | Sedang | ✅ RESOLVED (2026-08-27) |
 
 ---
 
@@ -235,6 +237,43 @@ Percobaan G1" #2.
 'res.groups' object has no attribute 'users'` — registry gagal dibangun, instalasi gagal total.
 **Dampak:** Kritis sebelum fix. Setelah fix: tidak ada dampak, logic tidak berubah.
 **Status:** ✅ RESOLVED (2026-08-27) — rename mekanis, divalidasi G1 percobaan #3 PASS.
+
+### MF-18 [pin_message] — `Store.add()` 19.0 selalu re-entry `_to_store()`, infinite recursion
+**Ditemukan di:** Step 6, G2/Tour test (2026-08-27) — **TIDAK ketahuan Step 2/3, dan fix pertama
+`_to_store` (menambah parameter `fields`) TERNYATA TIDAK CUKUP**, baru ketahuan dari eksekusi Tour
+test nyata (page dengan chatter benar-benar crash `RecursionError`), bukan dari baca kode.
+**Tag:** `[GAP-MIGRASI]`
+**Ref:** `06_implementation/pin_message/06c_IMPLEMENTATION_LOG.md` Fase A5, "Riwayat Percobaan G1+G2" #2.
+**Lokasi:** `pin_message/models/mail_message.py:32` (sebelum fix: `for message in self: store.add(message,
+{'is_pinned': message.is_pinned})`).
+**Deskripsi:** 18.0 `Store.add(record, values_dict)` punya jalur pintas — kalau argumen kedua dict
+nilai konkret, langsung ke `add_model_values()`, TIDAK re-entry `_to_store()`. 19.0 `Store.add()`
+TIDAK punya jalur pintas itu — argumen kedua SELALU diproses sebagai daftar field untuk difetch lewat
+`_to_store()`. Akibatnya `store.add(message, {...})` yang dipanggil DARI DALAM `_to_store()` sendiri
+selalu re-entry ke `_to_store()` lagi — infinite recursion, `RecursionError`, mematahkan loading
+HALAMAN APAPUN yang membuka chatter (bukan cuma fitur pin) begitu modul ini terinstall.
+**Dampak:** **Kritis, blast radius terluas di seluruh project** sebelum fix — chatter/Discuss/
+notifikasi apapun bisa crash.
+**Rekomendasi:** ganti jadi `store.add_records_fields(self, ['is_pinned'])` — API 19.0 yang eksplisit
+didesain untuk menambah field dari dalam `_to_store()` tanpa re-trigger (dipakai core sendiri).
+**Status:** ✅ RESOLVED (2026-08-27) — divalidasi 2 Tour test browser asli PASS (turun dari 122s/gagal
+jadi 4.22s/pass, membuktikan ini genuinely infinite-loop bukan cuma error kosmetik).
+
+### MF-19 [pos_margin_threshold] — Test-tour util `point_of_sale` pindah path
+**Ditemukan di:** Step 6, G2/Tour test (2026-08-27) — TIDAK ketahuan Step 2 (fokus Step 2 ke kode
+produksi, bukan test-tour util).
+**Tag:** `[GAP-MIGRASI]`
+**Ref:** `06_implementation/pos_margin_threshold/06c_IMPLEMENTATION_LOG.md` Fase E-tambahan,
+"Riwayat Percobaan G1+G2" #2.
+**Lokasi:** `pos_margin_threshold/static/tests/tours/margin_threshold_tour.js` (4 baris import).
+**Deskripsi:** `chrome_util.js`/`product_screen_util.js`/`payment_screen_util.js` pindah dari
+`point_of_sale/static/tests/tours/utils/` ke `static/tests/pos/tours/utils/`; `dialog_util.js`
+pindah KELUAR dari `tours/` sepenuhnya ke `static/tests/generic_helpers/`. Nama fungsi tidak
+berubah, hanya lokasi file. Import gagal resolve → seluruh file tour gagal load → tour tidak
+terdaftar → `odoo.isTourReady(...)` untuk tour itu tidak pernah true.
+**Dampak:** Sedang — hanya mempengaruhi test, bukan kode produksi; tapi tanpa fix ini TIDAK ADA
+bukti runtime bahwa fitur inti modul (`DIFF-06`..`09`) benar-benar berfungsi.
+**Status:** ✅ RESOLVED (2026-08-27) — divalidasi 2 Tour test browser asli PASS.
 
 ### MF-12 [pos_margin_threshold] — `Orderline.props.line.shape` dihapus total di 19.0
 **Ditemukan di:** Step 2 (2026-08-26), agent riset diff-analysis, cross-check langsung `odoo18` vs `enterprise19.0`.

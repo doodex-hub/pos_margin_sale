@@ -29,13 +29,13 @@ step. Lihat `migration-tool/templates/PROMPT_LOG.md` untuk definisi klasifikasi 
 | 3 — Migration Spec | 1 | | "LANJUT" — ditulis langsung dari temuan Step 2 (tanpa agent riset baru), 03_MIGRATION_SPEC.md ketiga modul. |
 | 4 — Spec Completeness Review | 1 | | "LANJUT" — enumerasi tabel cakupan ketiga modul + verifikasi tambahan 7 view inherit_id target (belum dicek Step 2) langsung ke enterprise19.0. Semua stabil, gate lulus ketiganya. |
 | 5 — Acceptance Criteria & Test Plan | 1 | | "LANJUT" — AC diturunkan dari BSL-NNN baseline spec (bukan migration spec), 05a+05b ketiga modul. pin_message dapat 1 requirement test baru (regression _to_store generik). |
-| 6 — Code Migration (semua fase A-G2) | 1 | | "baik, lakukan" — Fase A1-A5/B1/C1/E dikerjakan ketiga modul (kode fix pin_message + pos_margin_threshold, version bump sale_margin_threshold). G1/G2 belum jalan, blocked di keputusan environment Docker 19.0. |
+| 6 — Code Migration (semua fase A-G2) | 4 | | "baik, lakukan" -> kode Fase A1-A5/B1/C1/E ketiga modul -> "buat saja, kamu jalankan docker" -> G1 install-test 3x percobaan (2 fix `sale_margin_threshold`: `groups_id`->`group_ids`, `users`->`user_ids`) -> G1 PASS -> G2 test-enable+Tour test (2 fix kritis: `pin_message` infinite recursion `Store.add()`, `pos_margin_threshold` test-tour util path) -> **G1+G2 PASS ketiga modul, 0 failed/0 error dari 22 test**. |
 | 7 — Data Migration Scripts | | | — (N/A, port kode saja) |
 | 8 — Code Review | | | |
 | 9 — Dev Testing | | | |
 | 10 — QA Testing | | | |
 | 11 — UAT Sign-off | | | |
-| **Total** | 11 | 0 | |
+| **Total** | 14 | 0 | |
 
 ## Catatan Definisi
 

@@ -27,10 +27,10 @@ Sumber: `01a_MIGRATION_INTAKE.md` §2b.
 |---|---|---|
 | A1 | ✅ | 2026-08-26 |
 | A2 | N/A — tidak ada `ir.ui.view`/XML view sama sekali | 2026-08-26 |
-| G1 (checkpoint Fase A) | ⏳ Belum dijalankan — lihat "Riwayat Percobaan G1" | — |
+| G1 (checkpoint Fase A) | ✅ **Pass** (2026-08-27) | 2026-08-27 |
 | A3 | N/A — tidak ada wizard/TransientModel di modul ini | 2026-08-26 |
 | A4 | ✅ — struktur folder tidak berubah, tidak ada yang perlu dinormalisasi | 2026-08-26 |
-| A5 | ✅ | 2026-08-26 |
+| A5 | ✅ — **1 fix KRITIS ditemukan lewat G2/Tour test** (`_to_store` infinite recursion), lihat entri | 2026-08-27 |
 | B1 | ✅ — `is_pinned`/`toggle_pin()` diverifikasi tidak butuh perubahan | 2026-08-26 |
 | B2 | N/A — dikonfirmasi Applicability Check | — |
 | C1 | N/A — tidak ada view sama sekali | 2026-08-26 |
@@ -39,19 +39,17 @@ Sumber: `01a_MIGRATION_INTAKE.md` §2b.
 | D2 | N/A — dikonfirmasi Applicability Check | — |
 | E | ✅ | 2026-08-26 |
 | F | N/A — dikonfirmasi Applicability Check | — |
-| G2 (validasi akhir/runtime) | ⏳ Menunggu G1 | — |
+| G2 (validasi akhir/runtime) | ✅ **Pass (0 failed, 0 error dari 9 test, termasuk 2 Tour test browser asli)** | 2026-08-27 |
 
-## Riwayat Percobaan G1 (Install Test)
+## Riwayat Percobaan G1 (Install Test) + G2 (Tour test, Mode D)
 
-**Belum dijalankan** — environment Docker 19.0 (`docker-env/docker-compose.yml`) masih memakai image
-18.0 dari project sebelumnya, belum di-bump ke 19.0. Perlu keputusan dev soal mode eksekusi
-(A/B/C, lihat `06a_CODE_MIGRATION_PHASES.md` "Checkpoint G1") dan sumber image 19.0 (tidak ada image
-Docker Hub publik `odoo:19.0` yang dikonfirmasi tersedia — kemungkinan perlu build image sendiri dari
-`native-target` `enterprise19.0`, atau dev sudah punya sumber lain) sebelum G1 bisa dijalankan.
+Mode C (AI jalankan langsung, `docker compose up`), image `odoo:19.0` (sudah ada lokal).
 
 | # | Dijalankan setelah fase | Mode | Hasil | Error (kalau fail) | Tanggal |
 |---|---|---|---|---|---|
-| 1 | A2 | — | ⏳ Belum dijalankan | — | — |
+| 1 | A5 (install polos) | C | ✅ Pass | — (bersama `pos_margin_threshold`/`sale_margin_threshold`, lihat log project itu untuk 2 fix `sale_margin_threshold` yang tidak terkait modul ini) | 2026-08-27 |
+| 2 | E (`--test-enable`, Tour test) | C | ❌ **Fail 1, Error 1** | `test_pin_message_action_menu_pin_visible_tour`: "The ready `odoo.isTourReady(...)` code was always falsy". Root cause SEBENARNYA baru ketahuan dari traceback HTTP terpisah di log yang sama: **infinite recursion** — `models/mail_message.py`'s `_to_store()` override memanggil `store.add(message, {'is_pinned': ...})`, dan di 19.0 `Store.add()` TIDAK PUNYA jalur pintas untuk dict-of-values (beda dari 18.0) — setiap panggilan `store.add(record, ...)` SELALU re-entry ke `_to_store()`, jadi baris ini rekursi diri sendiri tanpa akhir sampai `RecursionError`, mematahkan loading HALAMAN APAPUN yang membuka chatter (bukan cuma fitur pin) — persis skenario blast-radius yang sudah diperingatkan di `MF-14`/`02_DIFF_ANALYSIS.md`, cuma fix pertama (Step 6 awal, cuma menambah parameter `fields`) BELUM cukup. | 2026-08-27 |
+| 3 | A5 (setelah fix #2) | C | ✅ **Pass** | — 0 failed, 0 error dari 9 test `pin_message` (naik dari gagal total, waktu eksekusi turun dari 122s ke 4.22s — bukti recursion loop sebelumnya benar-benar makan waktu, bukan cuma error kosmetik) | 2026-08-27 |
 
 ---
 
@@ -96,14 +94,25 @@ punya ACL native yang tidak disentuh modul ini).
   - `models/mail_message.py`: signature `_to_store(self, store, /, **kwargs)` diubah jadi
     `_to_store(self, store, fields, /, **kwargs)` — tambah parameter positional `fields` sesuai
     signature 19.0 core, diteruskan apa adanya ke `super()._to_store(store, fields, **kwargs)`.
-    Komentar ditambah menjelaskan perubahan ini.
+  - **Fix KEDUA, ditemukan lewat G2/Tour test (2026-08-27), TIDAK ketahuan Step 2/3 maupun review
+    manual pertama:** baris `for message in self: store.add(message, {'is_pinned':
+    message.is_pinned})` diganti `store.add_records_fields(self, ['is_pinned'])`. Root cause:
+    `Store.add()` 18.0 punya jalur pintas kalau argumen kedua adalah dict nilai konkret (langsung ke
+    `add_model_values`, TIDAK re-entry `_to_store()`); `Store.add()` 19.0 TIDAK punya jalur pintas
+    itu — argumen kedua SELALU diperlakukan sebagai daftar field untuk di-fetch lewat `_to_store()`,
+    jadi `store.add(message, {...})` dari DALAM `_to_store()` sendiri selalu re-entry ke
+    `_to_store()` lagi → infinite recursion (`RecursionError`) begitu modul ini terinstall dan
+    chatter APAPUN dibuka. `add_records_fields()` adalah API 19.0 yang didesain eksplisit untuk
+    kasus ini (dipakai core sendiri di `mail_message.py`/`discuss_channel.py`) — tidak re-entry
+    `_to_store()`.
 - **Secara eksplisit TIDAK dilakukan:** tidak ada perubahan pada `toggle_pin()`, `is_pinned` field,
-  atau logic penambahan `is_pinned` ke `store` — hanya signature yang diubah, behavior identik.
-  `fields` tidak pernah dibaca/dipakai langsung (modul ini selalu menambahkan `is_pinned` tanpa
-  syarat, tidak bergantung pada daftar field yang diminta).
-- **Risiko:** LOW (perubahan mekanis, sudah diverifikasi terhadap signature 19.0 asli di Step 2) —
-  tapi **belum divalidasi runtime** (G1/G2 belum jalan).
-- **Status:** ✅ Selesai (kode) — ⚠️ Perlu validasi G1/G2
+  atau NILAI yang dikirim ke frontend — behavior akhir (field `is_pinned` sampai ke client) identik,
+  hanya MEKANISME pengirimannya yang diperbaiki dua kali.
+- **Risiko:** Fix pertama LOW tapi TIDAK CUKUP (baru ketahuan dari eksekusi nyata, bukan baca kode) —
+  ini bukti langsung kenapa G1 install-test SENDIRIAN tidak cukup untuk area `_to_store`/chatter,
+  harus sampai G2/Tour test yang benar-benar membuka halaman dengan chatter.
+- **Status:** ✅ Selesai — **divalidasi G2, PASS** (0 failed/0 error, 9 test `pin_message`, termasuk
+  2 Tour test browser asli)
 
 ## [Fase B1] Model Risiko Rendah
 
@@ -168,9 +177,11 @@ N/A — dikonfirmasi Applicability Check.
     (bukan sesuatu yang 19.0 rusak), di luar scope 3 perbaikan wajib yang disepakati — dicatat di
     sini supaya tidak dianggap terlewat, bukan diperbaiki diam-diam.
 - **Risiko:** MEDIUM (perubahan JS di area yang sebelumnya sudah pernah crash — `MF-24` di project
-  17→18 — historically fragile) — **belum divalidasi runtime** (G1/G2, khususnya Tour test
-  `pin_message_action_menu_pin_visible_tour`, belum jalan).
-- **Status:** ✅ Selesai (kode) — ⚠️ Perlu validasi G1/G2 + Tour test re-run
+  17→18 — historically fragile).
+- **Status:** ✅ Selesai — **divalidasi Tour test `pin_message_action_menu_pin_visible_tour`, PASS**
+  (setelah fix `_to_store` di Fase A5 di atas juga diperbaiki — kegagalan pertama tour ini disebabkan
+  crash `_to_store`, bukan bug di `pinMessage.js` sendiri; setelah kedua fix, `condition`/`onSelected`
+  rewrite di file ini terbukti benar tanpa perubahan lanjutan).
 
 ## [Fase F] Upgrade Template
 
@@ -179,17 +190,27 @@ perubahan sama sekali).
 
 ## [Fase G2] Validasi Akhir
 
-⏳ Belum dijalankan — menunggu G1 (install test) dan environment Docker 19.0.
+✅ **Pass (2026-08-27)** — `docker compose up` dengan `--test-enable --test-tags=/pin_message` (dan
+dua modul lain sekaligus): **0 failed, 0 error dari 9 test**, termasuk kedua Tour test browser asli
+(`pin_message_toggle_pin_tour`, `pin_message_action_menu_pin_visible_tour`, keduanya "tour
+succeeded"). Kriteria minimal G2 terpenuhi: tidak ada warning server saat start, tidak ada error
+console browser, `DIFF-01`/`DIFF-02` terkonfirmasi valid di runtime nyata (bukan cuma baca kode).
 
 ---
 
 ## Temuan di Luar Spec (kalau ada)
 
-- [x] Tidak ada — semua perubahan kode persis mengikuti `03_MIGRATION_SPEC.md`, tidak ada yang
-  ditemukan di luar rencana.
+- [x] **Ada** — fix pertama untuk `_to_store` (Step 6 awal, cuma tambah parameter `fields`) TERNYATA
+  TIDAK CUKUP, baru ketahuan lewat Tour test (G2), bukan dari baca kode/spec. Root cause sebenarnya
+  (mekanisme `Store.add()` 19.0 tidak punya jalur pintas dict-value seperti 18.0) TIDAK tercakup di
+  `03_MIGRATION_SPEC.md`/`02_DIFF_ANALYSIS.md` — Step 2 mengidentifikasi signature `_to_store`
+  berubah, tapi tidak menganalisis PERILAKU `Store.add()` sendiri saat dipanggil dari dalam
+  `_to_store()`. Tidak perlu balik ke Step 3/4 (dampak kecil, sudah divalidasi G2 PASS) — dicatat di
+  sini + `FINDINGS.md` (`MF-18`) untuk jejak lengkap.
 
 ## Kontribusi ke Knowledge Base
 
-- [x] Tidak ada temuan baru yang perlu dicatat di titik ini — temuan `mail` 18→19 (`_to_store`,
-  `messageActionsRegistry`) sudah dicatat di Step 2 (`migration-records/pos-margin-sale_18.0_19.0/SUMMARY.md`).
-  Kalau G1/G2 nanti menemukan sesuatu yang tidak terduga, akan ditambahkan sebagai entri baru.
+- [x] **Ada** — `Store.add()`/`add_records_fields()` 19.0 (mekanisme baru untuk menambah field value
+  dari dalam `_to_store()` tanpa infinite recursion) adalah temuan BARU, lebih dalam dari yang sudah
+  dicatat Step 2 (yang cuma soal signature). Dicatat ke
+  `migration-records/pos-margin-sale_18.0_19.0/SUMMARY.md`.

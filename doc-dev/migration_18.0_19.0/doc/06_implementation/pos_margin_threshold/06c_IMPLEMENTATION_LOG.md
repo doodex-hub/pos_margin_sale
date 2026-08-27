@@ -27,7 +27,7 @@ Sumber: `01a_MIGRATION_INTAKE.md` §2b.
 |---|---|---|
 | A1 | ✅ | 2026-08-26 |
 | A2 | N/A — tidak ada `<tree>` tersisa (sudah `<list>` sejak 17→18, dikonfirmasi grep bersih) | 2026-08-26 |
-| G1 (checkpoint Fase A) | ⏳ Belum dijalankan — lihat "Riwayat Percobaan G1" | — |
+| G1 (checkpoint Fase A) | ✅ **Pass** (2026-08-27) | 2026-08-27 |
 | A3 | N/A — ACL wizard sudah ada sejak 17→18, tidak ada model baru di migrasi ini | 2026-08-26 |
 | A4 | ✅ — struktur folder diverifikasi konsisten | 2026-08-26 |
 | A5 | ✅ | 2026-08-26 |
@@ -37,18 +37,34 @@ Sumber: `01a_MIGRATION_INTAKE.md` §2b.
 | C2 | N/A — dikonfirmasi Applicability Check | — |
 | D1 | N/A — dikonfirmasi Applicability Check | — |
 | D2 | N/A — dikonfirmasi Applicability Check | — |
-| E | ✅ | 2026-08-26 |
+| E | ✅ — logic `models.js`/`pos_store.js` divalidasi BENAR lewat Tour test (lihat G2) | 2026-08-26 |
 | F | N/A — dikonfirmasi Applicability Check | — |
-| G2 (validasi akhir/runtime) | ⏳ Menunggu G1 | — |
+| G2 (validasi akhir/runtime) | ✅ **Pass (0 failed, 0 error dari 17 test, termasuk 2 Tour test browser asli), setelah 1 fix tambahan (test-tour util import path)** | 2026-08-27 |
 
-## Riwayat Percobaan G1 (Install Test)
+## Riwayat Percobaan G1 (Install Test) + G2 (Tour test, Mode D)
 
-**Belum dijalankan** — sama seperti `pin_message`, menunggu environment Docker 19.0 dan keputusan
-dev soal mode eksekusi + sumber image.
+Mode C (AI jalankan langsung), image `odoo:19.0` (sudah ada lokal).
 
 | # | Dijalankan setelah fase | Mode | Hasil | Error (kalau fail) | Tanggal |
 |---|---|---|---|---|---|
-| 1 | A2 | — | ⏳ Belum dijalankan | — | — |
+| 1 | A5 (install polos, bersama 2 modul lain) | C | ✅ Pass | — (2 fix ditemukan, tapi di `sale_margin_threshold`, tidak terkait modul ini — lihat log modul itu) | 2026-08-27 |
+| 2 | E (`--test-enable`, Tour test) | C | ❌ **Fail 2** | Kedua Tour test (`test_pos_margin_threshold_below_minimum_confirm_tour`,
+`test_pos_margin_threshold_below_minimum_blocked_tour`): "The ready `odoo.isTourReady(...)` code was
+always falsy". **BUKAN bug di `models.js`/`pos_store.js`** (POS webclient terbukti load bersih di log
+— banyak request sukses, Owl start normal) — root cause: `static/tests/tours/margin_threshold_tour.js`
+mengimpor util test dari path LAMA (`@point_of_sale/../tests/tours/utils/{chrome_util,dialog_util,
+product_screen_util,payment_screen_util}`) yang di 19.0 sudah PINDAH
+(`chrome_util`/`product_screen_util`/`payment_screen_util` → `tests/pos/tours/utils/`; `dialog_util`
+→ keluar dari `tours/` sepenuhnya, ke `tests/generic_helpers/`). Import gagal resolve → tour file
+gagal load → `registry.category("web_tour.tours").add(...)` tidak pernah jalan → nama tour tidak
+pernah terdaftar → `isTourReady` untuk nama itu tidak pernah true. **Ini area yang TIDAK dicek Step 2**
+(fokus Step 2 ke kode produksi, bukan test-tour util import) — pelajaran baru: util test tour JUGA
+ikut direstrukturisasi Odoo 19.0, bukan cuma kode produksi. | 2026-08-27 |
+| 3 | E (setelah fix #2) | C | ✅ **Pass** | — 0 failed, 0 error dari 17 test `pos_margin_threshold`
+(naik dari gagal total) — MEMBUKTIKAN getter pengganti (`displayPriceUnit`, dst) yang dipilih di
+Fase E (lihat entri di bawah) benar SECARA SEMANTIK, bukan cuma benar sintaks; kedua Tour test
+"tour succeeded" end-to-end (jual produk di bawah minimum → dialog muncul dengan teks benar →
+confirm/block → hasil sesuai skenario). | 2026-08-27 |
 
 ---
 
@@ -170,11 +186,31 @@ N/A — dikonfirmasi Applicability Check.
   - Tidak ada perubahan pada logic bisnis (kondisi blocking/confirm, threshold, dst) — HANYA nama
     method/getter yang diadaptasi ke API 19.0.
 - **Risiko:** MEDIUM-HIGH (area yang sudah dua kali mengalami restrukturisasi besar berturut-turut,
-  17→18 dan 18→19; getter pengganti `displayPriceUnit` dipilih berdasarkan analisis semantik Step 2,
-  BELUM divalidasi runtime) — **belum divalidasi runtime** (G1/G2, khususnya kedua Tour test
-  `margin_threshold_tour.js`, belum jalan).
-- **Status:** ✅ Selesai (kode) — ⚠️ Perlu validasi G1/G2 + Tour test re-run (prioritas tinggi,
-  ini fitur inti modul)
+  17→18 dan 18→19; getter pengganti `displayPriceUnit` dipilih berdasarkan analisis semantik Step 2).
+- **Status:** ✅ Selesai — **divalidasi 2 Tour test browser asli, PASS** ("tour succeeded" untuk
+  jalur confirm maupun blocked). Getter pengganti `displayPriceUnit`/`getProduct()`/`getOrder()`/
+  `getOrderlines()` terbukti benar secara semantik, bukan cuma benar sintaks.
+
+## [Fase E — tambahan] Perbaikan Test-Tour Util Import Path
+
+- **Scope:** `static/tests/tours/margin_threshold_tour.js` (file test, bukan kode produksi — tetap
+  bagian Step 6 karena test yang tidak bisa load = tidak ada bukti fitur berfungsi).
+- **Item spec (ref):** TIDAK ADA di `03_MIGRATION_SPEC.md`/`02_DIFF_ANALYSIS.md` — **ditemukan lewat
+  G2/Tour test (2026-08-27), bukan Step 2/3** (lihat "Riwayat Percobaan G1" #2, "Temuan di Luar
+  Spec" di bawah).
+- **Aksi:** 4 import statement diperbaiki:
+  - `@point_of_sale/../tests/tours/utils/chrome_util` → `@point_of_sale/../tests/pos/tours/utils/chrome_util`
+  - `@point_of_sale/../tests/tours/utils/dialog_util` → `@point_of_sale/../tests/generic_helpers/dialog_util`
+    (pindah KELUAR dari `tours/`, bukan cuma nested lebih dalam)
+  - `@point_of_sale/../tests/tours/utils/product_screen_util` → `@point_of_sale/../tests/pos/tours/utils/product_screen_util`
+  - `@point_of_sale/../tests/tours/utils/payment_screen_util` → `@point_of_sale/../tests/pos/tours/utils/payment_screen_util`
+  - Nama fungsi yang dipakai (`startPoS`, `endTour`, `confirm`, `is`, `bodyIs`, `isShown`,
+    `addOrderline`, `clickPayButton`, `clickPaymentMethod`, `clickValidate`) dikonfirmasi TIDAK
+    berubah nama/signature di 19.0 — HANYA lokasi file yang berubah.
+- **Secara eksplisit TIDAK dilakukan:** isi tour steps (`Chrome.startPoS()`, dst) tidak diubah sama
+  sekali — cuma baris import di paling atas file.
+- **Risiko:** LOW (mekanis) — divalidasi langsung G2 PASS.
+- **Status:** ✅ Selesai
 
 ## [Fase F] Upgrade Template
 
@@ -182,18 +218,26 @@ N/A — dikonfirmasi Applicability Check (Step 2 mengonfirmasi `orderline.xml` t
 
 ## [Fase G2] Validasi Akhir
 
-⏳ Belum dijalankan — menunggu G1 (install test) dan environment Docker 19.0.
+✅ **Pass (2026-08-27)**, setelah fix test-tour util import path di atas — `docker compose up`
+dengan `--test-enable --test-tags=/pos_margin_threshold` (dan dua modul lain sekaligus): **0 failed,
+0 error dari 17 test**, termasuk kedua Tour test browser asli ("tour succeeded" untuk jalur confirm
+maupun blocked). Kriteria minimal G2 terpenuhi: tidak ada warning server saat start, tidak ada error
+console browser, `DIFF-06`/`07`/`08`/`09` (area paling berisiko project ini) terkonfirmasi valid di
+runtime nyata.
 
 ---
 
 ## Temuan di Luar Spec (kalau ada)
 
-- [x] Tidak ada — semua perubahan kode persis mengikuti `03_MIGRATION_SPEC.md`.
+- [x] **Ada** — `03_MIGRATION_SPEC.md`/`02_DIFF_ANALYSIS.md` tidak mencakup import test-tour util
+  (`static/tests/tours/margin_threshold_tour.js`), karena Step 2 fokus ke kode produksi. Baru
+  ketahuan lewat G2. Tidak perlu balik ke Step 3/4 (dampak kecil, mekanis, sudah divalidasi PASS) —
+  dicatat di sini + `FINDINGS.md` (`MF-19`) untuk jejak lengkap.
 
 ## Kontribusi ke Knowledge Base
 
-- [x] Tidak ada temuan baru — pola porting `getDisplayData()`→getter langsung (dengan getter
-  pengganti `get_unit_display_price()`→`displayPriceUnit`) sudah cukup terekam di
-  `migration-records/pos-margin-sale_18.0_19.0/SUMMARY.md` dari Step 2; kalau G1/G2 menemukan getter
-  pengganti ini SALAH secara semantik (baru bisa dipastikan lewat runtime), akan diupdate sebagai
-  entri baru saat itu.
+- [x] **Ada** — restrukturisasi path util test-tour `point_of_sale` (`tests/tours/utils/`→
+  `tests/pos/tours/utils/` + `dialog_util` pindah ke `tests/generic_helpers/`) adalah temuan BARU,
+  terpisah dari restrukturisasi kode produksi yang sudah dicatat Step 2. Relevan untuk modul CUSTOM
+  APAPUN yang punya Tour test sendiri untuk `point_of_sale`. Dicatat ke
+  `migration-records/pos-margin-sale_18.0_19.0/SUMMARY.md`.
