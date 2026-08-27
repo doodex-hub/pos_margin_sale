@@ -427,10 +427,23 @@ harus dijalankan tangan sendiri oleh PM/FA/User. Item penting per modul:
 
 **Project ini SELESAI dari sisi kerja AI** — 10 dari 11 step tuntas (step 7 N/A by design). Yang
 tersisa murni aksi manusia: (1) jalankan `11_UAT_CHECKLIST.md` ketiga modul dengan tangan sendiri,
-(2) isi sign-off, (3) putuskan 4 finding pre-existing yang masih terbuka (`MF-20`/`21`/`23`/`24`,
-lihat `FINDINGS.md` — tidak blocking, tapi sebaiknya diputuskan sebelum go-live produksi), (4) kalau
-disetujui, `git push`/merge `migration/19.0_target` (AI tidak pernah melakukan ini sendiri, sesuai
-larangan permanen Mode Git).
+isi sign-off, (2) putuskan 4 finding pre-existing yang masih terbuka (`MF-20`/`21`/`23`/`24`, lihat
+`FINDINGS.md` — tidak blocking, sebaiknya diputuskan sebelum go-live produksi).
+
+**[RESOLVED 2026-08-27] Branch sudah di-push oleh dev sendiri** (`git push`, di luar sesi AI —
+sesuai larangan permanen Mode Git, AI tidak pernah melakukan ini sendiri).
+
+**[KEPUTUSAN USER 2026-08-27] `MF-20`/`21`/`23`/`24` — dibiarkan dulu.** Dev eksplisit: "Untuk
+finding jika tidak blocker akan kita biarkan dulu." Keempat finding ini pre-existing
+(`[DIWARISI-SOURCE]`, bukan gap migrasi 19.0) dan tidak blocking — tidak diperbaiki di project ini,
+tercatat terbuka di `FINDINGS.md` untuk keputusan final di masa depan (bukan diam-diam ditutup).
+
+**Catatan proses (2026-08-27):** sempat terjadi commit nyasar ke branch lokal `migration/19.0`
+(bukan `migration/19.0_target`) akibat working tree ter-checkout ke branch lain di luar sesi AI —
+dev sudah memindahkan HEAD kembali ke `migration/19.0_target`, dan perubahan (keputusan finding di
+atas) ditulis ulang langsung di branch yang benar. Branch `migration/19.0` yang nyasar (1 commit,
+tidak ada remote tracking, tidak pernah di-push) dibiarkan sebagai sisa lokal — aman, tidak
+mempengaruhi apapun.
 
 > **Catatan proses (2026-08-26):** sesi ini sempat menjalankan `git branch --show-current`/`git log -1`
 > di `native-source` (`odoo18`) — melanggar larangan permanen Mode Git (git hanya boleh di

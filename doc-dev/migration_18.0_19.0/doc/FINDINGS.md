@@ -48,11 +48,11 @@ dipilah pemilik modul saat review batch (konsisten pola `FINDINGS.md` project 17
 | MF-17 [sale_margin_threshold] | `res.groups.users`→`user_ids` — ditemukan lewat G1 (bukan Step 2), install-blocking | 6 (G1) | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED (2026-08-27) |
 | MF-18 [pin_message] | `Store.add()` 19.0 selalu re-entry `_to_store()` (beda dari 18.0) — fix pertama `_to_store` TIDAK CUKUP, infinite recursion, ditemukan lewat G2/Tour test | 6 (G2) | `[GAP-MIGRASI]` | **Kritis** | ✅ RESOLVED (2026-08-27) |
 | MF-19 [pos_margin_threshold] | Test-tour util `point_of_sale` pindah path (`tests/tours/utils/`→`tests/pos/tours/utils/`+`tests/generic_helpers/`) — ditemukan lewat G2, bukan Step 2 | 6 (G2) | `[GAP-MIGRASI]` | Sedang | ✅ RESOLVED (2026-08-27) |
-| MF-20 [sale_margin_threshold] | `security/groups.xml` `implied_ids` diisi `base.module_category_hidden` (kategori, bukan grup) — kemungkinan salah tempel `category_id` | 8 | `[DIWARISI-SOURCE][PERLU-KEPUTUSAN]` | Sedang | Open |
-| MF-21 [sale_margin_threshold] | `_compute_warning` (`is_less_minimum_sale`) tidak punya `@api.depends` — risiko cache stale | 8 | `[DIWARISI-SOURCE][PERLU-KEPUTUSAN]` | Sedang | Open |
+| MF-20 [sale_margin_threshold] | `security/groups.xml` `implied_ids` diisi `base.module_category_hidden` (kategori, bukan grup) — kemungkinan salah tempel `category_id` | 8 | `[DIWARISI-SOURCE][PERLU-KEPUTUSAN]` | Sedang | Open (dibiarkan dulu, 2026-08-27) |
+| MF-21 [sale_margin_threshold] | `_compute_warning` (`is_less_minimum_sale`) tidak punya `@api.depends` — risiko cache stale | 8 | `[DIWARISI-SOURCE][PERLU-KEPUTUSAN]` | Sedang | Open (dibiarkan dulu, 2026-08-27) |
 | MF-22 [pos_margin_threshold][sale_margin_threshold] | `self._context` — deprecated eksplisit di 19.0 core (`@api.deprecated`), 5 lokasi lintas 2 modul | 8 | `[GAP-MIGRASI]` | Rendah | ✅ RESOLVED (2026-08-27) |
-| MF-23 [pos_margin_threshold] | `_compute_warning` (`is_less_minimum_sale`) di `product.product` tidak punya `@api.depends` — sama seperti `MF-21`, instance terpisah di modul lain | 8 | `[DIWARISI-SOURCE][PERLU-KEPUTUSAN]` | Sedang | Open |
-| MF-24 [pos_margin_threshold] | `views/products.xml` `list_price` di-`position="replace"` bukan `attributes` — diam-diam menghapus `options`/`optional`/`decoration-muted` bawaan core | 8 | `[DIWARISI-SOURCE][PERLU-KEPUTUSAN]` | Sedang | Open |
+| MF-23 [pos_margin_threshold] | `_compute_warning` (`is_less_minimum_sale`) di `product.product` tidak punya `@api.depends` — sama seperti `MF-21`, instance terpisah di modul lain | 8 | `[DIWARISI-SOURCE][PERLU-KEPUTUSAN]` | Sedang | Open (dibiarkan dulu, 2026-08-27) |
+| MF-24 [pos_margin_threshold] | `views/products.xml` `list_price` di-`position="replace"` bukan `attributes` — diam-diam menghapus `options`/`optional`/`decoration-muted` bawaan core | 8 | `[DIWARISI-SOURCE][PERLU-KEPUTUSAN]` | Sedang | Open (dibiarkan dulu, 2026-08-27) |
 
 ---
 
@@ -304,7 +304,8 @@ tercatat sebelumnya di `FINDINGS.md` project 17→18 maupun ini.
 **Rekomendasi:** klarifikasi ke user apakah maksud aslinya adalah `category_id` (sembunyikan grup
 dari Settings) — kalau ya, ini bug lama yang perlu diperbaiki (dengan persetujuan eksplisit,
 bukan bagian scope port).
-**Keputusan pemilik modul:** *(kosong)*
+**Keputusan pemilik modul:** Dibiarkan dulu (2026-08-27) — "kalau tidak blocker, biarkan dulu".
+Tidak diperbaiki di project ini, tetap tercatat terbuka untuk keputusan final di masa depan.
 
 ### MF-21 [sale_margin_threshold] — `is_less_minimum_sale` tidak punya `@api.depends`
 **Ditemukan di:** Step 8, code review (2026-08-27) — sama seperti `MF-20`, tidak terkait perubahan
@@ -320,7 +321,8 @@ bisa basi dalam transaksi/request yang sama (mis. setelah `minimum_sale_price` r
 peringatan bisa tidak update sampai reload penuh.
 **Rekomendasi:** klarifikasi ke user apakah ini bug lama yang perlu diperbaiki (tambah
 `@api.depends('lst_price', 'minimum_sale_price')`) — di luar scope port kecuali disetujui eksplisit.
-**Keputusan pemilik modul:** *(kosong)*
+**Keputusan pemilik modul:** Dibiarkan dulu (2026-08-27) — "kalau tidak blocker, biarkan dulu".
+Tidak diperbaiki di project ini, tetap tercatat terbuka untuk keputusan final di masa depan.
 
 ### MF-22 [pos_margin_threshold][sale_margin_threshold] — `self._context` deprecated eksplisit di 19.0
 **Ditemukan di:** Step 8, code review (2026-08-27) — agent `odoo-code-reviewer`, modul
@@ -353,7 +355,9 @@ sama secara independen).
 **Dampak:** Sedang — sama seperti `MF-21`.
 **Rekomendasi:** Keputusan user sebaiknya SATU untuk kedua modul (`MF-21` + `MF-23`), karena
 polanya identik.
-**Keputusan pemilik modul:** *(kosong)*
+**Keputusan pemilik modul:** Dibiarkan dulu (2026-08-27) — "kalau tidak blocker, biarkan dulu",
+sama seperti `MF-21`. Tidak diperbaiki di project ini, tetap tercatat terbuka untuk keputusan final
+di masa depan.
 
 ### MF-24 [pos_margin_threshold] — `list_price` di-`position="replace"`, menghapus atribut core
 **Ditemukan di:** Step 8, code review (2026-08-27).
@@ -370,7 +374,8 @@ Sudah ada sejak SEBELUM migrasi ini (bukan gap 19.0), belum pernah tercatat sebe
 **Rekomendasi:** klarifikasi ke user — kemungkinan besar bug lama yang perlu diperbaiki
 (`position="attributes"` alih-alih `replace`), tapi tetap perlu persetujuan eksplisit sebelum
 diubah (di luar scope port).
-**Keputusan pemilik modul:** *(kosong)*
+**Keputusan pemilik modul:** Dibiarkan dulu (2026-08-27) — "kalau tidak blocker, biarkan dulu".
+Tidak diperbaiki di project ini, tetap tercatat terbuka untuk keputusan final di masa depan.
 
 ### MF-12 [pos_margin_threshold] — `Orderline.props.line.shape` dihapus total di 19.0
 **Ditemukan di:** Step 2 (2026-08-26), agent riset diff-analysis, cross-check langsung `odoo18` vs `enterprise19.0`.
