@@ -11,7 +11,8 @@
 lihat §"Adaptasi multi-modul" di `CLAUDE.md`, sama seperti project migrasi 17.0→18.0 sebelumnya di
 repo ini).
 **Migrasi:** 18.0 → 19.0
-**Terakhir update:** 2026-08-26 (Step 2 — Diff & Compatibility Analysis selesai untuk ketiga modul).
+**Terakhir update:** 2026-08-28 (port fix `pin_message` dari `migration/18.0` commit `82e25af`:
+MF-25/MF-26/MF-27 — ikon thumbtack + filter `message_type`/`thread.model`).
 MF-01..MF-10 adalah quirk/bug WARISAN dari project migrasi 17.0→18.0 sebelumnya (ID baru, dokumen
 self-contained) — lihat kolom "Ref asal" untuk ketertelusuran ke
 `doc-dev/migration_17.0_18.0/doc/FINDINGS.md`. **MF-12..MF-15 adalah gap BARU yang genuinely muncul
@@ -53,6 +54,9 @@ dipilah pemilik modul saat review batch (konsisten pola `FINDINGS.md` project 17
 | MF-22 [pos_margin_threshold][sale_margin_threshold] | `self._context` — deprecated eksplisit di 19.0 core (`@api.deprecated`), 5 lokasi lintas 2 modul | 8 | `[GAP-MIGRASI]` | Rendah | ✅ RESOLVED (2026-08-27) |
 | MF-23 [pos_margin_threshold] | `_compute_warning` (`is_less_minimum_sale`) di `product.product` tidak punya `@api.depends` — sama seperti `MF-21`, instance terpisah di modul lain | 8 | `[DIWARISI-SOURCE][PERLU-KEPUTUSAN]` | Sedang | Open (dibiarkan dulu, 2026-08-27) |
 | MF-24 [pos_margin_threshold] | `views/products.xml` `list_price` di-`position="replace"` bukan `attributes` — diam-diam menghapus `options`/`optional`/`decoration-muted` bawaan core | 8 | `[DIWARISI-SOURCE][PERLU-KEPUTUSAN]` | Sedang | Open (dibiarkan dulu, 2026-08-27) |
+| MF-25 [pin_message] | Tombol pin inline render kotak kosong saat pesan belum dipin — class `fa-thumb-tack-o` tidak ada di Font Awesome 4.7 | Pasca-11 (port dari 18.0 `82e25af`) | `[DIWARISI-SOURCE]` | Rendah (kosmetik) | ✅ RESOLVED (2026-08-28) — unpinned pakai `fa-thumb-tack text-muted` |
+| MF-26 [pin_message] | `icon: "fa-thumb-tack"` tanpa prefix family — glyph action-menu jadi kotak kosong (konvensi 18.0+, tetap berlaku di 19.0) | Pasca-11 (port dari 18.0 `82e25af`) | `[GAP-MIGRASI]` | Rendah (kosmetik) | ✅ RESOLVED (2026-08-28) — `icon: "fa fa-thumb-tack"` |
+| MF-27 [pin_message] | `message.type`/`message.model` sudah mati sejak 18.0 — filter jenis-pesan tombol pin silent-fail, pin muncul di notifikasi OdooBot | Pasca-11 (port dari 18.0 `82e25af`) | `[GAP-MIGRASI]` | **Sedang-Tinggi** | ✅ RESOLVED (2026-08-28) — `message_type` + `thread?.model` |
 
 ---
 
@@ -446,6 +450,30 @@ SETIAP pesan yang di-render (potensi mematahkan action-menu pesan secara luas).
 (`mail/static/src/discuss/message_pin/common/message_actions.js` — `registerMessageAction`, key
 `name`/`onSelected`, destructure `{message, thread}` bukan `component`).
 **Keputusan pemilik modul:** *(kosong — wajib diperbaiki)*
+
+---
+
+### MF-25 [pin_message] — Tombol pin inline render kotak kosong (`fa-thumb-tack-o`) — RESOLVED
+**Ditemukan di:** Port dari `migration/18.0` commit `82e25af` (2026-08-27, smoke manual user). Kode 19.0 masih memakai class yang sama.
+**Tag:** `[DIWARISI-SOURCE]` (bug lama 17.0, bukan regresi 19.0)
+**Lokasi:** `pin_message/static/src/xml/pinnedMessages.xml`
+**Fix:** state belum-dipin `fa-thumb-tack-o` → `fa-thumb-tack text-muted`. Selector tour `pin_message_toggle_pin_tour` ikut disesuaikan. Jangan tulis `--` di komentar QWeb (pecah XML template).
+**Status:** ✅ **RESOLVED** (2026-08-28)
+
+### MF-26 [pin_message] — class ikon action-menu wajib prefix family (`"fa fa-thumb-tack"`) — RESOLVED
+**Ditemukan di:** Port dari `migration/18.0` commit `82e25af`. Code review 19.0 (I-3) sudah mencatat ini tapi tidak diubah sampai sekarang.
+**Tag:** `[GAP-MIGRASI]` (konvensi sejak 18.0, tetap di 19.0)
+**Lokasi:** `pin_message/static/src/js/pinMessage.js` (`icon`)
+**Fix:** `icon: "fa fa-thumb-tack"`. Dua tombol pin (inline + action menu) tetap desain 17.0, bukan bug.
+**Status:** ✅ **RESOLVED** (2026-08-28)
+
+### MF-27 [pin_message] — `message.type`/`message.model` mati; filter jenis-pesan silent-fail — RESOLVED
+**Ditemukan di:** Port dari `migration/18.0` commit `82e25af`. Field JS mail: `type` → `message_type`, `model` → `thread.model` (sudah sejak 18.0; 19.0 tidak mengembalikan alias lama).
+**Tag:** `[GAP-MIGRASI]`
+**Lokasi:** `pinnedMessages.xml` (`t-if`), `pinMessage.js` (`condition`)
+**Fix:** `message.message_type`; `props.message.thread?.model`. `console.log` MF-10 sudah dihapus di 19.0, tidak dikembalikan.
+**Dampak yang diperbaiki:** tombol pin tidak lagi muncul di notifikasi OdooBot / notification / auto_comment.
+**Status:** ✅ **RESOLVED** (2026-08-28)
 
 ---
 
