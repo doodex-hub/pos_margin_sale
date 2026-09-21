@@ -277,7 +277,39 @@ ditutup.** `01a_MIGRATION_INTAKE.md` + `01b_BASELINE_SPEC.md` ditulis lewat 3 ag
 **✔️ GATE STEP 1 LULUS untuk ketiga modul (2026-09-21).** Dev konfirmasi lanjut dengan ke-4 asumsi
 carried-forward di atas apa adanya (port kode saja, source tidak aktif dikembangkan, tidak ada
 dependency OCA, tidak ada dokumen pelengkap lain di luar `doc-dev/backfill/` yang sudah ditemukan) —
-tidak ada koreksi. Lanjut ke Step 2 (Diff & Compatibility Analysis) untuk ketiga modul.
+tidak ada koreksi.
+
+**Step 2 (Diff & Compatibility Analysis) — SELESAI untuk ketiga modul (2026-09-21, tidak ada gate),
+via 3 agent riset paralel.** 6 finding baru ditemukan dan dicatat ke `FINDINGS.md` (`MF-29`..`MF-34`):
+
+- **`MF-29` [pos_margin_threshold][sale_margin_threshold] — KRITIS, lintas-modul.** View
+  `product.product_variant_easy_edit_view` **dihapus total** di native 20.0 (dikonfirmasi grep
+  penuh, 0 match, termasuk versi core `stock`-nya sendiri) — kedua modul akan gagal install kalau
+  di-port apa adanya. **Butuh keputusan desain dev sebelum Step 3** (kandidat pengganti:
+  `product.product_normal_form_view`, tapi itu form penuh bukan popup). Ditulis ke
+  `migration-records/pos-margin-sale_19.0_20.0/SUMMARY.md` sebagai kandidat knowledge base.
+- **`MF-30` [pos_margin_threshold][sale_margin_threshold]** — `ir.model.access.csv`→`ir.access.csv`,
+  fix mekanis (rename + reformat 1 baris), tidak perlu keputusan dev.
+- **`MF-31` [pos_margin_threshold]** — anchor view `stock_account.view_category_property_form_stock`
+  pindah ke `account.view_category_property_form`, fix satu baris.
+- **`MF-32` [pin_message]** — `messageActionsRegistry` berubah lagi (getter `canAddReaction`, filter
+  `IS_ACTION_DEFINITION_SYM`, ikon FontAwesome→Odoo Icons `push_pin`), fix mekanis diketahui untuk
+  ketiganya.
+- **`MF-33` [pin_message]** — komponen `Chatter` di-rewrite arsitektural, WAJIB tour test nyata di
+  Step 6/9, jangan diasumsikan aman dari baca kode saja.
+- **`MF-34` [pos_margin_threshold]** — `line.comboParent` kemungkinan no-op, TAPI tidak bisa
+  dipastikan murni gap 19→20 karena **`native-source` (`enterprise19.0`) ternyata folder KOSONG di
+  disk** — perlu dev refill folder itu untuk verifikasi tuntas (blocker infrastruktur, bukan cuma
+  keputusan konten).
+
+**`MF-28` (pin_message, `_to_store()` hilang) — SOLUSI DITEMUKAN, bukan lagi blocker.** Pola
+pengganti `_store_message_fields()` + `res.attr("is_pinned")`, diverifikasi dari 2 override native
+yang sudah berjalan (`rating`, `im_livechat`) — siap dieksekusi mekanis di Step 6.
+
+**Belum dikerjakan:** Step 3 (Migration Spec) untuk ketiga modul — `MF-29` (view popup hilang) dan
+`MF-34` (folder `native-source` kosong) sebaiknya diselesaikan/diklarifikasi dulu sebelum Step 3
+`pos_margin_threshold`/`sale_margin_threshold` ditulis final, supaya spec tidak berasumsi kosong di
+area itu.
 
 ---
 
@@ -310,8 +342,8 @@ satu-satunya yang tersisa sebelum gate Step 1 ditutup dan lanjut ke Step 2.
 | # | Step | pos_margin_threshold | sale_margin_threshold | pin_message |
 |---|---|---|---|---|
 | 1 | Intake & Scope | ✔️ Gate lulus (2026-09-21) | ✔️ Gate lulus (2026-09-21) | ✔️ Gate lulus (2026-09-21) |
-| 2 | Diff & Compatibility Analysis | 🔄 Sedang dikerjakan | 🔄 Sedang dikerjakan | 🔄 Sedang dikerjakan (prioritas `MF-28`) |
-| 3 | Migration Spec | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
+| 2 | Diff & Compatibility Analysis | ✅ Selesai — 1 kritis lintas-modul (`MF-29`) | ✅ Selesai — 1 kritis lintas-modul (`MF-29`) | ✅ Selesai — `MF-28` solusi ditemukan, `MF-32`/`33` fix diketahui |
+| 3 | Migration Spec | ⬜ Belum mulai — tunggu `MF-29`/`MF-34` | ⬜ Belum mulai — tunggu `MF-29` | ⬜ Belum mulai |
 | 4 | Spec Completeness Review | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 5 | Acceptance Criteria & Test Plan | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 6 | Code Migration | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
