@@ -274,8 +274,10 @@ ditutup.** `01a_MIGRATION_INTAKE.md` + `01b_BASELINE_SPEC.md` ditulis lewat 3 ag
    project migrasi sebelumnya — sudah dipakai sebagai bukti pendukung `MF-08` di atas, tapi
    konfirmasi ke kamu: apakah ada dokumen/test lain di luar ini yang belum diketahui AI?
 
-Begitu 4 poin di atas dikonfirmasi (atau dikoreksi), gate Step 1 bisa ditutup dan lanjut ke Step 2
-(Diff & Compatibility Analysis) untuk ketiga modul.
+**✔️ GATE STEP 1 LULUS untuk ketiga modul (2026-09-21).** Dev konfirmasi lanjut dengan ke-4 asumsi
+carried-forward di atas apa adanya (port kode saja, source tidak aktif dikembangkan, tidak ada
+dependency OCA, tidak ada dokumen pelengkap lain di luar `doc-dev/backfill/` yang sudah ditemukan) —
+tidak ada koreksi. Lanjut ke Step 2 (Diff & Compatibility Analysis) untuk ketiga modul.
 
 ---
 
@@ -307,8 +309,8 @@ satu-satunya yang tersisa sebelum gate Step 1 ditutup dan lanjut ke Step 2.
 
 | # | Step | pos_margin_threshold | sale_margin_threshold | pin_message |
 |---|---|---|---|---|
-| 1 | Intake & Scope | ✅ Draft ditulis (2026-09-21), gate belum ditutup | ✅ Draft ditulis (2026-09-21), gate belum ditutup | ✅ Draft ditulis (2026-09-21), gate belum ditutup |
-| 2 | Diff & Compatibility Analysis | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
+| 1 | Intake & Scope | ✔️ Gate lulus (2026-09-21) | ✔️ Gate lulus (2026-09-21) | ✔️ Gate lulus (2026-09-21) |
+| 2 | Diff & Compatibility Analysis | 🔄 Sedang dikerjakan | 🔄 Sedang dikerjakan | 🔄 Sedang dikerjakan (prioritas `MF-28`) |
 | 3 | Migration Spec | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 4 | Spec Completeness Review | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 5 | Acceptance Criteria & Test Plan | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
