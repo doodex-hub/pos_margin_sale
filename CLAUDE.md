@@ -238,9 +238,50 @@ sesuai file yang berubah. Ini menggantikan template `08_CODE_REVIEW.md` sebagai 
 
 ## Status saat ini
 
-**Bootstrap selesai (2026-09-21).** Belum ada branch `migration/20.0` di remote (belum di-push, dev
-perlu jalankan sendiri `git push -u origin migration/20.0` kapan pun siap — AI tidak pernah
-melakukan ini). Yang sudah dikerjakan sesi ini:
+**Step 1 (Intake & Scope) — draft SUDAH DITULIS untuk ketiga modul (2026-09-21), gate BELUM
+ditutup.** `01a_MIGRATION_INTAKE.md` + `01b_BASELINE_SPEC.md` ditulis lewat 3 agent riset paralel
+(satu per modul), masing-masing cross-check langsung ke baseline `01b_BASELINE_SPEC.md` project
+18.0→19.0 sebelumnya + kode 19.0 aktual (branch ini) + `native-target`/`native-target-enterprise`
+(`odoo20`/`enterprise20`). Tally klaim `BSL-NNN`: `pos_margin_threshold` 22 (19 `[MATCH]`/1 `[GAP]`/
+2 `[NO-SPEC]`), `sale_margin_threshold` 19 (16/1/2), `pin_message` 17 (12/2/3).
+
+**4 finding BARU ditemukan saat cross-check, sudah dicatat ke `FINDINGS.md` (`MF-25`..`MF-28`):**
+- **`MF-28` [pin_message] — KRITIS.** Native 20.0 `mail.message` **tidak punya `_to_store()` lagi**
+  (diganti `_store_message_fields()`/`Store.FieldList`) — fix `MF-14`/`MF-15`/`MF-18` dari project
+  18.0→19.0 (yang mengasumsikan method itu tetap ada, cuma signature beda) TIDAK RELEVAN lagi untuk
+  20.0. Override modul ini butuh rewrite arsitektural, bukan port mekanis. **WAJIB jadi riset
+  prioritas #1 Step 2** untuk modul ini — jangan mulai Step 6 fase manapun untuk `pin_message`
+  sebelum ini diriset tuntas. Ditulis juga sebagai kandidat knowledge base ke
+  `migration-tool/migration-records/pos-margin-sale_19.0_20.0/SUMMARY.md`.
+- **`MF-25` [pos_margin_threshold]/`MF-27` [sale_margin_threshold]** — dua instance BARU dari pola
+  `MF-24` (`position="replace"` pada field harga yang diam-diam menghapus atribut core), belum
+  pernah dicatat sebelumnya walau sudah ada sejak project sebelumnya.
+- **`MF-26` [sale_margin_threshold]** — singleton-assumption bug KEDUA (beda method dari `MF-08`) di
+  `_compute_is_rental_order_installed`.
+- **`MF-08` mekanismenya dikoreksi** (bukan keputusannya) — bukti eksekusi `doc-dev/backfill/`
+  (`F-05`, baru ketahuan Step 1 project ini, belum pernah dirujuk 2 project migrasi sebelumnya)
+  menunjukkan ini genuinely **hard crash** (`ValueError: Expected singleton`), bukan "silent skip"
+  seperti tercatat sebelumnya. Keputusan "dipertahankan" tetap tidak berubah.
+
+**Gate Step 1 belum ditutup — perlu konfirmasi eksplisit dari kamu atas 4 asumsi carried-forward**
+(sudah ditulis di draft sebagai asumsi, bukan fakta terkonfirmasi, konsisten di ketiga modul):
+1. Sifat migrasi = **port kode saja** (bukan upgrade instance)
+2. Source (`migration/19.0`) **tidak** aktif dikembangkan selama migrasi ini
+3. **Tidak ada** dependency third-party/OCA untuk ketiga modul
+4. **Tidak ada** dokumen pelengkap lain (manual/PRD/spec lama) di luar baseline spec project
+   sebelumnya — *koreksi kecil*: `pin_message`/`sale_margin_threshold` agent menemukan
+   `doc-dev/backfill/` (characterization test lama, 17.0) yang belum pernah dirujuk eksplisit di 2
+   project migrasi sebelumnya — sudah dipakai sebagai bukti pendukung `MF-08` di atas, tapi
+   konfirmasi ke kamu: apakah ada dokumen/test lain di luar ini yang belum diketahui AI?
+
+Begitu 4 poin di atas dikonfirmasi (atau dikoreksi), gate Step 1 bisa ditutup dan lanjut ke Step 2
+(Diff & Compatibility Analysis) untuk ketiga modul.
+
+---
+
+**Bootstrap selesai (2026-09-21).** Branch `migration/20.0` belum di-push ke remote (dev perlu
+jalankan sendiri `git push -u origin migration/20.0` kapan pun siap — AI tidak pernah melakukan
+ini). Yang sudah dikerjakan sesi ini:
 
 - Branch `migration/20.0` dibuat dari tip `migration/19.0` (commit `5876d01`).
 - `.claude/settings.json` diisi path referensi nyata: `native-target` = `D:\Kuncoro\doodex\repo\odoo20`
@@ -256,14 +297,8 @@ melakukan ini). Yang sudah dikerjakan sesi ini:
 - `.claude/skills/` (odoo-guidelines/odoo-web-guidelines/odoo-security/odoo-review — Odoo's Skill
   Library resmi) dikonfirmasi terpasang lengkap (4 skill + guideline files pendukungnya).
 
-**Belum dikerjakan / blocker Step 1:**
-- §0 `01a_MIGRATION_INTAKE.md` (folder referensi) — perlu dikonfirmasi ulang ke dev meski semua path
-  di atas sudah terisi (konfirmasi eksplisit belum diminta sesi ini).
-- Konfirmasi ulang ke dev: sifat migrasi (`port kode saja`, diasumsikan dari 2 project sebelumnya),
-  source aktif dikembangkan (diasumsikan Tidak), dependency `third-party-*`/OCA (diasumsikan tidak
-  ada, sama seperti project 18.0→19.0 — tapi WAJIB dicek ulang di intake, jangan diasumsikan
-  permanen).
-- Step 1 (Intake & Scope) itu sendiri belum dimulai untuk ketiga modul.
+**Belum dikerjakan / blocker Step 1:** lihat 4 poin konfirmasi di ringkasan paling atas — itu
+satu-satunya yang tersisa sebelum gate Step 1 ditutup dan lanjut ke Step 2.
 
 > AI: update bagian ini sendiri di akhir tiap sesi kerja, supaya sesi berikutnya tahu persis harus
 > lanjut dari mana tanpa tanya ulang ke user.
@@ -272,7 +307,7 @@ melakukan ini). Yang sudah dikerjakan sesi ini:
 
 | # | Step | pos_margin_threshold | sale_margin_threshold | pin_message |
 |---|---|---|---|---|
-| 1 | Intake & Scope | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
+| 1 | Intake & Scope | ✅ Draft ditulis (2026-09-21), gate belum ditutup | ✅ Draft ditulis (2026-09-21), gate belum ditutup | ✅ Draft ditulis (2026-09-21), gate belum ditutup |
 | 2 | Diff & Compatibility Analysis | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 3 | Migration Spec | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 4 | Spec Completeness Review | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |

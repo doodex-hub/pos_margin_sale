@@ -14,7 +14,7 @@ Tidak dihitung).
 | Step | # Prompt Normal | # Prompt Tool-fix | Catatan |
 |---|---|---|---|
 | 0 — Bootstrap (sebelum step 1 resmi) | 1 | 0 | Branch `migration/20.0` dibuat dari `migration/19.0`, `.claude/settings.json` diisi path referensi (`odoo20`, `enterprise20`, `enterprise19.0` sebagai native-source), `doc-dev/migration_19.0_20.0/doc/` dibuat, `CLAUDE.md` diinstansiasi dari template, `.claude/skills/` (odoo-guidelines/odoo-review/odoo-security/odoo-web-guidelines) dikonfirmasi terpasang. |
-| 1 — Intake & Baseline Spec | | | |
+| 1 — Intake & Baseline Spec | 1 | 0 | Draft `01a_MIGRATION_INTAKE.md` + `01b_BASELINE_SPEC.md` ditulis untuk ketiga modul (3 agent paralel), cross-check ke baseline 18.0→19.0 + kode 19.0 aktual + native20/enterprise20. 4 finding baru (`MF-25`..`MF-28`, termasuk 1 kritis `MF-28` — `_to_store()` hilang di native 20.0) + koreksi mekanisme `MF-08` ditulis ke `FINDINGS.md`. Gate Step 1 BELUM ditutup — menunggu konfirmasi user atas asumsi carried-forward (sifat migrasi, source aktif dikembangkan, dependency OCA, dokumen pelengkap lain). |
 | 2 — Diff & Compatibility Analysis | | | |
 | 3 — Migration Spec | | | |
 | 4 — Spec Completeness Review | | | |
@@ -25,7 +25,7 @@ Tidak dihitung).
 | 9 — Dev Testing | | | |
 | 10 — QA Testing | | | |
 | 11 — UAT Sign-off | | | |
-| **Total** | 1 | 0 | |
+| **Total** | 2 | 0 | |
 
 ## Catatan Definisi
 
