@@ -1,0 +1,39 @@
+# Prompt Log — pos_margin_threshold / sale_margin_threshold / pin_message (19.0 → 20.0)
+
+**Tujuan:** data empiris untuk `migration-tool/ai-doc/ROADMAP.md` §5 (Fase Otomasi) — mengukur
+seberapa sering user harus prompt untuk flow normal migrasi vs prompt tool-fix, per step. Lihat
+`migration-tool/templates/PROMPT_LOG.md` untuk definisi klasifikasi lengkap (Normal / Tool-fix /
+Tidak dihitung).
+
+**Cross-cutting, satu file untuk ketiga modul** (lihat CLAUDE.md §"Adaptasi multi-modul").
+
+---
+
+## Log per Step
+
+| Step | # Prompt Normal | # Prompt Tool-fix | Catatan |
+|---|---|---|---|
+| 0 — Bootstrap (sebelum step 1 resmi) | 1 | 0 | Branch `migration/20.0` dibuat dari `migration/19.0`, `.claude/settings.json` diisi path referensi (`odoo20`, `enterprise20`, `enterprise19.0` sebagai native-source), `doc-dev/migration_19.0_20.0/doc/` dibuat, `CLAUDE.md` diinstansiasi dari template, `.claude/skills/` (odoo-guidelines/odoo-review/odoo-security/odoo-web-guidelines) dikonfirmasi terpasang. |
+| 1 — Intake & Baseline Spec | | | |
+| 2 — Diff & Compatibility Analysis | | | |
+| 3 — Migration Spec | | | |
+| 4 — Spec Completeness Review | | | |
+| 5 — Acceptance Criteria & Test Plan | | | |
+| 6 — Code Migration (semua fase A-G2) | | | |
+| 7 — Data Migration Scripts | | | — (N/A, port kode saja) |
+| 8 — Code Review | | | |
+| 9 — Dev Testing | | | |
+| 10 — QA Testing | | | |
+| 11 — UAT Sign-off | | | |
+| **Total** | 1 | 0 | |
+
+## Catatan Definisi
+
+*(belum ada revisi kriteria di project ini)*
+
+## Ringkasan Akhir Project (isi setelah step 11 selesai)
+
+- Step dengan rasio Tool-fix tertinggi: ...
+- Step yang paling "bersih": ...
+- Tulis balik ringkasan project ini ke `migration-tool/ai-doc/ROADMAP.md` §5 begitu project ini
+  selesai.
