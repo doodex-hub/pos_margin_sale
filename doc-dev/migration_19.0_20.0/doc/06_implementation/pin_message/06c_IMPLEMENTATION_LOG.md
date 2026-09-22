@@ -1,8 +1,11 @@
 # Implementation Log — pin_message (19.0 → 20.0)
 
-**Status:** 🔄 Hampir selesai — `MF-28`/`MF-32`/`MF-33`/`MF-36`/`DIFF-04` semua diterapkan &
-diverifikasi. Fitur pin/unpin DAN expand/jump "Pinned Messages" end-to-end dikonfirmasi berfungsi
-via UI nyata.
+**Status:** ✅ Selesai — `MF-28`/`MF-32`/`MF-33`/`MF-36`/`DIFF-04` semua diterapkan & diverifikasi.
+Fitur pin/unpin DAN expand/jump "Pinned Messages" end-to-end dikonfirmasi berfungsi via UI nyata
+**DAN via Tour test otomatis (real Chrome, `--test-enable`, 2026-09-22)** — kedua tour
+(`pin_message_toggle_pin_tour`, `pin_message_action_menu_pin_visible_tour`) LOLOS bersih, termasuk
+step expand section yang persis menguji `MF-36`. Ini satu-satunya dari ketiga modul yang sudah
+genuinely lolos Tour test otomatis penuh di sesi ini (`pos_margin_threshold` masih terblokir `MF-43`).
 
 **Tanggal:** 2026-09-22
 

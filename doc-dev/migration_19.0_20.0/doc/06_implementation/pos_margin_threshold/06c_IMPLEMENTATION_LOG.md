@@ -19,14 +19,24 @@ sebelum `MF-29` benar-benar final. Applicability Check penuh (Fase A→G) belum 
 | Visual parity `MF-29` | **Dikonfirmasi dev 2026-09-22** — tambah `decoration-danger="margin_sale &lt; 0.0"` pada kolom `margin_sale` + kolom baru `minimum_sale_price_with_tax` ("Incl. Tax") di list Product Variants, menyamai 2 elemen popup 19.0 (`product_variant_easy_edit_view_margin_sale`) yang belum ikut pindah ke kolom list saat `MF-29` dieksekusi. Field `minimum_sale_price_with_tax` baru ditambahkan ke `ProductProduct` (compute dari `margin_sale`/`minimum_sale_price`/`product_tmpl_id.taxes_id`, mirror pola `ProductTemplate` yang sudah ada). Diverifikasi live: margin negatif tampil merah, kolom Incl. Tax terisi benar. | `views/products.xml`, `models/product.py` (field+compute baru) | `FINDINGS.md` (lihat entri visual-parity `sale_margin_threshold`, berlaku sama untuk modul ini) |
 | `DIFF-05`/`MF-34` | **Dikonfirmasi dev 2026-09-22 (keputusan: PERBAIKI, bukan pertahankan)** — `line.comboParent` → `line.combo_parent_id` di ekspresi `t-attf-class`. Cross-check ke native `odoo19`/`enterprise19` (setelah `native-source` diisi ulang) mengonfirmasi `comboParent` tidak pernah valid di versi manapun (typo sejak branch `17.0`, dikonfirmasi via `git show 17.0:...`) — field asli native adalah `combo_parent_id`. Komentar XML (bahasa Inggris) ditambahkan menjelaskan asal-usul rename. Styling combo-child (indent+border kiri) AKTIF untuk pertama kalinya di 20.0 — perubahan behavior yang terlihat, disetujui eksplisit dev. | `static/src/store/orderline.xml` | `FINDINGS.md` `MF-34` |
 | — | Bump `version` → `20.0.1.0`, update `data:` entry nama file security | `__manifest__.py` | `03_MIGRATION_SPEC.md` §1 |
+| `MF-40` | `ir.config_parameter.get_param()` dihapus total di native 20.0. `PosConfig._compute_blocked_warning()` crash runtime setiap kali dipanggil. Fix: `get_param`→`get_bool`. | `models/pos_config.py` | `FINDINGS.md` `MF-40` |
+| `MF-41` | Xpath anchor `t[@t-slot='default']` tidak resolve (native rename ke `t-call-slot`) — template `Orderline` gagal kompilasi total. Setelah diperbaiki, ketahuan SEMUA 4 pemakaian `line` bare di file yang sama juga bug bare-identifier (pola `MF-33`) — diberi prefix `this.`. | `static/src/store/orderline.xml` | `FINDINGS.md` `MF-41` |
+| `MF-42` (workaround, bukan fix modul) | Native 20.0 numpad tombol "Price" disabled untuk cashier role manager kalau `restrict_price_control=False` (logic terbalik dari help text field-nya sendiri, bug native). Workaround: set `restrict_price_control=True` di setup test. | `tests/test_margin_threshold_tour.py` | `FINDINGS.md` `MF-42` |
 
 ## Belum diterapkan (sengaja, menunggu keputusan/urutan normal)
 
 - G1/G2 (install test, tour test) formal — baru dijalankan sebatas smoke-install manual via Docker
   untuk keperluan review visual, BUKAN full test suite Step 6/9 resmi.
-- Verifikasi visual live `MF-34` (combo product sungguhan di POS) — DB QA Docker 20.0 belum ada
-  chart of accounts/config POS. Baru diverifikasi: XML well-formed (`lxml.etree.parse`) + update
-  modul sukses tanpa error. Verifikasi visual sesungguhnya jadi bagian Step 9 (Dev Testing) nanti.
+
+## 🔴 BLOCKER TERBUKA — `MF-43`
+
+Setelah `MF-40`/`MF-41`/`MF-42` diperbaiki, tour `pos_margin_threshold_below_minimum_confirm_tour`/
+`..._blocked_tour` berhasil maju sampai step klik "Pay", TAPI dialog margin minimum
+(`PosStore.pay()` patch) **tidak pernah muncul**. Investigasi mendalam (lihat `FINDINGS.md` `MF-43`
+untuk detail lengkap) MEMBUKTIKAN sisi Python/ORM 100% benar di semua level (compute, field list POS,
+`read()` mentah) — root cause BELUM ditemukan, kemungkinan di jalur RPC/loading real POS boot atau
+sisi JS. **Modul ini BELUM bisa dianggap tuntas Step 9** sampai ini diselesaikan. Verifikasi visual
+live `MF-34` (combo product) JUGA masih tertunda karena tour yang sama belum bisa selesai lolos.
 
 ## Catatan proses
 

@@ -6,9 +6,11 @@
 
 **Modul:** pos_margin_threshold, sale_margin_threshold, pin_message
 **Migrasi:** 19.0 → 20.0
-**Terakhir update:** 2026-09-22 (Step 9, `MF-40` RESOLVED — `ir.config_parameter.get_param()`/
-`set_param()` dihapus total di native 20.0, severity tertinggi project ini, ditemukan begitu test
-suite existing dijalankan sungguhan untuk pertama kali)
+**Terakhir update:** 2026-09-22 (Step 9, `MF-40`..`MF-43` — rangkaian 4 bug ditemukan berturut-turut
+di tour yang sama begitu test suite + Tour test (real Chrome) benar-benar dijalankan untuk pertama
+kali; `MF-40`/`MF-41` RESOLVED (bug modul), `MF-42` WORKAROUND (bug native), `MF-43` MASIH TERBUKA
+— dialog margin minimum tidak muncul, root cause belum ditemukan meski sisi Python/ORM terbukti
+benar di semua level)
 
 ---
 
@@ -38,6 +40,9 @@ suite existing dijalankan sungguhan untuk pertama kali)
 
 | MF-39 | [sale_margin_threshold] `i18n/*.po` (5 file bahasa) tidak pernah dicek kelengkapan terjemahannya terhadap string UI baru dari `DIFF-08`/`MF-29`/`MF-38` (kolom "Incl. Tax" dst) | Ditemukan Step 4 (Spec Completeness Review), 2026-09-22 | `[PERLU-KEPUTUSAN]` → **DIPUTUSKAN** | Rendah | ✅ RESOLVED (2026-09-22) — **keputusan dev: out-of-scope**, tidak diupdate. Migrasi ini "port kode saja", tidak ada keputusan sebelumnya soal update terjemahan. Fallback ke string Inggris untuk string baru, tidak crash — dampak murni kosmetik (UI campur bahasa untuk 2-3 string) |
 | MF-40 | [pos_margin_threshold][sale_margin_threshold] `ir.config_parameter.get_param()`/`set_param()` **dihapus total** di native 20.0, diganti method typed (`get_bool`/`set_bool`/`get_str`/dst) — install sukses, TAPI **crash saat runtime** setiap kali kode ini genuinely dieksekusi (klik "Pay" di POS / confirm Sale Order dengan produk di bawah minimum) | Ditemukan Step 9 (Dev Testing), 2026-09-22, saat menjalankan test suite existing sungguhan untuk pertama kali (`--test-enable`) — TIDAK ketahuan di Step 1-4 manapun karena hanya muncul saat compute yang memakainya benar-benar jalan, bukan saat install modul | `[GAP-MIGRASI]` | **Kritis** | ✅ RESOLVED (2026-09-22) — `get_param`→`get_bool` di `pos_margin_threshold/models/pos_config.py` + `sale_margin_threshold/models/sale_order.py` (keduanya field `Boolean` via `config_parameter=`, dikonfirmasi dari definisi field di `res_config_settings.py` dan pola native `res.config.settings.default_get`/`set_values`), `set_param`→`set_bool` di 2 file test yang juga memakai API lama. Diverifikasi: 0 failed, 0 error di 22 test (sebelumnya 4 error, semua akibat bug ini) |
+| MF-41 | [pos_margin_threshold] DUA bug bertumpuk di `static/src/store/orderline.xml` (`DIFF-08`), keduanya baru ketahuan begitu Tour test (real Chrome) genuinely jalan untuk pertama kali: (1) xpath anchor `t[@t-slot='default']` tidak pernah resolve — native 20.0 rename total jadi `t-call-slot`; (2) setelah #1 diperbaiki, SEMUA 4 pemakaian identifier bare `line` di file yang sama ternyata bug bare-identifier IDENTIK `MF-33`/`MF-36` (`line` harus `this.line`) | Ditemukan Step 9 (Dev Testing), 2026-09-22, tour pertama kali benar-benar jalan dengan Chrome sungguhan (sebelumnya Chrome belum terpasang di image Docker) | `[GAP-MIGRASI]` | **Kritis** | ✅ RESOLVED (2026-09-22) — (1) xpath diupdate ke `t[@t-call-slot='default']`, dikonfirmasi dari `odoo20/addons/point_of_sale/static/src/app/components/orderline/orderline.xml`; (2) `line.combo_parent_id`/`line.isLessMinimumSalePrice` (di `position="attributes"`) dan `line.isLessMinimumSalePrice`/`line.minimumSalePriceWithTax` (di node baru hasil `position="before"`) semua diberi prefix `this.` — dikonfirmasi native 20.0 sendiri tidak pernah bind bare `line` di scope ini, hanya `this.line` (getter component). `03_MIGRATION_SPEC.md` `DIFF-08` awalnya menulis "tidak ada tindakan, xpath anchor stabil" — kesimpulan itu SALAH, cuma dari baca kode, tidak pernah diverifikasi dengan menjalankan tour sungguhan. Diverifikasi ulang setelah kedua fix: lihat catatan hasil test di bawah |
+| MF-42 | [pos_margin_threshold] **BUKAN bug modul ini** — native 20.0's numpad tombol "Price" (`access_right_plugin.js` `get disablePriceButton()`) punya logic TERBALIK dari help text field-nya sendiri: `restrict_price_control` (help: "Only users with Manager access rights... can modify prices") justru membuat tombol Price DISABLED untuk cashier role "manager" saat `False` (default) — kebalikan dari yang diimplikasikan help text. Dikonfirmasi 19.0 punya logic SAMA SEKALI BEDA (`cashierHasPriceControlRights()`), bukan regresi dari kode lama, genuinely fitur/logic baru 20.0 yang tampak salah | Ditemukan Step 9 (Dev Testing), 2026-09-22, tour `pos_margin_threshold` gagal di step numpad "Price" ("Element is not enabled") setelah `MF-41` diperbaiki | `[GAP-MIGRASI]` (native, di luar kendali modul) | Sedang — blocking test tour, TIDAK blocking fungsi inti manapun di modul ini | ✅ WORKAROUND (2026-09-22) — `restrict_price_control=True` ditambahkan ke setup POS config test (`tests/test_margin_threshold_tour.py`), TIDAK menyentuh file native manapun. Kalau perilaku ini genuinely bug (bukan intentional design 20.0), sebaiknya dilaporkan ke Odoo terpisah dari migrasi ini — di luar scope perbaikan modul |
+| MF-43 | [pos_margin_threshold] **BELUM RESOLVED.** Tour `pos_margin_threshold_below_minimum_confirm_tour`/`..._blocked_tour` (setelah `MF-41`/`MF-42` diperbaiki, tour sudah sampai step klik "Pay") — dialog "Price unit less than minimum price" (`PosStore.pay()` patch, `pos_store.js`) **TIDAK PERNAH muncul**. Root cause BELUM ditemukan meski sudah investigasi mendalam — lihat detail di bawah | Ditemukan Step 9 (Dev Testing), 2026-09-22, setelah `MF-41`/`MF-42` diperbaiki dan tour berhasil sampai step "Pay" | `[GAP-MIGRASI]` | **Kritis** (fitur inti: validasi harga di bawah minimum di POS tidak berfungsi via jalur normal) | 🔴 **TERBUKA — butuh investigasi lanjutan** |
 
 **`DIFF-04` [pos_margin_threshold] — dikonfirmasi dev 2026-09-22, diterapkan.** Field pengganti
 `list_price` (form Product Template, bug lama `MF-24` yang dipertahankan) ditambah
@@ -538,10 +543,65 @@ di 20.0, bukan pilihan desain), murni mekanis.
 
 ---
 
+### MF-43 — Dialog margin minimum TIDAK muncul di POS — TERBUKA, investigasi belum tuntas
+**Ditemukan di:** Step 9 (Dev Testing), 2026-09-22, setelah `MF-41`/`MF-42` diperbaiki — tour
+`pos_margin_threshold_below_minimum_confirm_tour`/`..._blocked_tour` berhasil maju sampai step klik
+tombol "Pay" (sebelumnya gagal lebih awal karena dua bug itu), TAPI langkah berikutnya (assert dialog
+"Price unit less than minimum price" muncul) timeout — dialog genuinely tidak pernah dibuka.
+**Tag:** `[GAP-MIGRASI]`
+**Gejala:** `PosStore.pay()` (patch di `static/src/store/pos_store.js`) mengecek
+`orderLines.filter(line => line.displayPriceUnit < line.getProduct().get_minimum_sale_price_with_tax())`
+— kalau hasil filter kosong, tidak ada dialog sama sekali, order lanjut ke `super.pay()` seolah tidak
+ada masalah harga.
+**Investigasi yang SUDAH dilakukan (semua mengonfirmasi sisi Python/ORM benar):**
+1. Debug `console.log` sementara di `pos_store.js` (sudah dihapus lagi, TIDAK di-commit) menangkap
+   nilai runtime SAAT tour asli jalan: `displayPriceUnit=5` (benar, sesuai input tour), TAPI
+   `minimum_sale_price=0` DAN `minimum_sale_price_with_tax=0` — padahal produk test dibuat dengan
+   `standard_price=10.0`/`margin_sale=50.0` yang seharusnya menghasilkan `minimum_sale_price=15.0`.
+2. Test Python terpisah (`TransactionCase`, tanpa Chrome/tour) yang mereplikasi PERSIS `create()` call
+   yang sama dari `test_margin_threshold_tour.py` `setUpClass` — hasilnya **BENAR di semua level**:
+   `product.minimum_sale_price=15.0`, `variant.minimum_sale_price=15.0`,
+   `variant.minimum_sale_price_with_tax=15.0`.
+3. `ProductProduct._load_pos_data_fields()` dikonfirmasi MENGEMBALIKAN `minimum_sale_price`/
+   `minimum_sale_price_with_tax` di daftar field (override bekerja benar, tidak ke-drop oleh MRO
+   modul lain).
+4. `variant.read(['minimum_sale_price', 'minimum_sale_price_with_tax'], load=False)` — DIPANGGIL
+   LANGSUNG, bahkan setelah `invalidate_recordset()` (menyingkirkan kemungkinan cache ORM basi) —
+   tetap mengembalikan `15.0`/`15.0` dengan benar.
+5. Cross-check data existing di DB (`Test Rental Margin QA 20`, produk lama sesi ini) menemukan HAL
+   BERBEDA yang SEMPAT dikira relevan tapi ternyata bukan penyebab yang sama: variant produk itu
+   punya `standard_price` NULL (kosong) akibat regenerasi variant saat attribute Size ditambahkan
+   belakangan — TAPI produk test tour ini dibuat tanpa attribute sama sekali (variant tunggal
+   implisit), jadi tidak seharusnya kena pola kerusakan data yang sama; dan poin #2 di atas sudah
+   membuktikan `create()`-nya sendiri menghasilkan `standard_price`/`minimum_sale_price` yang benar.
+**Kesimpulan sementara:** SEMUA mekanisme sisi server (compute Python, daftar field POS,
+`read()` mentah) TERBUKTI BENAR lewat pengujian langsung. Bug ada di suatu tempat ANTARA
+"`read()` mengembalikan nilai benar" dan "data itu genuinely sampai ke objek JS frontend saat POS
+boot sungguhan" — kemungkinan di jalur RPC/loading real POS boot (bukan `_load_pos_data_read` yang
+dipanggil manual), atau di sisi JS (skema IndexedDB/model frontend tidak mengenali 2 field custom
+ini meski field-nya ada di data mentah), tapi belum dibuktikan yang mana. Investigasi dihentikan di
+titik ini karena sudah menghabiskan waktu signifikan (4 bug berturut-turut ditemukan di tour yang
+sama: `MF-40`→`MF-41`→`MF-42`→`MF-43`) — perlu sesi lanjutan dengan pendekatan berbeda (mis. baca
+compiled JS bundle langsung seperti teknik `MF-33`/`MF-36`, atau instrumentasi RPC layer, bukan
+cuma Python-side).
+**Dampak:** dialog peringatan margin tidak muncul via jalur normal POS UI, TAPI belum dikonfirmasi
+apakah field `minimum_sale_price`/`minimum_sale_price_with_tax` genuinely tidak sampai ke frontend,
+atau ada penyebab lain di `pos_store.js`/`models.js` sendiri yang belum ketahuan. **Modul ini
+BELUM bisa dianggap tuntas Step 9** sampai ini diselesaikan.
+**Rekomendasi lanjutan:** (1) baca `app.templates`/store state langsung dari console browser saat
+tour berjalan (teknik yang sama `MF-33`), (2) tambahkan breakpoint/log di level RPC
+(`_load_pos_data_read` dipanggil dari controller POS asli, bukan manual), (3) cek apakah field
+custom butuh registrasi tambahan di skema data POS 20.0 (kemungkinan arsitektur baru yang belum
+diketahui project ini).
+**Keputusan pemilik modul:** belum relevan — ini masih tahap investigasi teknis, bukan keputusan
+desain.
+
+---
+
 ## Cara Pakai
 
 Sama seperti `migration-tool/templates/FINDINGS.md` — lihat file itu untuk skema `MF-NNN`, kapan
 pakai `[PERLU-KEPUTUSAN]`/`[DIWARISI-SOURCE]`/`[GAP-MIGRASI]`, dan kewajiban Step 4/Step 8 membaca
-file ini sebagai bagian gate. `MF-25`..`MF-40` sudah dipakai (`MF-25`..`MF-28` Step 1, `MF-29`..`MF-34`
+file ini sebagai bagian gate. `MF-25`..`MF-42` sudah dipakai (`MF-25`..`MF-28` Step 1, `MF-29`..`MF-34`
 Step 2, `MF-35`/`MF-36` smoke-test Docker 2026-09-22, `MF-37`/`MF-38` Step 6 dini, `MF-39` Step 4,
-`MF-40` Step 9) — ID lanjutan finding BARU selanjutnya mulai dari `MF-41`.
+`MF-40`..`MF-43` Step 9) — ID lanjutan finding BARU selanjutnya mulai dari `MF-44`.

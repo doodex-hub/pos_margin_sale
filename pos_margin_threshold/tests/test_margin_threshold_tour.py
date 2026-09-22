@@ -29,6 +29,18 @@ class TestMarginThresholdTour(TestPointOfSaleHttpCommon):
         })
         cls.main_pos_config.write({
             'payment_method_ids': [(4, cls.bank_payment_method.id)],
+            # MF-42 (native bug, NOT our module): 20.0's numpad Price button reads
+            # `!(config.restrict_price_control or cashier.role != "manager")` for its disabled
+            # state (access_right_plugin.js, get disablePriceButton). Despite the field's own
+            # help text ("Only users with Manager access rights... can modify prices"), the
+            # actual boolean logic is inverted: with restrict_price_control=False (the default)
+            # a manager-role cashier gets the Price button DISABLED, not enabled. Confirmed by
+            # diffing against 19.0 (product_screen.js), which used a completely different,
+            # non-inverted condition (cashierHasPriceControlRights()/role check). This is a
+            # native logic bug unrelated to any of this project's modules -- never patch native
+            # files for this, work around it here so pos_admin (manager role) can use the
+            # numpad Price step our tour depends on (ProductScreen.addOrderline()).
+            'restrict_price_control': True,
         })
 
     def test_pos_margin_threshold_below_minimum_confirm_tour(self):

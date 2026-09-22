@@ -5,16 +5,34 @@
              present since branch 17.0 (confirmed via git show 17.0). comboParent was never a
              valid property on the POS order line model in any Odoo version; native code uses
              combo_parent_id. Fixed here per dev decision on 2026-09-22, this makes the
-             combo-child indent/border styling actually render for the first time. -->
+             combo-child indent/border styling actually render for the first time.
+             MF-41 (second issue found in the same attribute): both `line` references below are
+             also bare identifiers, same root cause as MF-33/MF-36 (bare identifiers do not
+             auto resolve to this.xxx in 20.0 extension-mode nodes). Native 20.0 itself never
+             binds a bare `line` here, only `this.line` (see orderline.js, `get line()`), so this
+             was never valid in any Odoo version despite compiling fine under 19.0's more lenient
+             resolver. Confirmed by Step 9: TypeError reading 'combo_parent_id' of undefined the
+             first time this attribute genuinely rendered via a real Chrome tour. -->
         <xpath expr="//li[contains(@class, 'orderline')]" position="attributes">
             <attribute name="t-attf-class">
-                {{ line.combo_parent_id ? 'border-start border-3 ms-4' : '' }}
-                {{ line.isLessMinimumSalePrice ? 'text-danger' : '' }}
+                {{ this.line.combo_parent_id ? 'border-start border-3 ms-4' : '' }}
+                {{ this.line.isLessMinimumSalePrice ? 'text-danger' : '' }}
             </attribute>
         </xpath>
-        <xpath expr="//li[contains(@class, 'orderline')]//ul[hasclass('info-list')]/t[@t-slot='default']" position="before">
-            <li t-if="line.isLessMinimumSalePrice">
-                <strong>*The price of this product is less than minimum sale price <t t-esc="line.minimumSalePriceWithTax"/></strong> 
+        <!-- MF-41: anchor was t[@t-slot='default'] (19.0 Owl slot syntax). Native 20.0 renamed
+             this to t-call-slot (see odoo20 point_of_sale/.../orderline.xml, the t element has
+             t-call-slot="default" now); t-slot no longer exists anywhere in the compiled
+             template, so this xpath silently failed to locate its anchor. 03_MIGRATION_SPEC.md's
+             DIFF-08 conclusion ("no action needed, xpath anchor stable") was wrong, it was never
+             actually verified by running the tour, only by reading code. Confirmed by Step 9:
+             the tour that exercises this xpath (compiling the Orderline template at all) failed
+             with "Element ... cannot be located in element tree" the first time Chrome tour
+             tests actually ran for this pairing. -->
+        <xpath expr="//li[contains(@class, 'orderline')]//ul[hasclass('info-list')]/t[@t-call-slot='default']" position="before">
+            <!-- MF-41: same bare-identifier fix as above, this inserted node has no t-foreach
+                 binding a `line` variable either, so it must be this.line here too. -->
+            <li t-if="this.line.isLessMinimumSalePrice">
+                <strong>*The price of this product is less than minimum sale price <t t-esc="this.line.minimumSalePriceWithTax"/></strong>
             </li>
         </xpath>
     </t>
