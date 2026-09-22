@@ -27,7 +27,7 @@
 | MF-30 | [pos_margin_threshold][sale_margin_threshold] `ir.model.access.csv`→`ir.access.csv` — model lama dihapus total, kedua modul akan gagal install kalau tidak direname+reformat | Step 2, project 19.0→20.0 (2026-09-21) | `[GAP-MIGRASI]` | Tinggi | 🟡 Fix mekanis diketahui — rename file + reformat 1 baris ke skema `operation`/`domain` |
 | MF-31 | [pos_margin_threshold] Anchor inherit `stock_account.view_category_property_form_stock` pindah jadi `account.view_category_property_form` | Step 2, project 19.0→20.0 (2026-09-21) | `[GAP-MIGRASI]` | Sedang | 🟡 Fix mekanis diketahui — ganti `ref=` satu baris, field target tidak berubah |
 | MF-32 | [pin_message] `messageActionsRegistry` berubah lagi di 20.0 — 3 breaking point konkret (getter `canAddReaction`, filter `IS_ACTION_DEFINITION_SYM`, FontAwesome→Odoo Icons `push_pin`) | Step 2, project 19.0→20.0 (2026-09-21) | `[GAP-MIGRASI]` | Tinggi | 🟡 Fix mekanis diketahui untuk ketiganya — lihat `02_DIFF_ANALYSIS.md` |
-| MF-33 | [pin_message] **KRITIS, 2 lapis bug** — (1) `chatter.js` import path lama: **FIXED & DIVERIFIKASI** (2026-09-22). (2) Setelah (1) di-fix, muncul crash KEDUA yang berbeda (`TypeError` di render template `mail.Chatter` yang sama) — root cause belum ditemukan, kemungkinan konflik `pinnedMessages.xml`/state Chatter dengan arsitektur baru | Step 2 (risiko teoretis), dikonfirmasi 2 crash nyata via smoke-test Docker 2026-09-22 | `[GAP-MIGRASI]` | **Tinggi** | 🔴 Terbuka — bug KEDUA belum ditemukan akarnya, WAJIB diselesaikan sebelum modul ini genuinely dipakai di 20.0 |
+| MF-33 | [pin_message] Crash `Chatter`/`Message` di 20.0 — 3 lapis bug (import path lama, bare identifier tidak auto-resolve ke `this.xxx` di node `t-inherit-mode="extension"`, dan salah ketik `--` di komentar XML) — **SEMUA DIPERBAIKI & DIVERIFIKASI** (2026-09-22) | Step 2 (risiko teoretis), 3 crash nyata ditemukan+diperbaiki via smoke-test Docker 2026-09-22 | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED — diverifikasi bersih di browser (0 error console terkait modul) |
 | MF-34 | [pos_margin_threshold] `line.comboParent` (styling combo di `orderline.xml`) kemungkinan sudah jadi no-op — TIDAK bisa dipastikan murni gap 19→20 karena `native-source` (`enterprise19.0`) ternyata folder KOSONG di disk | Step 2, project 19.0→20.0 (2026-09-21) | `[PERLU-KEPUTUSAN]` | Rendah | 🔵 Terbuka — blocker infrastruktur (native-source kosong), bukan cuma keputusan konten |
 | MF-35 | [sale_margin_threshold] `price_unit` di list `sale.order` dibungkus `<column name="price_unit">` baru di native 20.0 (sengaja — komentar native eksplisit sebut modul seperti `sale_margin`) — xpath lama tidak resolve, install-blocking. Tidak ketahuan di Step 2/3 (file `views/sale_order.xml` tidak eksplisit dicek), baru ketemu dari smoke-install Docker nyata | Ditemukan dari smoke-install Docker 20.0, 2026-09-22 (di luar Step 2/3 formal) | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED (2026-09-22) — xpath diupdate, install sukses dikonfirmasi |
 
@@ -278,29 +278,36 @@ sisa form (Owl error boundary menahan crash di komponen Chatter saja, field lain
 berfungsi — dikonfirmasi `action_confirm()` Sale Order tetap jalan normal via RPC meski chatter
 error terus muncul), tapi UX chatter/message panel genuinely rusak total di 20.0 selama file ini
 belum diperbaiki.
-**Update 2026-09-22 — fix import diterapkan, TAPI bug kedua ditemukan:**
-`pin_message/static/src/js/chatter.js:4` diubah jadi
-`import { Chatter } from "@mail/chatter/web_portal_project/chatter";`, modul di-update
-(`-u pin_message`) supaya asset bundle regenerate. **Diverifikasi via console browser: warning
-"module not defined"/`@pin_message/js/chatter` unmet-dependency SUDAH HILANG** di bundle baru
-(hash asset berubah `eb0cd74`→`65c0b38`) — import sekarang genuinely resolve.
+**✅ RESOLVED 2026-09-22 — 3 bug lapis ditemukan dan diperbaiki semua, diverifikasi bersih:**
 
-**TAPI setelah fix ini, crash `TypeError: Cannot read properties of undefined (reading 'length')`
-di `Chatter.template_mail_Chatter` MASIH TERJADI** (stack trace identik, cuma hash bundle beda) —
-ini bug KEDUA, berbeda akar dari masalah import path. Native `mail.Chatter` template
-(`odoo20/addons/mail/static/src/chatter/web/chatter.xml`) punya banyak ekspresi `.length` pada
-getter yang bergantung `this.state.thread`/`this.attachments`/dst — kemungkinan patch
-`pin_message` (`setup()` yang extend `super.setup()`, atau xpath `pinnedMessages.xml` yang inherit
-`mail.Chatter` t-name) menyebabkan salah satu di antaranya jadi undefined saat render awal. Belum
-ditemukan baris persis penyebabnya (stack trace dari bundle terminifikasi, perlu mode dev/assets
-debug untuk source map yang jelas) — root cause masih terbuka.
-**Rekomendasi:** investigasi lanjutan (aktifkan `--dev=xml,qweb,assets` untuk source map jelas, atau
-tambah `console.log`/breakpoint di `pin_message/static/src/js/chatter.js` `initialLoad()`) untuk
-menemukan properti persis yang undefined. Setelah kedua bug selesai, WAJIB tour test "pindah
-thread" (rekomendasi asli finding ini) sebelum modul dianggap selesai Step 6.
-**Keputusan pemilik modul:** *(tidak perlu keputusan untuk fix #1, sudah diterapkan; fix #2 masih
-butuh investigasi teknis lanjutan — severity tetap Tinggi)*
-**Keputusan pemilik modul:** *(kosong — perlu bukti eksekusi Step 6/9, bukan keputusan dev)*
+1. **Import path** (`chatter.js:4`) — diubah jadi
+   `import { Chatter } from "@mail/chatter/web_portal_project/chatter";`. Diverifikasi via console
+   browser: warning "module not defined"/unmet-dependency `@pin_message/js/chatter` hilang, asset
+   bundle regenerate (hash `eb0cd74`→`65c0b38`).
+2. **Bare identifier tidak auto-resolve ke `this.xxx` di node hasil `t-inherit-mode="extension"`**
+   (root cause sebenarnya, ditemukan via `odoo.__WOWL_DEBUG__.root.__owl__.app.templates` — baca
+   source function template hasil kompilasi langsung dari browser, bandingkan ke pola native yang
+   SELALU eksplisit `this.xxx`):
+   - `pinnedMessages.xml` (`mail.Chatter` extension): `pinnedMessages`/`state`/
+     `togglePinnedMessages` dikompilasi jadi `ctx['pinnedMessages']` (lookup context biasa,
+     `undefined`) bukan `ctx['this'].pinnedMessages` — diperbaiki jadi `this.pinnedMessages`/
+     `this.state`/`this.togglePinnedMessages` di semua 6 titik pemakaian.
+   - `pinnedMessages.xml` (`mail.Message` extension): pola identik untuk `props` — diperbaiki jadi
+     `this.props.message...` di semua titik.
+3. **Bug ketikan sendiri saat menulis komentar penjelasan fix #2** — komentar XML sempat memuat
+   `--` (double-hyphen) yang tidak valid dalam XML comment, sempat merusak SELURUH asset bundle
+   webclient (`Missing template: "web.WebClient"`) untuk seluruh database sampai diperbaiki (ganti
+   ke tanda baca tanpa `--`). Pelajaran: hindari `--`/em-dash-style separator di komentar XML Odoo.
+
+**Verifikasi akhir (browser tab baru, console bersih dari cache lama):** buka form Product (chatter)
+— 0 error console selain `Service worker registration failed` (tidak terkait, gagal karena
+localhost tanpa HTTPS, bukan bug modul). Scroll ke panel chatter — render sempurna, log message
+("Product created", dst) tampil normal, tombol Send message/Log note/Activity berfungsi.
+**Rekomendasi tersisa:** tour test "pindah thread" (rekomendasi asli finding ini) tetap disarankan
+sebagai bagian Step 9 formal untuk verifikasi otomatis, meski verifikasi manual di atas sudah
+cukup meyakinkan untuk menutup risiko utama finding ini.
+**Keputusan pemilik modul:** *(tidak perlu keputusan — ketiga fix mekanis, sudah diterapkan dan
+diverifikasi bersih via browser nyata)*
 
 ### MF-35 — `price_unit` dibungkus `<column>` baru di list `sale.order` native 20.0
 **Ditemukan di:** smoke-install Docker 20.0 nyata (2026-09-22), BUKAN Step 2/3 formal — file

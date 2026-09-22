@@ -4,25 +4,30 @@
     <t t-name="mail.Chatter" t-inherit="mail.Chatter"
        t-inherit-mode="extension">
         <xpath expr="//div[hasclass('o-mail-Chatter-topbar')]" position="after">
-            <div t-if="pinnedMessages.length > 0" class="o-mail-PinnedMessages">
+            <!-- 20.0: bare identifiers (pinnedMessages, state, togglePinnedMessages) no longer
+                 auto resolve to this.xxx in xpath inserted (t-inherit-mode="extension") nodes;
+                 compiled output was ctx['pinnedMessages'] (plain context lookup, undefined)
+                 instead of ctx['this'].pinnedMessages (MF-33). Native 20.0 templates always write
+                 this. explicitly (see chatter.xml this.state...), matched here. -->
+            <div t-if="this.pinnedMessages.length > 0" class="o-mail-PinnedMessages">
                 <div class="d-flex pt-4 cursor-pointer fw-bolder"
-                     t-on-click="togglePinnedMessages">
+                     t-on-click="this.togglePinnedMessages">
                     <hr class="flex-grow-1 fs-3"/>
                     <div class="d-flex align-items-center px-3">
                         <i class="fa fa-fw"
-                           t-att-class="state.showPinnedMessages ? 'fa-caret-down' : 'fa-caret-right'"/>
+                           t-att-class="this.state.showPinnedMessages ? 'fa-caret-down' : 'fa-caret-right'"/>
                         Pinned Messages
-                        <span t-if="!state.showPinnedMessages"
+                        <span t-if="!this.state.showPinnedMessages"
                               class="badge rounded-pill ms-2 text-bg-primary">
-                            <t t-esc="pinnedMessages.length"/>
+                            <t t-esc="this.pinnedMessages.length"/>
                         </span>
                     </div>
                     <hr class="flex-grow-1 fe-3"/>
                 </div>
-                <t t-if="state.showPinnedMessages">
+                <t t-if="this.state.showPinnedMessages">
                     <MessageCardList
-                            messages="pinnedMessages"
-                            thread="state.thread"
+                            messages="this.pinnedMessages"
+                            thread="this.state.thread"
                             mode="'extended'"
                             showEmpty="false"/>
                 </t>
@@ -34,15 +39,17 @@
        t-inherit-mode="extension">
         <xpath expr="//span[hasclass('o-mail-Message-author')]"
                position="after">
-            <t t-if="props.message.message_type !== 'notification' and props.message.message_type !== 'auto_comment' and props.message.message_type !== 'user_notification' and !props.message.is_discussion and props.message.thread?.model !== 'mail.activity.thread'">
+            <!-- 20.0 (MF-33, same root cause as mail.Chatter above): bare props also does not
+                 auto resolve to this.props here, prefixed explicitly. -->
+            <t t-if="this.props.message.message_type !== 'notification' and this.props.message.message_type !== 'auto_comment' and this.props.message.message_type !== 'user_notification' and !this.props.message.is_discussion and this.props.message.thread?.model !== 'mail.activity.thread'">
                 <button class="btn btn-link"
-                        t-on-click="() => this.onMessagePin(props.message.id)">
+                        t-on-click="() => this.onMessagePin(this.props.message.id)">
                     <!-- Font Awesome 4.7 (shipped by Odoo) has no outline thumb-tack variant:
                          fa-thumb-tack-o maps to no glyph and renders as an empty box, so the
                          unpinned state uses the solid icon dimmed instead. -->
-                    <i t-attf-class="fa {{ props.message.is_pinned ? 'fa-thumb-tack text-primary' : 'fa-thumb-tack text-muted' }}"
+                    <i t-attf-class="fa {{ this.props.message.is_pinned ? 'fa-thumb-tack text-primary' : 'fa-thumb-tack text-muted' }}"
                        role="img"
-                       t-att-aria-label="props.message.is_pinned ? 'Unpin Message' : 'Pin Message'"/>
+                       t-att-aria-label="this.props.message.is_pinned ? 'Unpin Message' : 'Pin Message'"/>
                 </button>
             </t>
         </xpath>
