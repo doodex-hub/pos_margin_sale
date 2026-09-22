@@ -126,5 +126,6 @@ menutup gate secara resmi.
 Gap #1 (`views/sale_order.xml`) dan #2 (`ProductProduct._get_view()` / dedup `MF-37`) **sudah
 disinkronkan** ke `03_MIGRATION_SPEC.md` (baris baru di §2 untuk `views/sale_order.xml`, revisi
 "Risiko Integrasi" #2 di §2b) — murni update dokumentasi, tidak ada perubahan kode. Gap #3
-(`i18n/*.po`) **masih terbuka**, menunggu keputusan dev eksplisit (in-scope vs out-of-scope untuk
-migrasi port-kode-saja ini) — lihat pertanyaan yang diajukan ke dev di sesi ini.
+(`i18n/*.po`) **DIPUTUSKAN dev 2026-09-22: out-of-scope**, tidak diupdate (dicatat sebagai `MF-39`,
+`FINDINGS.md`). **Gate ini sekarang LULUS** — ketiga gap sudah ditutup (2 dokumentasi + 1 keputusan
+dev eksplisit).

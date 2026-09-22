@@ -320,5 +320,9 @@ popup ke kolom list. Tidak ada transformasi data lama yang dibutuhkan.
   `product_template_views.xml` dan `products.xml`, record pertama selalu inert) — dipertahankan
   identik, tidak diperbaiki.
 - Dua item flagged §2b poin 3 (`minimum_sale_price_with_tax`, `decoration-danger="margin_sale <
-  0.0"`) — **di luar scope literal keputusan dev `MF-29` saat ini**, ditulis sebagai kandidat kalau
-  dev ingin paritas visual penuh dengan popup lama, bukan diasumsikan otomatis termasuk.
+  0.0"`) — **update Step 4 (2026-09-22): SUDAH DITERAPKAN**, dev mengonfirmasi paritas visual penuh
+  diinginkan (`MF-38`). Baris ini dipertahankan sebagai catatan sejarah keputusan awal, lihat §2b
+  poin 3 untuk hasil final.
+- `i18n/*.po` (5 file bahasa) — **keputusan dev 2026-09-22 (Step 4, `MF-39`): out-of-scope.** String
+  UI baru dari `MF-29`/`MF-38` (kolom "Incl. Tax" dst) TIDAK ditambahkan ke terjemahan, fallback ke
+  string Inggris. Konsisten prinsip "port kode saja" — migrasi ini tidak mencakup update terjemahan.

@@ -393,10 +393,12 @@ stack trace. Diperbaiki & diverifikasi live (expand + klik "See" jump, 0 error c
 `MF-36` sudah dikoreksi root cause-nya (bukan sekadar ditandai resolved — investigasi awal genuinely
 salah, bukan cuma belum tuntas).
 
-**Satu item masih terbuka, butuh keputusan dev:** `sale_margin_threshold` — `i18n/*.po` (5 file
-bahasa) belum pernah dicek kelengkapan terjemahannya terhadap string UI baru (kolom "Incl. Tax" dst,
-`MF-29`/`MF-38`). Perlu keputusan: in-scope (update terjemahan) atau eksplisit out-of-scope untuk
-migrasi "port kode saja" ini — lihat `doc-dev/migration_19.0_20.0/doc/04_completeness/sale_margin_threshold/04_SPEC_COMPLETENESS_REVIEW.md`.
+**`MF-39` [sale_margin_threshold] — RESOLVED (2026-09-22).** `i18n/*.po` (5 file bahasa) tidak pernah
+dicek kelengkapan terjemahannya terhadap string UI baru (`MF-29`/`MF-38`). **Keputusan dev:
+out-of-scope**, tidak diupdate — konsisten prinsip "port kode saja", fallback ke string Inggris
+untuk string baru, tidak ada dampak fungsional.
+
+**Gate Step 4 LULUS untuk ketiga modul.**
 
 **Belum dikerjakan:** Step 5 (Acceptance Criteria & Test Plan) untuk ketiga modul. Step 6 belum
 resmi menjalankan Applicability Check penuh (Fase A→G) — fix di atas dieksekusi dini/parsial di luar
@@ -435,7 +437,7 @@ satu-satunya yang tersisa sebelum gate Step 1 ditutup dan lanjut ke Step 2.
 | 1 | Intake & Scope | ✔️ Gate lulus (2026-09-21) | ✔️ Gate lulus (2026-09-21) | ✔️ Gate lulus (2026-09-21) |
 | 2 | Diff & Compatibility Analysis | ✅ Selesai — 1 kritis lintas-modul (`MF-29`) | ✅ Selesai — 1 kritis lintas-modul (`MF-29`) | ✅ Selesai — `MF-28` solusi ditemukan, `MF-32`/`33` fix diketahui |
 | 3 | Migration Spec | ✅ Selesai — 2 item nunggu konfirmasi dev | ✅ Selesai — 2 detail visual parity nunggu konfirmasi | ✅ Selesai — mekanis, `MF-33` jadi syarat tour test Step 6 |
-| 4 | Spec Completeness Review | ✔️ Gate lulus (2026-09-22, setelah sinkronisasi spec) | 🟡 Gate hampir lulus — 1 item nunggu keputusan dev (`i18n`) | ✔️ Gate lulus (2026-09-22) — `MF-36` root cause dikoreksi + fix |
+| 4 | Spec Completeness Review | ✔️ Gate lulus (2026-09-22, setelah sinkronisasi spec) | ✔️ Gate lulus (2026-09-22) — `i18n` diputuskan out-of-scope (`MF-39`) | ✔️ Gate lulus (2026-09-22) — `MF-36` root cause dikoreksi + fix |
 | 5 | Acceptance Criteria & Test Plan | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 6 | Code Migration | 🔄 Sebagian (`DIFF-01/02/03/04`+`MF-34/38` diterapkan; `MF-34` verifikasi visual live ditunda Step 9) | 🔄 Sebagian (`DIFF-01/08`+`MF-35/37/38` diterapkan+diverifikasi Docker) | 🔄 Sebagian (`MF-28/32/33/36`+`DIFF-04` semua diterapkan+diverifikasi Docker, tidak ada lagi item native yang ditunda) |
 | 7 | Data Migration Scripts | — (asumsi N/A) | — (asumsi N/A) | — (asumsi N/A) |
