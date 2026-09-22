@@ -337,6 +337,18 @@ dini di luar urutan fase normal:**
   dev-snapshot Odoo 20.0 (belum ada rilis stabil), direkomendasikan re-test nanti, BUKAN ditambal
   dari sisi modul.
 
+**`MF-37` (baru, ditemukan+RESOLVED 2026-09-22) — kolom Margin/Minimum sale price dobel di list
+Product Variants 20.0.** Efek samping `MF-29`: `pos_margin_threshold` dan `sale_margin_threshold`
+sama-sama inherit `product.product_product_tree_view` dan menambah field bernama sama. Fix:
+`sale_margin_threshold/views/products.xml` diberi marker `class="o_smt_dedup_*"` pada field-nya,
+lalu `ProductProduct._get_view()` (baru, `sale_margin_threshold/models/product.py`) strip node itu
+spesifik lewat xpath kalau `pos_margin_threshold` terinstall — kolom `pos_margin_threshold` jadi
+satu-satunya yang tampil, sesuai desain `MF-29`. **Diverifikasi bersih di Docker 20.0** (1 set kolom,
+nilai terisi benar). Percobaan awal `column_invisible="module_pos_margin_threshold == True"` gagal
+(tidak ada record context di evaluasi `column_invisible`) — detail lengkap + lesson proses (restart
+container wajib setelah edit file `.py`, `-u <module>` di proses terpisah tidak cukup) di
+`FINDINGS.md` `MF-37` dan `06_implementation/sale_margin_threshold/06c_IMPLEMENTATION_LOG.md`.
+
 **Belum dikerjakan:** Step 4 (Spec Completeness Review), Step 5 (Acceptance Criteria & Test Plan)
 untuk ketiga modul. Step 6 belum resmi menjalankan Applicability Check penuh (Fase A→G) — fix di
 atas dieksekusi dini/parsial di luar urutan normal atas permintaan dev, akan direview ulang sebagai
@@ -379,7 +391,7 @@ satu-satunya yang tersisa sebelum gate Step 1 ditutup dan lanjut ke Step 2.
 | 3 | Migration Spec | ✅ Selesai — 2 item nunggu konfirmasi dev | ✅ Selesai — 2 detail visual parity nunggu konfirmasi | ✅ Selesai — mekanis, `MF-33` jadi syarat tour test Step 6 |
 | 4 | Spec Completeness Review | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 5 | Acceptance Criteria & Test Plan | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
-| 6 | Code Migration | 🔄 Sebagian (`DIFF-01/02/03` diterapkan+diverifikasi Docker, `DIFF-04` blm) | 🔄 Sebagian (`DIFF-01/08`+`MF-35` diterapkan+diverifikasi Docker) | 🔄 Sebagian (`MF-28/32/33`+`DIFF-04` diterapkan+diverifikasi Docker; `MF-36` native, ditunda) |
+| 6 | Code Migration | 🔄 Sebagian (`DIFF-01/02/03` diterapkan+diverifikasi Docker, `DIFF-04` blm) | 🔄 Sebagian (`DIFF-01/08`+`MF-35`+`MF-37` diterapkan+diverifikasi Docker) | 🔄 Sebagian (`MF-28/32/33`+`DIFF-04` diterapkan+diverifikasi Docker; `MF-36` native, ditunda) |
 | 7 | Data Migration Scripts | — (asumsi N/A) | — (asumsi N/A) | — (asumsi N/A) |
 | 8 | Code Review | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 9 | Dev Testing | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
