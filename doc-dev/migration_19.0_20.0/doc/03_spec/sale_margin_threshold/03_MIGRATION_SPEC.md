@@ -195,20 +195,15 @@ Keputusan teknis yang perlu dijelaskan (semua konsisten dengan `MF-29` §"Keputu
    resolve mata uang dengan benar, konsisten dengan cara core menampilkan field monetary lain di
    list yang sama (bukan devisiasi baru).
 
-**Flagged — belum eksplisit di keputusan `MF-29`, perlu konfirmasi dev sebelum Step 6 (tidak
-blocking untuk mulai Step 6 bagian lain, tapi sebaiknya diputuskan sebelum record ini
-diimplementasi):**
-- **`minimum_sale_price_with_tax`** — ada di popup lama (kolom "Incl. Tax", `views/products.xml`
-  baris 57-59 saat ini) tapi TIDAK disebutkan di 3 poin keputusan dev `MF-29`. Spec ini
-  **TIDAK menambahkannya** sebagai kolom (mengikuti scope literal keputusan dev apa adanya) — kalau
-  dev ingin field ini tetap tersedia di list (paritas penuh dengan popup lama), perlu keputusan
-  tambahan eksplisit (kolom baru dengan pola `optional="show"` yang sama).
-- **`decoration-danger="margin_sale < 0.0"`** pada field `margin_sale` sendiri — ada di popup lama
-  (`views/products.xml` baris 48 saat ini) sebagai warning terpisah dari warning `lst_price`, juga
-  TIDAK disebutkan di keputusan `MF-29`. Spec ini **TIDAK menambahkannya** (scope literal), tapi
-  ini murni penambahan `decoration-danger=` satu baris beresiko sangat rendah kalau dev ingin
-  paritas visual penuh — direkomendasikan ditanyakan sekaligus dengan poin
-  `minimum_sale_price_with_tax` di atas, bukan diasumsikan otomatis termasuk/tidak termasuk.
+**Visual parity — ✅ DIKONFIRMASI DEV 2026-09-22, DITERAPKAN (`FINDINGS.md` `MF-38`):**
+- **`minimum_sale_price_with_tax`** — ada di popup lama (kolom "Incl. Tax"). Field baru ditambahkan
+  ke `ProductProduct` (compute dari `margin_sale`/`minimum_sale_price`/`product_tmpl_id.taxes_id`)
+  + kolom baru di list, dengan marker dedup `MF-37` supaya tidak dobel saat `pos_margin_threshold`
+  juga terinstall (modul itu mendapat kolom yang sama).
+- **`decoration-danger="margin_sale < 0.0"`** pada field `margin_sale` sendiri — ditambahkan ke
+  field yang sudah ada.
+- Diverifikasi live (Docker 20.0): margin negatif tampil merah, kolom Incl. Tax terisi benar, tidak
+  dobel. Lihat `06_implementation/sale_margin_threshold/06c_IMPLEMENTATION_LOG.md`.
 
 **Review visual Step 10 (sudah dicatat `MF-29`):** bandingkan tampilan popup 19.0 vs kolom list
 20.0 berdampingan — bukan cuma verifikasi fungsional (field muncul/tersimpan), termasuk cek kedua

@@ -299,14 +299,12 @@ N/A — port kode saja, tidak ada data produksi (`01a_MIGRATION_INTAKE.md` §3, 
   terinstall).
 
 ### Perlu Konfirmasi (belum final, bukan blocker instalasi)
-- **`DIFF-04`** (tambah `options="{'currency_field': 'currency_id', 'field_digits': True}"` ke
-  field pengganti `list_price` di form Product Template) — dikategorikan "wajib kompatibilitas
-  20.0" oleh analisis Step 2/3 (mencegah `MF-24` memburuk akibat perubahan native), TAPI karena
-  ini menyentuh markup yang sama dengan bug warisan `MF-24` yang harus "dipertahankan identik",
-  spec ini menandainya untuk **konfirmasi ringan dev di gate Step 4** sebelum Step 6 mengeksekusi —
-  bukan eskalasi penuh (risiko rendah, arahnya sudah jelas), tapi tetap tidak dieksekusi otomatis
-  tanpa anggukan eksplisit, konsisten prinsip "jangan perbaiki bug lama tanpa persetujuan" di
-  `CLAUDE.md`.
+- **`DIFF-04`** — **✅ DIKONFIRMASI DEV 2026-09-22, DITERAPKAN.** Tambah
+  `options="{'currency_field': 'currency_id', 'field_digits': True}"` ke field pengganti
+  `list_price` di form Product Template. Diverifikasi live (Docker 19.0 vs 20.0): tidak ada beda
+  visual di data instance ini (single-currency) — diterapkan murni sebagai jaga-jaga kompatibilitas
+  jangka panjang. Lihat `FINDINGS.md` §`DIFF-04` dan
+  `06_implementation/pos_margin_threshold/06c_IMPLEMENTATION_LOG.md`.
 
 ### Di Luar Scope (sengaja, disetujui di intake/finding)
 - `MF-01`/`BSL-010`, `MF-02`/`BSL-021`, `MF-03`/`BSL-020`, `MF-04`/`BSL-022`, `MF-23`/`BSL-019`,

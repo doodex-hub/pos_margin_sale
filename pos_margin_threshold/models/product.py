@@ -59,12 +59,19 @@ class ProductProduct(models.Model):
 
     margin_sale = fields.Float(string="Margin", tracking=True, compute="_compute_margin_sale", inverse="_set_product_margin_sale", store=True, readonly=False)
     minimum_sale_price = fields.Float(string="Minimum sale price", compute="_compute_minimum_sale_price", inverse='_inverse_minimum_sale_price', store=True, readonly=False)
+    minimum_sale_price_with_tax = fields.Float(string="Minimum sale price (Tax include)", compute='_compute_minimum_sale_price_with_tax', store=True)
     is_less_minimum_sale = fields.Boolean(string="Less minimum price", compute="_compute_warning")
 
     @api.onchange('margin_sale')
     def _set_product_margin_sale(self):
         for rec in self:
             rec.product_tmpl_id.write({'margin_sale': rec.margin_sale})
+
+    @api.depends('margin_sale', 'minimum_sale_price', 'product_tmpl_id.taxes_id')
+    def _compute_minimum_sale_price_with_tax(self):
+        for rec in self:
+            tax_amount = sum(tax.amount for tax in rec.product_tmpl_id.taxes_id)
+            rec.minimum_sale_price_with_tax = rec.minimum_sale_price * (1 + tax_amount / 100)
 
     def _compute_warning(self):
         for rec in self:

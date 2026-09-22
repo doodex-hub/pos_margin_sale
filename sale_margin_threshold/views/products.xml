@@ -55,12 +55,20 @@
                      nodes specifically (both modules add a field literally named margin_sale/
                      minimum_sale_price to the same native list, so name alone cannot tell them
                      apart in the merged arch). -->
-                <field name="margin_sale" optional="show" widget="float" class="o_smt_dedup_margin"/>
+                <field name="margin_sale" optional="show" widget="float" decoration-danger="margin_sale &lt; 0.0" class="o_smt_dedup_margin"/>
                 <field name="minimum_sale_price"
                        optional="show"
                        widget="monetary"
                        options="{'currency_field': 'currency_id'}"
                        class="o_smt_dedup_min_price"/>
+                <!-- Visual parity dengan popup 19.0 (product_variant_easy_edit_view, dihapus
+                     native 20.0, lihat MF-29): kolom "Incl. Tax" sama seperti popup lama. -->
+                <field name="minimum_sale_price_with_tax"
+                       string="Incl. Tax"
+                       optional="show"
+                       widget="monetary"
+                       options="{'currency_field': 'currency_id'}"
+                       class="o_smt_dedup_min_price_tax"/>
             </field>
         </field>
     </record>

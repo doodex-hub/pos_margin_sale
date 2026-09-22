@@ -60,7 +60,12 @@
         <field name="inherit_id" ref="product.product_template_form_view"/>
         <field name="arch" type="xml">
             <field name="list_price" position="replace">
-                <field name="list_price" decoration-danger="list_price &lt; minimum_sale_price" widget="monetary"/>
+                <!-- DIFF-04/MF-24: native 20.0 menambah options currency_field/field_digits ke
+                     list_price yang tidak ada di 19.0 (murni gap kompatibilitas 19->20). Field ini
+                     tetap position="replace" total (bug lama MF-24 dipertahankan identik, TIDAK
+                     diubah jadi position="attributes") - options berikut cuma menyamai atribut
+                     baru native supaya field pengganti tidak regresi presisi/currency. -->
+                <field name="list_price" decoration-danger="list_price &lt; minimum_sale_price" widget="monetary" options="{'currency_field': 'currency_id', 'field_digits': True}"/>
             </field>
             <field name="categ_id" position="before">
                 <label for="margin_sale" invisible="product_variant_count &gt; 1 and not is_product_variant"/>
@@ -96,8 +101,13 @@
                 <attribute name="decoration-danger">is_less_minimum_sale</attribute>
             </field>
             <field name="lst_price" position="after">
-                <field name="margin_sale" optional="show" widget="float"/>
+                <!-- Visual parity dengan popup 19.0 (product.product_variant_easy_edit_view,
+                     dihapus native 20.0, lihat MF-29): decoration-danger di margin_sale +
+                     kolom minimum_sale_price_with_tax ("Incl. Tax") sama seperti popup lama. -->
+                <field name="margin_sale" optional="show" widget="float" decoration-danger="margin_sale &lt; 0.0"/>
                 <field name="minimum_sale_price" optional="show" widget="monetary"
+                       options="{'currency_field': 'currency_id'}"/>
+                <field name="minimum_sale_price_with_tax" string="Incl. Tax" optional="show" widget="monetary"
                        options="{'currency_field': 'currency_id'}"/>
                 <field name="is_less_minimum_sale" column_invisible="True"/>
             </field>

@@ -323,13 +323,13 @@ dini di luar urutan fase normal:**
   `enterprise19`/`enterprise20` untuk verifikasi `BSL-001` — **dikonfirmasi identik** (order Rental
   skip validasi margin di kedua versi).
 - **`pos_margin_threshold`:** `DIFF-01`/`DIFF-02`/`DIFF-03`(`MF-29`) diterapkan & diverifikasi
-  install sukses di 20.0. `DIFF-04` (options currency `list_price`) **belum** diterapkan, masih
-  menunggu konfirmasi dev ringan.
+  install sukses di 20.0. `DIFF-04` (options currency `list_price`) **dikonfirmasi dev & diterapkan
+  2026-09-22** — diverifikasi tidak ada beda visual di data instance ini (single-currency), murni
+  jaga-jaga kompatibilitas.
 - **`sale_margin_threshold`:** `DIFF-01`(`MF-30`)/`DIFF-08`(`MF-29`) diterapkan. **`MF-35` (baru,
   ditemukan dari smoke-install, bukan Step 2/3)** — `views/sale_order.xml` xpath `price_unit` tidak
   resolve karena native 20.0 membungkusnya dalam `<column name="price_unit">` baru — **sudah
-  diperbaiki & diverifikasi**. Dua detail visual-parity (`minimum_sale_price_with_tax`, warning
-  merah di field margin) masih menunggu konfirmasi dev soal full parity dengan 19.0.
+  diperbaiki & diverifikasi**.
 - **`pin_message`:** `MF-28`/`MF-32`/`MF-33`/`DIFF-04` semua diterapkan & **diverifikasi end-to-end
   via UI nyata** (tulis log note → klik pin → badge "Pinned Messages: 1" muncul benar). **`MF-36`
   (baru)** — crash di komponen NATIVE `mail.MessageCardList` (bukan kode modul ini, dikonfirmasi
@@ -349,12 +349,24 @@ nilai terisi benar). Percobaan awal `column_invisible="module_pos_margin_thresho
 container wajib setelah edit file `.py`, `-u <module>` di proses terpisah tidak cukup) di
 `FINDINGS.md` `MF-37` dan `06_implementation/sale_margin_threshold/06c_IMPLEMENTATION_LOG.md`.
 
+**`MF-38` (baru, ditemukan+RESOLVED 2026-09-22) — visual parity popup 19.0 vs kolom list 20.0.**
+Kolom list `MF-29` tidak membawa 2 elemen visual yang ada di popup 19.0: warna merah saat
+`margin_sale` negatif, dan kolom "Incl. Tax" (`minimum_sale_price_with_tax`). **Dikonfirmasi dev
+2026-09-22** (dijustifikasi `CLAUDE.md` §Source of Truth: "UX di 20.0 harus identik dengan 19.0"),
+diterapkan di KEDUA modul (`pos_margin_threshold` dan `sale_margin_threshold`, karena kolom
+`pos_margin_threshold` yang jadi satu-satunya tampil saat keduanya terinstall bersamaan, hasil dedup
+`MF-37`) — field baru `minimum_sale_price_with_tax` ditambahkan ke `ProductProduct` di kedua modul,
+kolom baru `sale_margin_threshold` diberi marker dedup `MF-37` juga supaya tidak dobel. Diverifikasi
+live: margin negatif tampil merah, kolom Incl. Tax terisi benar, tidak dobel. Detail lengkap +
+catatan efek samping (`ProductProduct._load_pos_data_fields()` di `pos_margin_threshold` sudah sejak
+19.0 mereferensikan field ini padahal sebelumnya belum ada) di `FINDINGS.md` `MF-38` dan kedua
+`06c_IMPLEMENTATION_LOG.md`.
+
 **Belum dikerjakan:** Step 4 (Spec Completeness Review), Step 5 (Acceptance Criteria & Test Plan)
 untuk ketiga modul. Step 6 belum resmi menjalankan Applicability Check penuh (Fase A→G) — fix di
 atas dieksekusi dini/parsial di luar urutan normal atas permintaan dev, akan direview ulang sebagai
-bagian gate Step 6 formal nanti. `DIFF-04` `pos_margin_threshold` dan 2 detail visual-parity
-`sale_margin_threshold` masih menunggu keputusan dev. `MF-34` (folder `native-source` kosong) masih
-blocker infrastruktur terbuka.
+bagian gate Step 6 formal nanti. `MF-34` (folder `native-source` kosong) masih blocker infrastruktur
+terbuka.
 
 ---
 
@@ -391,7 +403,7 @@ satu-satunya yang tersisa sebelum gate Step 1 ditutup dan lanjut ke Step 2.
 | 3 | Migration Spec | ✅ Selesai — 2 item nunggu konfirmasi dev | ✅ Selesai — 2 detail visual parity nunggu konfirmasi | ✅ Selesai — mekanis, `MF-33` jadi syarat tour test Step 6 |
 | 4 | Spec Completeness Review | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 5 | Acceptance Criteria & Test Plan | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
-| 6 | Code Migration | 🔄 Sebagian (`DIFF-01/02/03` diterapkan+diverifikasi Docker, `DIFF-04` blm) | 🔄 Sebagian (`DIFF-01/08`+`MF-35`+`MF-37` diterapkan+diverifikasi Docker) | 🔄 Sebagian (`MF-28/32/33`+`DIFF-04` diterapkan+diverifikasi Docker; `MF-36` native, ditunda) |
+| 6 | Code Migration | 🔄 Sebagian (`DIFF-01/02/03/04`+`MF-38` diterapkan+diverifikasi Docker) | 🔄 Sebagian (`DIFF-01/08`+`MF-35/37/38` diterapkan+diverifikasi Docker) | 🔄 Sebagian (`MF-28/32/33`+`DIFF-04` diterapkan+diverifikasi Docker; `MF-36` native, ditunda) |
 | 7 | Data Migration Scripts | — (asumsi N/A) | — (asumsi N/A) | — (asumsi N/A) |
 | 8 | Code Review | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 9 | Dev Testing | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |

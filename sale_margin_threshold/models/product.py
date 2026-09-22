@@ -72,6 +72,7 @@ class ProductProduct(models.Model):
 
     margin_sale = fields.Float(string="Margin", tracking=True, compute="_compute_margin_sale", inverse="_set_product_margin_sale", store=True, readonly=False)
     minimum_sale_price = fields.Float(string="Minimum sale price", compute="_compute_minimum_sale_price", inverse='_inverse_minimum_sale_price', store=True, readonly=False)
+    minimum_sale_price_with_tax = fields.Float(string="Minimum sale price (Tax include)", compute='_compute_minimum_sale_price_with_tax', store=True)
     is_less_minimum_sale = fields.Boolean(string="Less minimum price", compute="_compute_warning")
 
     @api.onchange('margin_sale')
@@ -82,6 +83,12 @@ class ProductProduct(models.Model):
     def _compute_warning(self):
         for rec in self:
             rec.is_less_minimum_sale = rec.lst_price < rec.minimum_sale_price
+
+    @api.depends('margin_sale', 'minimum_sale_price', 'product_tmpl_id.taxes_id')
+    def _compute_minimum_sale_price_with_tax(self):
+        for rec in self:
+            tax_amount = sum(tax.amount for tax in rec.product_tmpl_id.taxes_id)
+            rec.minimum_sale_price_with_tax = rec.minimum_sale_price * (1 + tax_amount / 100)
 
     @api.depends('categ_id.margin_sale', 'product_tmpl_id.margin_sale')
     def _compute_margin_sale(self):
@@ -139,6 +146,7 @@ class ProductProduct(models.Model):
                 for node in arch.xpath(
                     "//field[@name='margin_sale'][contains(@class, 'o_smt_dedup_margin')]"
                     " | //field[@name='minimum_sale_price'][contains(@class, 'o_smt_dedup_min_price')]"
+                    " | //field[@name='minimum_sale_price_with_tax'][contains(@class, 'o_smt_dedup_min_price_tax')]"
                 ):
                     node.getparent().remove(node)
         return arch, view

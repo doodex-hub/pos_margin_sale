@@ -6,8 +6,8 @@
 
 **Modul:** pos_margin_threshold, sale_margin_threshold, pin_message
 **Migrasi:** 19.0 → 20.0
-**Terakhir update:** 2026-09-22 (`MF-37` resolved — dedup kolom Margin/Minimum sale price ganda di
-list Product Variants 20.0)
+**Terakhir update:** 2026-09-22 (`MF-38` resolved + `DIFF-04` diterapkan — visual parity popup 19.0
+vs kolom list 20.0)
 
 ---
 
@@ -33,6 +33,13 @@ list Product Variants 20.0)
 | MF-35 | [sale_margin_threshold] `price_unit` di list `sale.order` dibungkus `<column name="price_unit">` baru di native 20.0 (sengaja — komentar native eksplisit sebut modul seperti `sale_margin`) — xpath lama tidak resolve, install-blocking. Tidak ketahuan di Step 2/3 (file `views/sale_order.xml` tidak eksplisit dicek), baru ketemu dari smoke-install Docker nyata | Ditemukan dari smoke-install Docker 20.0, 2026-09-22 (di luar Step 2/3 formal) | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED (2026-09-22) — xpath diupdate, install sukses dikonfirmasi |
 | MF-36 | [pin_message] Crash di komponen **native** `mail.MessageCardList` (BUKAN kode modul ini) saat expand section "Pinned Messages" — `ctx['ui'].isSmall` tidak resolve ke `ctx['this'].ui.isSmall` untuk baris pertama setelah `t-foreach` masuk scope, padahal baris kedua di file yang sama resolve benar. Toggle pin sendiri (badge count) SUDAH terbukti berfungsi — ini murni soal expand-view | Ditemukan smoke-test Docker 20.0, 2026-09-22, saat verifikasi `MF-28`/`MF-32` | `[GAP-MIGRASI]` | Sedang | 🔴 Terbuka — kemungkinan bug/quirk native Odoo 20.0 dev-snapshot, di luar kendali modul ini |
 | MF-37 | [pos_margin_threshold][sale_margin_threshold] Kolom "Margin"/"Minimum sale price" DOBEL di list Product Variants 20.0 setelah eksekusi `MF-29` (kedua modul sama-sama inherit `product.product_product_tree_view` dan menambah field bernama sama) | Ditemukan review visual Docker 19.0 vs 20.0, 2026-09-22, saat verifikasi `MF-29` | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED (2026-09-22) — dedup via `ProductProduct._get_view()` di `sale_margin_threshold`, diverifikasi bersih di browser (1 set kolom, bukan 2) |
+| MF-38 | [pos_margin_threshold][sale_margin_threshold] Kolom list `MF-29` (pengganti popup `product_variant_easy_edit_view` yang dihapus native 20.0) tidak membawa 2 elemen visual yang ADA di popup 19.0: warna merah saat `margin_sale` negatif, dan kolom "Incl. Tax" (`minimum_sale_price_with_tax`) | Ditemukan review visual Docker 19.0 vs 20.0, 2026-09-22, saat konfirmasi ulang keputusan `MF-29` bersama dev | `[GAP-MIGRASI]` | Sedang | ✅ RESOLVED (2026-09-22) — **keputusan dev: diterapkan** (dijustifikasi `CLAUDE.md` §Source of Truth: "UX di 20.0 harus identik dengan 19.0"), diverifikasi live di kedua modul: margin negatif tampil merah, kolom Incl. Tax terisi benar, tidak dobel (field+kolom baru `minimum_sale_price_with_tax` di `ProductProduct` juga diberi marker dedup `MF-37` supaya tidak duplikat saat kedua modul terinstall bersamaan) |
+
+**`DIFF-04` [pos_margin_threshold] — dikonfirmasi dev 2026-09-22, diterapkan.** Field pengganti
+`list_price` (form Product Template, bug lama `MF-24` yang dipertahankan) ditambah
+`options="{'currency_field': 'currency_id', 'field_digits': True}"` menyamai atribut baru native
+20.0 (tidak ada di 19.0). Diverifikasi: tidak ada beda visual di data instance ini (single-currency)
+— murni jaga-jaga kompatibilitas kalau instance ini suatu saat multi-currency, risiko nol.
 
 ---
 
