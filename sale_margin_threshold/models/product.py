@@ -112,6 +112,37 @@ class ProductProduct(models.Model):
             'target': 'new',
             'res_id': wizard.id,
         }
+
+    def _get_view(self, view_id=None, view_type='list', **options):
+        # MF-37/MF-29: Product Variants list gets margin_sale/minimum_sale_price columns from
+        # this module AND from pos_margin_threshold (both inherit the same native
+        # product.product_product_tree_view, same field names since it is the same field on
+        # product.product). column_invisible cannot reference plain record fields (Odoo
+        # evaluates it without record context, confirmed empirically: "Name
+        # 'module_pos_margin_threshold' is not defined") and invisible only blanks list cells,
+        # not the column header, so the dedup decided at MF-29 needs to happen here in Python
+        # instead of in the view arch: strip this module's own columns from the FINAL MERGED
+        # arch when pos_margin_threshold is installed, leaving that module's columns as the
+        # only ones rendered. `view` here is the base/requested view record (e.g. the native
+        # product.product_product_tree_view itself), NOT either inheriting delta view, so the
+        # dedup cannot be gated on view.id — it must run whenever this model's list arch is
+        # built, and select the nodes to strip via the class="o_smt_dedup_*" marker (both
+        # modules add a field literally named margin_sale/minimum_sale_price, so field name
+        # alone cannot tell the two modules' nodes apart in the merged arch).
+        arch, view = super()._get_view(view_id, view_type, **options)
+        if view_type == 'list' and self._name == 'product.product':
+            pos_margin_installed = self.env['ir.module.module'].sudo().search([
+                ('name', '=', 'pos_margin_threshold'),
+                ('state', '=', 'installed'),
+            ], limit=1)
+            if pos_margin_installed:
+                for node in arch.xpath(
+                    "//field[@name='margin_sale'][contains(@class, 'o_smt_dedup_margin')]"
+                    " | //field[@name='minimum_sale_price'][contains(@class, 'o_smt_dedup_min_price')]"
+                ):
+                    node.getparent().remove(node)
+        return arch, view
+
     @api.model
     def _register_hook(self):
         super()._register_hook()

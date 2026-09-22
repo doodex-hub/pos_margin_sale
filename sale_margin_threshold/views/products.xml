@@ -42,17 +42,25 @@
                 <attribute name="decoration-danger">is_less_minimum_sale</attribute>
             </field>
             <field name="lst_price" position="after">
-                <field name="module_pos_margin_threshold" column_invisible="True"/>
-                <field name="is_less_minimum_sale" column_invisible="True"/>
-                <field name="margin_sale"
-                       optional="show"
-                       invisible="module_pos_margin_threshold == True"
-                       widget="float"/>
+                <!-- MF-37: column_invisible cannot reference a plain record field (Odoo
+                     evaluates it without record context; confirmed empirically: "Name
+                     'module_pos_margin_threshold' is not defined"), and invisible only blanks
+                     list cells per row, not the column header, so it cannot be used here either
+                     (that caused the earlier MF-37 dedup bug: an empty duplicate column instead
+                     of a hidden one). The dedup with pos_margin_threshold's own columns on this
+                     same native list is instead done in Python, see ProductProduct._get_view()
+                     in models/product.py, which strips these two field nodes from the FINAL
+                     MERGED arch when pos_margin_threshold is installed. The class="o_smt_dedup_*"
+                     markers below exist only so that Python step can select this module's own
+                     nodes specifically (both modules add a field literally named margin_sale/
+                     minimum_sale_price to the same native list, so name alone cannot tell them
+                     apart in the merged arch). -->
+                <field name="margin_sale" optional="show" widget="float" class="o_smt_dedup_margin"/>
                 <field name="minimum_sale_price"
                        optional="show"
-                       invisible="module_pos_margin_threshold == True"
                        widget="monetary"
-                       options="{'currency_field': 'currency_id'}"/>
+                       options="{'currency_field': 'currency_id'}"
+                       class="o_smt_dedup_min_price"/>
             </field>
         </field>
     </record>

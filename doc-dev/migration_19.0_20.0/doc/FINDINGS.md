@@ -6,7 +6,8 @@
 
 **Modul:** pos_margin_threshold, sale_margin_threshold, pin_message
 **Migrasi:** 19.0 → 20.0
-**Terakhir update:** 2026-09-21 (Step 2 — Diff & Compatibility Analysis, ketiga modul)
+**Terakhir update:** 2026-09-22 (`MF-37` resolved — dedup kolom Margin/Minimum sale price ganda di
+list Product Variants 20.0)
 
 ---
 
@@ -31,6 +32,7 @@
 | MF-34 | [pos_margin_threshold] `line.comboParent` (styling combo di `orderline.xml`) kemungkinan sudah jadi no-op — TIDAK bisa dipastikan murni gap 19→20 karena `native-source` (`enterprise19.0`) ternyata folder KOSONG di disk | Step 2, project 19.0→20.0 (2026-09-21) | `[PERLU-KEPUTUSAN]` | Rendah | 🔵 Terbuka — blocker infrastruktur (native-source kosong), bukan cuma keputusan konten |
 | MF-35 | [sale_margin_threshold] `price_unit` di list `sale.order` dibungkus `<column name="price_unit">` baru di native 20.0 (sengaja — komentar native eksplisit sebut modul seperti `sale_margin`) — xpath lama tidak resolve, install-blocking. Tidak ketahuan di Step 2/3 (file `views/sale_order.xml` tidak eksplisit dicek), baru ketemu dari smoke-install Docker nyata | Ditemukan dari smoke-install Docker 20.0, 2026-09-22 (di luar Step 2/3 formal) | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED (2026-09-22) — xpath diupdate, install sukses dikonfirmasi |
 | MF-36 | [pin_message] Crash di komponen **native** `mail.MessageCardList` (BUKAN kode modul ini) saat expand section "Pinned Messages" — `ctx['ui'].isSmall` tidak resolve ke `ctx['this'].ui.isSmall` untuk baris pertama setelah `t-foreach` masuk scope, padahal baris kedua di file yang sama resolve benar. Toggle pin sendiri (badge count) SUDAH terbukti berfungsi — ini murni soal expand-view | Ditemukan smoke-test Docker 20.0, 2026-09-22, saat verifikasi `MF-28`/`MF-32` | `[GAP-MIGRASI]` | Sedang | 🔴 Terbuka — kemungkinan bug/quirk native Odoo 20.0 dev-snapshot, di luar kendali modul ini |
+| MF-37 | [pos_margin_threshold][sale_margin_threshold] Kolom "Margin"/"Minimum sale price" DOBEL di list Product Variants 20.0 setelah eksekusi `MF-29` (kedua modul sama-sama inherit `product.product_product_tree_view` dan menambah field bernama sama) | Ditemukan review visual Docker 19.0 vs 20.0, 2026-09-22, saat verifikasi `MF-29` | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED (2026-09-22) — dedup via `ProductProduct._get_view()` di `sale_margin_threshold`, diverifikasi bersih di browser (1 set kolom, bukan 2) |
 
 ---
 
@@ -397,6 +399,56 @@ bug ke Odoo, atau perlu workaround sisi modul (mis. render list pesan pinned sen
 `message_card_list.xml`/`.js` untuk "fix" ini** — itu di luar scope perbaikan modul migrasi.
 **Keputusan pemilik modul:** *(kosong — butuh keputusan setelah re-test di rilis 20.0 stabil, bukan
 sesuatu yang bisa diputuskan sekarang dari dev-snapshot)*
+
+---
+
+### MF-37 — Kolom Margin/Minimum sale price dobel di list Product Variants 20.0 (efek samping `MF-29`)
+**Ditemukan di:** review visual Docker 19.0 vs 20.0, 2026-09-22, saat verifikasi manual keputusan
+desain `MF-29` (kolom pengganti popup "easy edit" yang dihapus native 20.0).
+**Tag:** `[GAP-MIGRASI]`
+**Deskripsi:** `pos_margin_threshold` (`product_product_tree_view_inherit_margin_sale`) DAN
+`sale_margin_threshold` (`product_product_tree_view_margin_sale`) masing-masing inherit native
+`product.product_product_tree_view` dan menambah `<field name="margin_sale">`/
+`<field name="minimum_sale_price">` persis setelah `lst_price` — field yang sama (didefinisikan di
+model `product.product`), ditambahkan dua kali oleh dua view inherit terpisah. Di 20.0, list
+"Product Variants" (dibuka lewat smart button "N Variants" pada Product Template) menampilkan KEDUA
+pasang kolom berdampingan: "Margin | Minimum sale ... | Margin | Minimum s...".
+**Percobaan fix #1 (GAGAL):** `column_invisible="module_pos_margin_threshold == True"` pada field
+`sale_margin_threshold` — error `EvalError: ... Name 'module_pos_margin_threshold' is not defined`.
+Root cause: `column_invisible` dievaluasi TANPA record context sama sekali (beda dari `invisible`
+pada `<field>` list biasa, yang punya record context tapi cuma mem-blank isi sel per baris, tidak
+menyembunyikan header kolom — jadi `invisible=` juga tidak applicable di sini).
+**Percobaan fix #2 (GAGAL, kesalahan implementasi bukan pendekatan):** override
+`ProductProduct._get_view()` di `sale_margin_threshold/models/product.py`, strip node
+`margin_sale`/`minimum_sale_price` dari arch kalau `pos_margin_threshold` terinstall — TAPI gating-nya
+salah, membandingkan `view.id` (view YANG DIMINTA/basis, yaitu native
+`product.product_product_tree_view` sendiri) dengan id view inherit `sale_margin_threshold` —
+kondisi ini TIDAK PERNAH true karena `view` yang dikembalikan `_get_view()` bukan salah satu delta
+view inherit, jadi override tidak pernah efektif. Sempat memberi kesan "sudah fix" karena update
+modul di Docker (`-u sale_margin_threshold`) sukses tanpa error, TAPI proses `-u` itu berjalan di
+proses `odoo-bin` terpisah/sesaat — server web yang benar-benar melayani browser (`docker compose
+... exec odoo` container long-running) masih menjalankan kode Python LAMA di memori sampai
+di-restart. **Lesson penting:** setelah edit file `.py` (bukan `.xml`/aset), restart container/proses
+server (`docker compose restart odoo`), jangan cuma jalankan `-u <module>` di proses terpisah — kalau
+tidak, hasil test akan terlihat "belum fix" walau kode sudah benar (atau sebaliknya, terlihat "sudah
+fix" padahal proses updatenya sendiri yang salah, harus dicek dua-duanya).
+**Fix final (BERHASIL, diverifikasi 2026-09-22):** dua bagian —
+1. `sale_margin_threshold/views/products.xml` — tambah `class="o_smt_dedup_margin"` /
+   `class="o_smt_dedup_min_price"` pada dua field itu, murni sebagai marker (tidak mengubah tampilan)
+   supaya node milik modul ini bisa ditarget spesifik lewat xpath di arch HASIL MERGE (nama field
+   saja tidak cukup, karena kedua modul pakai nama field yang identik).
+2. `sale_margin_threshold/models/product.py` — `ProductProduct._get_view()`: hapus gating
+   `view.id == target_view.id` yang salah, jalankan dedup setiap kali `view_type == 'list'` untuk
+   `product.product` dan `pos_margin_threshold` terinstall, target node lewat
+   `//field[@name='margin_sale'][contains(@class, 'o_smt_dedup_margin')] | //field[@name='minimum_sale_price'][contains(@class, 'o_smt_dedup_min_price')]`
+   — hanya menghapus node milik `sale_margin_threshold`, kolom `pos_margin_threshold` (tanpa marker)
+   tetap utuh sebagai satu-satunya set kolom yang tampil, sesuai keputusan desain `MF-29`.
+**Verifikasi:** update modul + restart container `odoo` di Docker 20.0, buka Product Variants untuk
+"Test Rental Margin QA 20" (2 varian) — hasil: satu set kolom "Margin"/"Minimum sale price" (bukan
+dua), nilai tetap terisi benar (20.00 / $0.00) untuk kedua baris varian.
+**Keputusan pemilik modul:** tidak perlu — ini murni bug implementasi migrasi (kolom dobel akibat dua
+modul menyentuh view yang sama), bukan ambiguitas desain (desain sudah diputuskan di `MF-29`: kolom
+`pos_margin_threshold` yang jadi satu-satunya yang tampil).
 
 ---
 
