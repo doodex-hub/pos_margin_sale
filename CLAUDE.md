@@ -424,6 +424,32 @@ tiap AC ke Step 9/10/11, merujuk test/tour yang SUDAH ADA (bukan asumsi semua pe
 Step 6 yang sudah dieksekusi dini/parsial di luar urutan normal atas permintaan dev akan direview
 ulang sebagai bagian gate Step 6 formal nanti.
 
+**Step 9 (Dev Testing) — DIMULAI dini atas permintaan dev (2026-09-22, belum gate).** Menjalankan
+test suite existing (`--test-enable`) untuk KETIGA modul untuk pertama kalinya sesi ini menemukan 4
+bug baru BERTUMPUK di satu tour `pos_margin_threshold`, satu-satu ketahuan begitu bug sebelumnya
+diperbaiki (Docker image awalnya tidak punya Chrome sama sekali, jadi tour belum pernah genuinely
+jalan sebelum ini):
+- **`MF-40` (Kritis, RESOLVED)** — `ir.config_parameter.get_param()`/`set_param()` dihapus total di
+  native 20.0. Install sukses TAPI crash runtime di fitur INTI kedua modul margin (klik "Pay" di POS
+  / confirm Sale Order). Fix: `get_bool`/`set_bool`.
+- **`MF-41` (Kritis, RESOLVED)** — `pos_margin_threshold/static/src/store/orderline.xml`: xpath
+  anchor `t-slot` di-rename total jadi `t-call-slot` di native (template gagal kompilasi total),
+  DAN 4 bare `line` identifier (pola sama `MF-33`/`MF-36`) butuh prefix `this.`.
+- **`MF-42` (Sedang, WORKAROUND)** — bug NATIVE (bukan modul manapun project ini): numpad tombol
+  "Price" 20.0 disabled untuk cashier manager kalau `restrict_price_control=False` (logic terbalik
+  dari help text field-nya sendiri). Di-workaround di test setup, tidak menyentuh file native.
+- **`MF-43` (Kritis, 🔴 TERBUKA)** — setelah 3 fix di atas, tour `pos_margin_threshold` sampai step
+  "Pay" tapi dialog margin minimum tidak muncul. Investigasi mendalam MEMBUKTIKAN sisi Python/ORM
+  100% benar (compute, field list POS, `read()` mentah semua diverifikasi terpisah) — root cause
+  belum ditemukan (kemungkinan jalur RPC POS boot atau sisi JS), butuh sesi investigasi lanjutan
+  dengan pendekatan beda (baca compiled JS bundle langsung, teknik yang sama `MF-33`). **Modul
+  `pos_margin_threshold` BELUM bisa dianggap tuntas Step 9.**
+
+**`pin_message` — SATU-SATUNYA modul yang sudah genuinely lolos Tour test otomatis penuh sesi ini**
+(`pin_message_toggle_pin_tour`, `pin_message_action_menu_pin_visible_tour`, real Chrome,
+`--test-enable`) — termasuk step expand yang persis menguji `MF-36`. `sale_margin_threshold` tidak
+punya Tour (backend murni), 10 test Python-nya semua lolos setelah `MF-40` diperbaiki.
+
 ---
 
 **Bootstrap selesai (2026-09-21).** Branch `migration/20.0` belum di-push ke remote (dev perlu
