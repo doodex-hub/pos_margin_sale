@@ -27,7 +27,7 @@
 | MF-30 | [pos_margin_threshold][sale_margin_threshold] `ir.model.access.csv`→`ir.access.csv` — model lama dihapus total, kedua modul akan gagal install kalau tidak direname+reformat | Step 2, project 19.0→20.0 (2026-09-21) | `[GAP-MIGRASI]` | Tinggi | 🟡 Fix mekanis diketahui — rename file + reformat 1 baris ke skema `operation`/`domain` |
 | MF-31 | [pos_margin_threshold] Anchor inherit `stock_account.view_category_property_form_stock` pindah jadi `account.view_category_property_form` | Step 2, project 19.0→20.0 (2026-09-21) | `[GAP-MIGRASI]` | Sedang | 🟡 Fix mekanis diketahui — ganti `ref=` satu baris, field target tidak berubah |
 | MF-32 | [pin_message] `messageActionsRegistry` berubah lagi di 20.0 — 3 breaking point konkret (getter `canAddReaction`, filter `IS_ACTION_DEFINITION_SYM`, FontAwesome→Odoo Icons `push_pin`) | Step 2, project 19.0→20.0 (2026-09-21) | `[GAP-MIGRASI]` | Tinggi | 🟡 Fix mekanis diketahui untuk ketiganya — lihat `02_DIFF_ANALYSIS.md` |
-| MF-33 | [pin_message] Komponen `Chatter` di-rewrite arsitektural (Owl signals) + pindah path modul — patch modul ini secara statis masih valid tapi behavior re-trigger saat ganti thread BELUM bisa dipastikan dari baca kode saja | Step 2, project 19.0→20.0 (2026-09-21) | `[GAP-MIGRASI]` | Sedang | 🔴 Terbuka — WAJIB diverifikasi via tour test nyata di Step 6/9, jangan diasumsikan aman |
+| MF-33 | [pin_message] **KRITIS, dikonfirmasi crash nyata** — `chatter.js` masih import dari path lama `@mail/chatter/web_portal/chatter` yang sudah tidak ada di 20.0 → `TypeError` di SETIAP render form manapun yang punya chatter (Product, Sale Order, dst), bukan cuma saat ganti thread | Step 2 (risiko teoretis), dikonfirmasi crash nyata via smoke-test Docker 2026-09-22 | `[GAP-MIGRASI]` | **Tinggi** | 🔴 Terbuka — WAJIB fix import path (`@mail/chatter/web_portal_project/chatter`) sebelum modul ini genuinely dipakai di 20.0 |
 | MF-34 | [pos_margin_threshold] `line.comboParent` (styling combo di `orderline.xml`) kemungkinan sudah jadi no-op — TIDAK bisa dipastikan murni gap 19→20 karena `native-source` (`enterprise19.0`) ternyata folder KOSONG di disk | Step 2, project 19.0→20.0 (2026-09-21) | `[PERLU-KEPUTUSAN]` | Rendah | 🔵 Terbuka — blocker infrastruktur (native-source kosong), bukan cuma keputusan konten |
 | MF-35 | [sale_margin_threshold] `price_unit` di list `sale.order` dibungkus `<column name="price_unit">` baru di native 20.0 (sengaja — komentar native eksplisit sebut modul seperti `sale_margin`) — xpath lama tidak resolve, install-blocking. Tidak ketahuan di Step 2/3 (file `views/sale_order.xml` tidak eksplisit dicek), baru ketemu dari smoke-install Docker nyata | Ditemukan dari smoke-install Docker 20.0, 2026-09-22 (di luar Step 2/3 formal) | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED (2026-09-22) — xpath diupdate, install sukses dikonfirmasi |
 
@@ -251,20 +251,41 @@ lebih berbahaya dari error karena tidak kelihatan saat testing sekilas.
 **Keputusan pemilik modul:** *(tidak perlu keputusan — fix mekanis, tapi WAJIB dikerjakan bareng
 `MF-28` supaya action pin genuinely muncul)*
 
-### MF-33 — Arsitektur `Chatter` di-rewrite, risiko re-trigger saat ganti thread
-**Ditemukan di:** Step 2, `pin_message`
+### MF-33 — Arsitektur `Chatter` di-rewrite — CRASH NYATA dikonfirmasi (bukan cuma risiko re-trigger)
+**Ditemukan di:** Step 2 (risiko teoretis), **dikonfirmasi crash nyata 2026-09-22** via smoke-test
+manual Docker 20.0 (port 8078) — dicoba buka form Product baru DAN form Rental Order baru, keduanya
+crash identik.
 **Tag:** `[GAP-MIGRASI]`
-**Ref:** `02_diff/pin_message/02_DIFF_ANALYSIS.md`
-**Lokasi:** `pin_message/static/src/js/chatter.js` (patch `onWillUpdateProps`).
-**Deskripsi:** komponen native `Chatter` dipindah dari `@mail/chatter/web_portal/chatter` ke
-`@mail/chatter/web_portal_project/chatter` DAN di-rewrite pakai pola Owl signals/`propComputed`/
-`useOnChange` — patch modul ini masih valid secara sintaks, tapi apakah logic re-trigger-nya
-(berbasis `onWillUpdateProps`) masih genuinely jalan terhadap mekanisme deteksi ganti-thread yang
-BARU tidak bisa dipastikan dari baca kode statis saja.
-**Dampak:** kalau tidak jalan, kemungkinan chatter tidak update saat pindah dokumen/thread — perlu
-dibuktikan lewat eksekusi nyata, bukan dianggap aman.
-**Rekomendasi:** WAJIB ada tour test "pindah thread" eksplisit di Step 6/9 — jangan tutup finding ini
-hanya dari review kode.
+**Ref:** `02_diff/pin_message/02_DIFF_ANALYSIS.md`; console browser (2026-09-22):
+```
+[error] The following modules are needed by other modules but have not been defined...: {0: @mail/chatter/web_portal/chatter}
+[error] ...unmet dependencies...: {0: @pin_message/js/chatter}
+[error] TypeError: Cannot read properties of undefined (reading 'length')
+    at Chatter.template_mail_Chatter ...
+```
+**Lokasi:** `pin_message/static/src/js/chatter.js:4` —
+`import { Chatter } from "@mail/chatter/web_portal/chatter";`
+**Deskripsi:** path lama `@mail/chatter/web_portal/chatter` **TIDAK ADA SAMA SEKALI** di asset bundle
+20.0 (dipindah ke `@mail/chatter/web_portal_project/chatter`, sudah diketahui sejak Step 2). Karena
+modul JS ini gagal di-resolve, `patch(Chatter.prototype, ...)` di file ini patch ke `undefined` —
+begitu komponen native `Chatter` benar-benar coba render (template mencoba akses properti pesan
+pinned), terjadi `TypeError: Cannot read properties of undefined (reading 'length')`.
+**Dampak (lebih parah dari perkiraan Step 2):** ini BUKAN cuma soal "chatter tidak update saat ganti
+thread" — ini crash yang terjadi di **SETIAP render form apapun yang punya widget chatter**
+(dikonfirmasi: form Product baru, form Sale/Rental Order baru — kemungkinan besar SEMUA form
+standar Odoo, karena chatter ada di hampir semua business document). Untungnya non-fatal untuk
+sisa form (Owl error boundary menahan crash di komponen Chatter saja, field lain di form tetap
+berfungsi — dikonfirmasi `action_confirm()` Sale Order tetap jalan normal via RPC meski chatter
+error terus muncul), tapi UX chatter/message panel genuinely rusak total di 20.0 selama file ini
+belum diperbaiki.
+**Rekomendasi:** fix WAJIB sebelum modul ini dianggap Step 6 selesai — ganti baris import jadi
+`import { Chatter } from "@mail/chatter/web_portal_project/chatter";` (sudah tercatat sebagai
+rencana di `03_MIGRATION_SPEC.md`, TAPI belum benar-benar diterapkan ke kode — baru manifest version
+yang di-bump). Setelah fix, WAJIB tour test "pindah thread" tetap dijalankan (rekomendasi asli
+finding ini) untuk memastikan logic re-trigger-nya genuinely benar terhadap arsitektur baru, bukan
+cuma tidak crash lagi.
+**Keputusan pemilik modul:** *(tidak perlu keputusan — fix mekanis diketahui, tinggal dieksekusi;
+severity dinaikkan dari "Sedang" ke "Tinggi" karena dampaknya ternyata jauh lebih luas)*
 **Keputusan pemilik modul:** *(kosong — perlu bukti eksekusi Step 6/9, bukan keputusan dev)*
 
 ### MF-35 — `price_unit` dibungkus `<column>` baru di list `sale.order` native 20.0
