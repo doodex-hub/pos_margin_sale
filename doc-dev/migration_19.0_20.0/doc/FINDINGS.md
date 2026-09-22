@@ -23,7 +23,7 @@
 | MF-26 | [sale_margin_threshold] Singleton-assumption bug KEDUA (beda method dari `MF-08`) di `_compute_is_rental_order_installed` | Step 1, project 19.0→20.0 (2026-09-21) | `[DIWARISI-SOURCE]` | Sedang | 🔵 Terbuka — baru ditemukan, belum ada keputusan user |
 | MF-27 | [sale_margin_threshold] `position="replace"` pada `list_price`/`lst_price` (pola sama `MF-24`/`MF-25`, modul berbeda) — belum pernah dicatat | Step 1, project 19.0→20.0 (2026-09-21) | `[DIWARISI-SOURCE]` | Sedang | 🔵 Terbuka — baru ditemukan, belum ada keputusan user |
 | MF-28 | [pin_message] native 20.0 `mail.message` tidak punya `_to_store()` lagi — **solusi mekanis SUDAH DITEMUKAN Step 2** (`res.attr("is_pinned")` via `_store_message_fields()`, pola native `rating`/`im_livechat`) | Step 1, riset selesai Step 2 (2026-09-21) | `[GAP-MIGRASI]` | Tinggi | 🟡 Solusi ditemukan — siap diimplementasi Step 6, belum ada keputusan/eksekusi |
-| MF-29 | [pos_margin_threshold][sale_margin_threshold] **KRITIS, install-blocking, dampak lintas-modul** — view `product.product_variant_easy_edit_view` DIHAPUS TOTAL di native 20.0, tidak ada pengganti senama | Step 2, project 19.0→20.0 (2026-09-21) | `[GAP-MIGRASI]` | **Tertinggi** | 🔴 Terbuka — butuh keputusan desain dev sebelum Step 3, bukan port mekanis |
+| MF-29 | [pos_margin_threshold][sale_margin_threshold] view `product.product_variant_easy_edit_view` DIHAPUS TOTAL di native 20.0 — **keputusan desain SUDAH DIAMBIL dev**: pindah ke kolom baru di `product_product_tree_view` (list Product Variants, native 20.0 sudah `editable="bottom"`/`multi_edit="1"`) | Step 2, project 19.0→20.0 (2026-09-21) | `[GAP-MIGRASI]` | Tinggi | 🟡 Keputusan diambil (2026-09-21) — siap dieksekusi Step 3/6, plus item review visual Step 10 |
 | MF-30 | [pos_margin_threshold][sale_margin_threshold] `ir.model.access.csv`→`ir.access.csv` — model lama dihapus total, kedua modul akan gagal install kalau tidak direname+reformat | Step 2, project 19.0→20.0 (2026-09-21) | `[GAP-MIGRASI]` | Tinggi | 🟡 Fix mekanis diketahui — rename file + reformat 1 baris ke skema `operation`/`domain` |
 | MF-31 | [pos_margin_threshold] Anchor inherit `stock_account.view_category_property_form_stock` pindah jadi `account.view_category_property_form` | Step 2, project 19.0→20.0 (2026-09-21) | `[GAP-MIGRASI]` | Sedang | 🟡 Fix mekanis diketahui — ganti `ref=` satu baris, field target tidak berubah |
 | MF-32 | [pin_message] `messageActionsRegistry` berubah lagi di 20.0 — 3 breaking point konkret (getter `canAddReaction`, filter `IS_ACTION_DEFINITION_SYM`, FontAwesome→Odoo Icons `push_pin`) | Step 2, project 19.0→20.0 (2026-09-21) | `[GAP-MIGRASI]` | Tinggi | 🟡 Fix mekanis diketahui untuk ketiganya — lihat `02_DIFF_ANALYSIS.md` |
@@ -177,12 +177,34 @@ diretarget).
 **Dampak:** kedua modul akan GAGAL INSTALL total di 20.0 kalau record ini diport apa adanya
 (`inherit_id` tidak resolve). Kandidat pengganti terdekat: `product.product_normal_form_view` (form
 penuh, bukan popup ringan) — TAPI ini keputusan desain, bukan port 1:1.
-**Rekomendasi:** WAJIB diputuskan sebelum Step 3 menulis migration spec untuk bagian ini di kedua
-modul — apakah customization margin dipindah ke form penuh, atau didesain ulang cara lain. Ditulis
-juga sebagai kandidat knowledge base ke
+**Ditulis juga sebagai kandidat knowledge base ke**
 `migration-tool/migration-records/pos-margin-sale_19.0_20.0/SUMMARY.md` karena kemungkinan besar
 relevan untuk modul migrasi Odoo LAIN yang juga customize popup easy-edit produk.
-**Keputusan pemilik modul:** *(kosong — butuh keputusan desain, bukan cuma konfirmasi)*
+
+**Update — Riset lanjutan & keputusan dev (2026-09-21):** dicek langsung ke
+`odoo20/addons/product/views/product_views.xml:424-498` — Odoo 20.0 TIDAK sekadar menghapus popup,
+tapi menggantinya: list "Product Variants" (`product_product_tree_view`, action yang sama,
+`res_model=product.product`) sekarang `editable="bottom"` + `multi_edit="1"` (edit inline langsung
+di list, bisa multi-select). Field `margin_sale`/`minimum_sale_price`/`is_less_minimum_sale` semuanya
+sudah didefinisikan di model `product.product` (bukan field baru) — bisa langsung jadi kolom baru di
+list yang sama.
+
+**Keputusan dev (2026-09-21):**
+1. **Setuju** pindah ke pendekatan kolom-di-list (bukan pindah ke form penuh) — **dicatat untuk
+   review visual di Step 10** (bandingkan tampilan 19.0 popup vs 20.0 kolom list berdampingan, bukan
+   cuma verifikasi fungsional).
+2. Kolom `margin_sale`/`minimum_sale_price` pakai **`optional="show"`** (langsung tampil, sama
+   seperti popup lama yang selalu tampil tanpa toggle — `optional="hide"` akan jadi downgrade
+   visibilitas dibanding behavior 19.0).
+3. Koordinasi lintas-modul (`MF-03`, sembunyikan field margin kalau `pos_margin_threshold` juga
+   terinstall): pakai `invisible="module_pos_margin_threshold == True"` — pola yang SAMA PERSIS
+   sudah dipakai (dan terbukti jalan) di `sale_margin_threshold/views/product_template_views.xml:13-20`
+   untuk form produk penuh, tinggal direplikasi ke kolom list, bukan pola baru.
+
+**Rekomendasi Step 3:** migration spec kedua modul menulis penggantian record
+`product_variant_easy_edit_view_margin_sale` (inherit view yang sudah tidak ada) menjadi record baru
+yang inherit `product.product_product_tree_view`, menambah kolom sesuai 3 poin keputusan di atas.
+**Keputusan pemilik modul:** ✅ Diputuskan (2026-09-21) — lihat detail di atas.
 
 ### MF-30 — `ir.model.access.csv` → `ir.access.csv` (dua modul)
 **Ditemukan di:** Step 2, `pos_margin_threshold` (`DIFF-01`) dan `sale_margin_threshold` (`DIFF-01`)
