@@ -17,13 +17,16 @@ sebelum `MF-29` benar-benar final. Applicability Check penuh (Fase A→G) belum 
 | `DIFF-03`/`MF-29` | Ganti record `product_variant_easy_edit_view_margin_sale` (inherit view yang hilang) menjadi `product_product_tree_view_inherit_margin_sale` (inherit `product.product_product_tree_view`), tambah kolom `margin_sale`/`minimum_sale_price` (`optional="show"`) + `decoration-danger` di `lst_price` | `views/products.xml` | `03_MIGRATION_SPEC.md` §2a |
 | `DIFF-04` | **Dikonfirmasi dev 2026-09-22 (lihat §4 spec, keputusan: terapkan)** — tambah `options="{'currency_field': 'currency_id', 'field_digits': True}"` ke field pengganti `list_price` (form Product Template), menyamai atribut baru native 20.0. Diverifikasi: tidak ada beda visual di data instance ini (single-currency), murni jaga-jaga kompatibilitas. | `views/products.xml` | `03_MIGRATION_SPEC.md` §2a/§4 |
 | Visual parity `MF-29` | **Dikonfirmasi dev 2026-09-22** — tambah `decoration-danger="margin_sale &lt; 0.0"` pada kolom `margin_sale` + kolom baru `minimum_sale_price_with_tax` ("Incl. Tax") di list Product Variants, menyamai 2 elemen popup 19.0 (`product_variant_easy_edit_view_margin_sale`) yang belum ikut pindah ke kolom list saat `MF-29` dieksekusi. Field `minimum_sale_price_with_tax` baru ditambahkan ke `ProductProduct` (compute dari `margin_sale`/`minimum_sale_price`/`product_tmpl_id.taxes_id`, mirror pola `ProductTemplate` yang sudah ada). Diverifikasi live: margin negatif tampil merah, kolom Incl. Tax terisi benar. | `views/products.xml`, `models/product.py` (field+compute baru) | `FINDINGS.md` (lihat entri visual-parity `sale_margin_threshold`, berlaku sama untuk modul ini) |
+| `DIFF-05`/`MF-34` | **Dikonfirmasi dev 2026-09-22 (keputusan: PERBAIKI, bukan pertahankan)** — `line.comboParent` → `line.combo_parent_id` di ekspresi `t-attf-class`. Cross-check ke native `odoo19`/`enterprise19` (setelah `native-source` diisi ulang) mengonfirmasi `comboParent` tidak pernah valid di versi manapun (typo sejak branch `17.0`, dikonfirmasi via `git show 17.0:...`) — field asli native adalah `combo_parent_id`. Komentar XML (bahasa Inggris) ditambahkan menjelaskan asal-usul rename. Styling combo-child (indent+border kiri) AKTIF untuk pertama kalinya di 20.0 — perubahan behavior yang terlihat, disetujui eksplisit dev. | `static/src/store/orderline.xml` | `FINDINGS.md` `MF-34` |
 | — | Bump `version` → `20.0.1.0`, update `data:` entry nama file security | `__manifest__.py` | `03_MIGRATION_SPEC.md` §1 |
 
 ## Belum diterapkan (sengaja, menunggu keputusan/urutan normal)
 
-- `DIFF-05`/`MF-34` (`line.comboParent`) — ditunda, blocker `native-source` kosong.
 - G1/G2 (install test, tour test) formal — baru dijalankan sebatas smoke-install manual via Docker
   untuk keperluan review visual, BUKAN full test suite Step 6/9 resmi.
+- Verifikasi visual live `MF-34` (combo product sungguhan di POS) — DB QA Docker 20.0 belum ada
+  chart of accounts/config POS. Baru diverifikasi: XML well-formed (`lxml.etree.parse`) + update
+  modul sukses tanpa error. Verifikasi visual sesungguhnya jadi bagian Step 9 (Dev Testing) nanti.
 
 ## Catatan proses
 

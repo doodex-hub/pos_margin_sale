@@ -363,14 +363,19 @@ catatan efek samping (`ProductProduct._load_pos_data_fields()` di `pos_margin_th
 19.0 mereferensikan field ini padahal sebelumnya belum ada) di `FINDINGS.md` `MF-38` dan kedua
 `06c_IMPLEMENTATION_LOG.md`.
 
-**`MF-34` — blocker infrastruktur RESOLVED, cross-check TUNTAS (2026-09-22).** Dev mengisi ulang
-`native-source` sebagai `odoo19` (Community) + `enterprise19` (Enterprise), dua clone terpisah.
-Cross-check ke `point_of_sale/static/src/app/components/orderline/orderline.js` native (19.0 DAN
-20.0) mengonfirmasi: `line.comboParent` di `pos_margin_threshold/static/src/store/orderline.xml`
-adalah **typo lama** (seharusnya `line.combo_parent_id`, field asli yang dipakai native) — styling
-combo-child sudah no-op SEJAK 19.0, **BUKAN gap migrasi 19→20**. Detail di `FINDINGS.md` `MF-34`.
-**Perlu keputusan dev:** pertahankan typo (identik 19.0, rekomendasi) atau perbaiki (styling jadi
-aktif pertama kali, behavior baru yang terlihat, butuh persetujuan eksplisit).
+**`MF-34` — RESOLVED, diperbaiki (2026-09-22).** Dev mengisi ulang `native-source` sebagai `odoo19`
+(Community) + `enterprise19` (Enterprise), dua clone terpisah. Cross-check ke native
+`point_of_sale/static/src/app/components/orderline/orderline.js` (19.0 DAN 20.0), **diperdalam lagi
+sampai branch `17.0`** atas permintaan dev, mengonfirmasi: `line.comboParent` di
+`pos_margin_threshold/static/src/store/orderline.xml` adalah **typo original sejak modul pertama
+kali ditulis** (branch `17.0`, dikonfirmasi via `git show 17.0:...`) — seharusnya
+`line.combo_parent_id`, field asli yang dipakai native. **Keputusan dev: PERBAIKI** (bukan
+pertahankan) — sudah diterapkan, `line.comboParent` → `line.combo_parent_id`, dengan komentar XML
+(bahasa Inggris) menjelaskan asal rename. Styling combo-child (indent+border kiri) AKTIF untuk
+pertama kalinya di 20.0 — perubahan behavior yang terlihat dibanding SEMUA versi sebelumnya, sudah
+disetujui eksplisit. Diverifikasi: XML well-formed + update modul bersih; verifikasi visual live di
+POS (combo product sungguhan) BELUM dilakukan (DB QA belum ada chart of accounts/config POS),
+ditunda ke Step 9. Detail di `FINDINGS.md` `MF-34`.
 
 **Belum dikerjakan:** Step 4 (Spec Completeness Review), Step 5 (Acceptance Criteria & Test Plan)
 untuk ketiga modul. Step 6 belum resmi menjalankan Applicability Check penuh (Fase A→G) — fix di
@@ -412,7 +417,7 @@ satu-satunya yang tersisa sebelum gate Step 1 ditutup dan lanjut ke Step 2.
 | 3 | Migration Spec | ✅ Selesai — 2 item nunggu konfirmasi dev | ✅ Selesai — 2 detail visual parity nunggu konfirmasi | ✅ Selesai — mekanis, `MF-33` jadi syarat tour test Step 6 |
 | 4 | Spec Completeness Review | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 5 | Acceptance Criteria & Test Plan | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
-| 6 | Code Migration | 🔄 Sebagian (`DIFF-01/02/03/04`+`MF-38` diterapkan+diverifikasi Docker) | 🔄 Sebagian (`DIFF-01/08`+`MF-35/37/38` diterapkan+diverifikasi Docker) | 🔄 Sebagian (`MF-28/32/33`+`DIFF-04` diterapkan+diverifikasi Docker; `MF-36` native, ditunda) |
+| 6 | Code Migration | 🔄 Sebagian (`DIFF-01/02/03/04`+`MF-34/38` diterapkan; `MF-34` verifikasi visual live ditunda Step 9) | 🔄 Sebagian (`DIFF-01/08`+`MF-35/37/38` diterapkan+diverifikasi Docker) | 🔄 Sebagian (`MF-28/32/33`+`DIFF-04` diterapkan+diverifikasi Docker; `MF-36` native, ditunda) |
 | 7 | Data Migration Scripts | — (asumsi N/A) | — (asumsi N/A) | — (asumsi N/A) |
 | 8 | Code Review | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 9 | Dev Testing | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |

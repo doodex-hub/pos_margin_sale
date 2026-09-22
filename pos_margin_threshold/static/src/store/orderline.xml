@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
     <t t-name="Orderline" t-inherit="point_of_sale.Orderline" t-inherit-mode="extension">
+        <!-- MF-34: line.combo_parent_id below was renamed from line.comboParent, a typo
+             present since branch 17.0 (confirmed via git show 17.0). comboParent was never a
+             valid property on the POS order line model in any Odoo version; native code uses
+             combo_parent_id. Fixed here per dev decision on 2026-09-22, this makes the
+             combo-child indent/border styling actually render for the first time. -->
         <xpath expr="//li[contains(@class, 'orderline')]" position="attributes">
             <attribute name="t-attf-class">
-                {{ line.comboParent ? 'border-start border-3 ms-4' : '' }}
+                {{ line.combo_parent_id ? 'border-start border-3 ms-4' : '' }}
                 {{ line.isLessMinimumSalePrice ? 'text-danger' : '' }}
             </attribute>
         </xpath>

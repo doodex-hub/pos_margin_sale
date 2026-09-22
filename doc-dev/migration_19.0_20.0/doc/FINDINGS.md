@@ -29,7 +29,7 @@ migrasi — masih menunggu keputusan dev soal pertahankan vs perbaiki)
 | MF-31 | [pos_margin_threshold] Anchor inherit `stock_account.view_category_property_form_stock` pindah jadi `account.view_category_property_form` | Step 2, project 19.0→20.0 (2026-09-21) | `[GAP-MIGRASI]` | Sedang | 🟡 Fix mekanis diketahui — ganti `ref=` satu baris, field target tidak berubah |
 | MF-32 | [pin_message] `messageActionsRegistry` berubah lagi di 20.0 — 3 breaking point (getter `canAddReaction`, filter `IS_ACTION_DEFINITION_SYM`, FontAwesome→Odoo Icons `push_pin`) | Step 2, **diterapkan & diverifikasi 2026-09-22** | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED — action "Pin" dikonfirmasi muncul+berfungsi via UI nyata (badge count benar) |
 | MF-33 | [pin_message] Crash `Chatter`/`Message` di 20.0 — 3 lapis bug (import path lama, bare identifier tidak auto-resolve ke `this.xxx` di node `t-inherit-mode="extension"`, dan salah ketik `--` di komentar XML) — **SEMUA DIPERBAIKI & DIVERIFIKASI** (2026-09-22) | Step 2 (risiko teoretis), 3 crash nyata ditemukan+diperbaiki via smoke-test Docker 2026-09-22 | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED — diverifikasi bersih di browser (0 error console terkait modul) |
-| MF-34 | [pos_margin_threshold] `line.comboParent` (styling combo di `orderline.xml`) — **dikonfirmasi tuntas**: typo lama (seharusnya `combo_parent_id`), sudah no-op sejak 19.0, BUKAN gap migrasi | Step 2, project 19.0→20.0 (2026-09-21); blocker infrastruktur resolved + cross-check tuntas 2026-09-22 | `[DIWARISI-SOURCE]` | Rendah | 🟡 Cross-check selesai — keputusan dev masih terbuka (pertahankan vs perbaiki typo), rekomendasi: pertahankan |
+| MF-34 | [pos_margin_threshold] `line.comboParent` (styling combo di `orderline.xml`) — typo lama sejak branch `17.0` (seharusnya `combo_parent_id`) | Step 2, project 19.0→20.0 (2026-09-21); blocker infrastruktur resolved + cross-check tuntas 2026-09-22 | `[DIWARISI-SOURCE]` | Rendah | ✅ RESOLVED (2026-09-22) — **keputusan dev: perbaiki** (bukan pertahankan) — `line.comboParent` → `line.combo_parent_id`, styling combo-child aktif untuk pertama kali. Diverifikasi XML well-formed + module update bersih; verifikasi visual live di POS ditunda (butuh chart of accounts + config POS, belum tersedia di DB QA ini) |
 | MF-35 | [sale_margin_threshold] `price_unit` di list `sale.order` dibungkus `<column name="price_unit">` baru di native 20.0 (sengaja — komentar native eksplisit sebut modul seperti `sale_margin`) — xpath lama tidak resolve, install-blocking. Tidak ketahuan di Step 2/3 (file `views/sale_order.xml` tidak eksplisit dicek), baru ketemu dari smoke-install Docker nyata | Ditemukan dari smoke-install Docker 20.0, 2026-09-22 (di luar Step 2/3 formal) | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED (2026-09-22) — xpath diupdate, install sukses dikonfirmasi |
 | MF-36 | [pin_message] Crash di komponen **native** `mail.MessageCardList` (BUKAN kode modul ini) saat expand section "Pinned Messages" — `ctx['ui'].isSmall` tidak resolve ke `ctx['this'].ui.isSmall` untuk baris pertama setelah `t-foreach` masuk scope, padahal baris kedua di file yang sama resolve benar. Toggle pin sendiri (badge count) SUDAH terbukti berfungsi — ini murni soal expand-view | Ditemukan smoke-test Docker 20.0, 2026-09-22, saat verifikasi `MF-28`/`MF-32` | `[GAP-MIGRASI]` | Sedang | 🔴 Terbuka — kemungkinan bug/quirk native Odoo 20.0 dev-snapshot, di luar kendali modul ini |
 | MF-37 | [pos_margin_threshold][sale_margin_threshold] Kolom "Margin"/"Minimum sale price" DOBEL di list Product Variants 20.0 setelah eksekusi `MF-29` (kedua modul sama-sama inherit `product.product_product_tree_view` dan menambah field bernama sama) | Ditemukan review visual Docker 19.0 vs 20.0, 2026-09-22, saat verifikasi `MF-29` | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED (2026-09-22) — dedup via `ProductProduct._get_view()` di `sale_margin_threshold`, diverifikasi bersih di browser (1 set kolom, bukan 2) |
@@ -343,35 +343,42 @@ tidak resolve lagi karena `price_unit` sekarang anak dari `<column name="price_u
 Docker 20.0 port 8078).
 **Keputusan pemilik modul:** *(tidak perlu keputusan — fix mekanis, sudah diterapkan & diverifikasi)*
 
-### MF-34 — `line.comboParent` adalah typo lama, BUKAN gap migrasi — ✅ DIKONFIRMASI TUNTAS
+### MF-34 — `line.comboParent` adalah typo lama sejak branch `17.0` — ✅ RESOLVED (diperbaiki)
 **Ditemukan di:** Step 2, `pos_margin_threshold`. **Blocker infrastruktur resolved 2026-09-22** — dev
 mengisi ulang referensi native-source sebagai dua folder terpisah: `D:\Kuncoro\doodex\repo\enterprise19`
 (Enterprise 19.0, git clone resmi, branch `19.0`) + `D:\Kuncoro\doodex\repo\odoo19` (Community 19.0,
 sudah ada sebelumnya) — pola dua-clone, bukan folder gabungan seperti `enterprise19.0` lama.
-**Tag:** `[DIWARISI-SOURCE]` (dikoreksi dari `[PERLU-KEPUTUSAN]` setelah cross-check tuntas)
+**Tag:** `[DIWARISI-SOURCE]`
 **Ref:** `02_diff/pos_margin_threshold/02_DIFF_ANALYSIS.md` (`DIFF-05`)
 **Lokasi:** `pos_margin_threshold/static/src/store/orderline.xml` — `line.comboParent` di ekspresi
-`t-attf-class` (baris 6).
+`t-attf-class`.
 **Deskripsi — CROSS-CHECK TUNTAS ke `odoo19`/`enterprise19` (2026-09-22):** native `Orderline`
 component (`point_of_sale/static/src/app/components/orderline/orderline.js`, `get
 lineContainerClasses()`) memakai `this.line.combo_parent_id` (snake_case, field model asli) untuk
 styling combo-child — **BUKAN** `comboParent` (camelCase). Digrep di SELURUH `point_of_sale` addon,
 baik `odoo19` maupun `odoo20`: getter/property `comboParent` **TIDAK PERNAH ADA** pada model
 `pos.order.line` di versi manapun — satu-satunya kemunculan `comboParent` di kode native adalah nama
-variabel lokal di test-helper/customer-display (konteks berbeda total, bukan properti record). Jadi
-`line.comboParent` di modul ini **sudah selalu `undefined`/falsy sejak modul ditulis** — ini typo
-lama (seharusnya `line.combo_parent_id`), **BUKAN sesuatu yang berubah/hilang akibat migrasi
-19→20**. Styling border/indent untuk combo-child line memang tidak pernah aktif, di 19.0 maupun 20.0.
+variabel lokal di test-helper/customer-display (konteks berbeda total, bukan properti record).
+**Diperdalam lagi atas permintaan dev:** dicek `git show 17.0:pos_margin_threshold/static/src/store/orderline.xml`
+— baris `line.comboParent` sudah identik ada di branch `17.0`, versi tertua yang tersimpan di repo
+ini. Jadi bukan cuma "sejak 19.0" seperti draft awal finding ini, tapi **sejak modul pertama kali
+ditulis** — typo original, dipertahankan identik lewat migrasi 17→18, 18→19, dan sampai sebelum fix
+ini di 19→20. Styling border/indent combo-child TIDAK PERNAH aktif di versi manapun sebelum fix ini.
 **Dampak:** tetap rendah — murni styling (indentasi/border kiri combo-child), tidak pernah
 fungsional aktif, tidak ada crash, tidak ada data yang salah.
-**Keputusan pemilik modul:** **BELUM diputuskan** — pilihan: (1) pertahankan identik
-(`line.comboParent` tetap ada di kode, sesuai prinsip "jangan perbaiki bug lama tanpa persetujuan"
-di `CLAUDE.md`, styling combo-child tetap tidak muncul, IDENTIK dengan 19.0), atau (2) perbaiki jadi
-`line.combo_parent_id` (styling combo-child jadi AKTIF pertama kalinya — ini genuinely mengubah
-behavior yang terlihat user, walau kearah "yang seharusnya dari awal", tetap butuh persetujuan
-eksplisit karena bukan port mekanis). **Rekomendasi:** opsi (1), pertahankan — konsisten pola
-`MF-08`/`MF-20`/`MF-21`/`MF-23`/`MF-24` di project ini (bug lama dipertahankan kecuali dev minta
-lain).
+**Keputusan pemilik modul (2026-09-22): PERBAIKI** (bukan pertahankan, dev secara eksplisit meminta
+fix untuk versi 20.0 ini) — `line.comboParent` → `line.combo_parent_id` di
+`pos_margin_threshold/static/src/store/orderline.xml`, dengan komentar XML (bahasa Inggris)
+menjelaskan asal-usul rename ini. Styling combo-child sekarang AKTIF untuk pertama kalinya di 20.0 —
+**catatan penting:** ini genuinely perubahan behavior yang terlihat user dibanding SEMUA versi
+sebelumnya (17.0-19.0 tidak pernah menampilkannya), bukan port mekanis murni, tapi sudah disetujui
+dev secara eksplisit jadi tidak perlu eskalasi lagi.
+**Verifikasi:** XML dikonfirmasi well-formed (`lxml.etree.parse`, dijalankan di container Docker
+20.0), update modul (`-u pos_margin_threshold`) sukses tanpa error. **Verifikasi visual live di POS
+(combo product sungguhan) BELUM dilakukan** — DB QA Docker 20.0 belum ada chart of accounts/config
+POS terpasang, di luar scope perbaikan mekanis ini. Rekomendasi: verifikasi visual jadi bagian Step 9
+(Dev Testing) formal nanti, bukan diasumsikan otomatis benar dari baca kode saja (pola yang sama
+seperti `MF-33`).
 
 ### MF-36 — Crash native `mail.MessageCardList` saat expand "Pinned Messages" (bukan bug modul ini)
 **Ditemukan di:** smoke-test Docker 20.0, 2026-09-22, saat verifikasi end-to-end `MF-28`/`MF-32`
