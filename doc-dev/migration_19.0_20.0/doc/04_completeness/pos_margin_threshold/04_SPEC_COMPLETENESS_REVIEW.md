@@ -149,3 +149,12 @@ belum disinkronkan dengan keputusan-keputusan yang diambil di luar urutan step n
 Step 4 ini). Setelah dokumen diupdate, gate ini bisa langsung diulang (cukup cek ulang §1/§2a spec
 dan tambah baris tabel di atas) tanpa perlu riset ulang dari nol — cross-check teknis di review ini
 sudah tuntas.
+
+---
+
+## Update pasca-review (2026-09-22)
+
+Kandidat #1 (`MF-38` spec drift, §1+§2a), #2 (`MF-34` spec drift, §1+§2) dan #3 (10 elemen coverage
+gap) **semua sudah disinkronkan** ke `03_MIGRATION_SPEC.md` (§1 dikoreksi, baris §2 tabel diupdate
+status RESOLVED, §2c baru ditambahkan untuk 10 elemen no-action-needed) — murni update dokumentasi,
+tidak ada perubahan kode tambahan. Gate ini bisa dianggap **LULUS** setelah update ini.

@@ -178,3 +178,20 @@ stabil), supaya cakupan spec genuinely 100%.
 
 Setelah ketiga item di atas ditutup (terutama Gap 1, yang punya dampak fungsional nyata dan
 mempengaruhi status `MF-36`), Step 4 bisa diulang untuk menutup gate sebelum lanjut ke Step 5.
+
+---
+
+## Update pasca-review (2026-09-22)
+
+Semua 3 gap **sudah ditutup di sesi yang sama**:
+- **Gap 1 (kritis):** `message_card_list.xml` diperbaiki (`ui.isSmall` → `this.ui.isSmall`),
+  diverifikasi live di Docker 20.0 (expand "Pinned Messages" tidak lagi crash, tombol "See"
+  berfungsi, 0 error console). `FINDINGS.md` `MF-36` dikoreksi root cause-nya (bukan finding baru
+  `MF-39` terpisah — dikoreksi langsung sebagai `MF-36` karena ini sama persis crash yang sudah
+  dicatat, cuma root cause-nya yang salah, bukan bug baru yang belum tercatat).
+- **Gap 2, 3 (minor):** baris konfirmasi eksplisit ditambahkan ke `03_MIGRATION_SPEC.md` (§2c baru)
+  untuk `style.css` dan kedua file test Python.
+- `03_MIGRATION_SPEC.md` juga disinkronkan untuk fix `MF-33` di `pinnedMessages.xml` (baris `DIFF-04`
+  diupdate) yang sebelumnya cuma tercatat di `FINDINGS.md`.
+
+Gate ini bisa dianggap **LULUS** setelah update ini.

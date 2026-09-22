@@ -13,12 +13,15 @@
 
 ## 1. Ringkasan Strategi
 
-Python (`models/`, `wizard/`) **tidak butuh perubahan apapun** — semua field/compute/inverse
-(`margin_sale`, `minimum_sale_price`, `minimum_sale_price_with_tax`, `is_less_minimum_sale`,
-`_load_pos_data_fields`, wizard bulk-assign) tetap fungsional identik di 20.0 (`DIFF-09`
-dikonfirmasi Step 2). JS/Owl POS (`static/src/store/`) juga **stabil** siklus ini — pengecualian
-dari pola breaking-change dua migrasi berturut-turut sebelumnya (`DIFF-06`..`DIFF-10`, semua
-"tidak ada tindakan"). Breaking change nyata modul ini SELURUHNYA ada di lapisan **XML/security**,
+**Update retroaktif (Step 4, 2026-09-22):** klaim asli paragraf ini — "Python tidak butuh perubahan
+apapun" — sudah TIDAK akurat lagi. `ProductProduct.minimum_sale_price_with_tax` (field baru, compute
+dari `margin_sale`/`minimum_sale_price`/`product_tmpl_id.taxes_id`) DITAMBAHKAN ke `models/product.py`
+sebagai bagian fix `MF-38` (visual parity, dikonfirmasi dev 2026-09-22) — field ini sebelumnya HANYA
+ada di `ProductTemplate`, sekarang juga ada di `ProductProduct`. Juga, `static/src/store/orderline.xml`
+(bukan Python, tapi bagian klaim "stabil" yang sama) diperbaiki untuk `MF-34` (`line.comboParent` →
+`combo_parent_id`, keputusan dev: perbaiki, bukan pertahankan — lihat `FINDINGS.md` `MF-34`). Detail
+kedua fix ada di §2 tabel di bawah. Sisanya (wizard, `_load_pos_data_fields`, JS lain) tetap identik
+seperti klaim asli. Breaking change instalasi modul ini SELURUHNYA ada di lapisan **XML/security**,
 tiga item install-blocking:
 
 1. **`DIFF-01`** — `security/ir.model.access.csv` harus di-rename + reformat jadi
@@ -44,10 +47,12 @@ ditambah `options` yang sama seperti versi native 20.0 yang baru). Ini dikategor
 kompatibilitas 20.0" (mencegah regresi akibat perubahan native), bukan perbaikan bug diskresioner —
 tapi tetap ditandai untuk konfirmasi ringan di gate Step 4 (lihat §4 "Perlu Konfirmasi").
 
-`DIFF-05` (`line.comboParent`, terkait `MF-34`) **DITUNDA** — diblok oleh `native-source`
-(`enterprise19.0`) yang kosong di disk, tidak bisa dipastikan apakah ini regresi 19→20 murni atau
-quirk lama. Tidak ada perubahan kode untuk item ini di Step 6 sampai folder itu diisi ulang dan
-diverifikasi ulang.
+`DIFF-05` (`line.comboParent`, terkait `MF-34`) — **RESOLVED (2026-09-22).** `native-source` sudah
+diisi ulang dev (`odoo19`+`enterprise19`, dua clone terpisah). Cross-check tuntas ke native
+mengonfirmasi `line.comboParent` adalah typo original sejak branch `17.0` (bukan gap migrasi 19→20)
+— field asli native adalah `combo_parent_id`. **Keputusan dev: perbaiki** (bukan pertahankan) —
+`static/src/store/orderline.xml` diupdate, styling combo-child AKTIF untuk pertama kalinya di 20.0.
+Detail lengkap di `FINDINGS.md` `MF-34`.
 
 Manifest: bump `version` dari `19.0.1.0` → `20.0.1.0` (skema angka mayor mengikuti versi Odoo,
 konsisten pola migrasi 18→19 sebelumnya), plus update path `security/ir.model.access.csv` →
@@ -62,8 +67,9 @@ konsisten pola migrasi 18→19 sebelumnya), plus update path `security/ir.model.
 | `security/ir.model.access.csv` | `DIFF-01` | Rename file → `security/ir.access.csv`, reformat header & baris ke skema baru (lihat §2a). Update `__manifest__.py` `data:` list. | Kritis kalau tidak dikerjakan (install-blocking) — rendah setelah fix, murni mekanis | — |
 | `views/products.xml` record `product_category_form_view_inherit_margin_sale`, `<field name="inherit_id">` | `DIFF-02` | Ganti `ref="stock_account.view_category_property_form_stock"` → `ref="account.view_category_property_form"`. Tidak ada perubahan lain — xpath `<field name="property_cost_method" position="before">` tetap match. | Kritis kalau tidak dikerjakan — rendah setelah fix | `BSL-014` |
 | `views/products.xml` record `product_variant_easy_edit_view_margin_sale` (inherit `product.product_variant_easy_edit_view`, DIHAPUS di 20.0) | `DIFF-03` / `MF-29` | **Ganti total** — hapus record lama, tulis record baru inherit `product.product_product_tree_view`, tambah kolom `margin_sale`/`minimum_sale_price` (`optional="show"`) + `decoration-danger` di kolom `lst_price` existing. Lihat §2a untuk XML literal. | Kritis kalau tidak dikerjakan (install-blocking); Sedang setelah fix — kolom baru harus direview visual Step 10 (keputusan dev sudah mencatat ini eksplisit) | `BSL-017`/`MF-25` (view yang sama, konteks bug lama yang harus tetap dipertahankan pada field `lst_price`) |
-| `views/products.xml` record `product_template_inherit_pos_margin_threshold`, `<field name="list_price" position="replace">` | `DIFF-04` | **Direkomendasikan** (bukan wajib-install): tambah `options="{'currency_field': 'currency_id', 'field_digits': True}"` ke field pengganti `list_price`, menyamai atribut baru yang native 20.0 tambahkan di titik anchor yang sama. `position="replace"` (akar `MF-24`) TIDAK diubah jadi `attributes` — bug lama tetap dipertahankan identik, cuma tidak dibiarkan MEMBURUK oleh perubahan native. **Tandai untuk konfirmasi dev di gate Step 4**, lihat §4. | Sedang tanpa fix (regresi visual currency/presisi dari 19.0); rendah dengan fix | `BSL-013`/`MF-24` |
-| `views/products.xml` `line.comboParent` — TIDAK relevan (ini file JS, dicatat di baris terpisah) | `DIFF-05` / `MF-34` | **DITUNDA** — tidak ada perubahan kode. Blocker: `native-source` (`enterprise19.0`) kosong, tidak bisa cross-check ke 19.0 asli. Biarkan `orderline.xml` seperti sekarang, catat ulang di Step 6 kalau folder sudah diisi. | Rendah (styling saja, silent no-op, tidak crash) | `BSL-016` |
+| `views/products.xml` record `product_template_inherit_pos_margin_threshold`, `<field name="list_price" position="replace">` | `DIFF-04` | **RESOLVED (2026-09-22, dikonfirmasi dev di gate Step 4)** — `options="{'currency_field': 'currency_id', 'field_digits': True}"` ditambahkan ke field pengganti `list_price`, menyamai atribut baru native 20.0. `position="replace"` (akar `MF-24`) TIDAK diubah jadi `attributes` — bug lama tetap dipertahankan identik. Diverifikasi: tidak ada beda visual di data instance ini (single-currency), murni jaga-jaga kompatibilitas. | Sedang tanpa fix (regresi visual currency/presisi dari 19.0); rendah dengan fix — **RESOLVED** | `BSL-013`/`MF-24` |
+| `static/src/store/orderline.xml` `line.comboParent` | `DIFF-05` / `MF-34` | **RESOLVED (2026-09-22)** — `line.comboParent` → `line.combo_parent_id` (typo original sejak branch `17.0`, dikonfirmasi via `git show`; field asli native). Keputusan dev: perbaiki. Komentar XML (bahasa Inggris) ditambahkan. Styling combo-child aktif pertama kali di 20.0. | Rendah (styling saja) — **RESOLVED**, diverifikasi XML well-formed + update modul bersih | `BSL-016` |
+| `views/products.xml` record `product_product_tree_view_inherit_margin_sale` (kolom `margin_sale`/`minimum_sale_price`) + `models/product.py` `ProductProduct` | `MF-38` (baru, ditemukan Step 2 setelah `03_MIGRATION_SPEC.md` awal ditulis) | **RESOLVED (2026-09-22, dikonfirmasi dev)** — visual parity dengan popup 19.0 yang belum tercakup di keputusan `MF-29` awal: `decoration-danger="margin_sale &lt; 0.0"` ditambahkan ke field `margin_sale`, field BARU `minimum_sale_price_with_tax` ditambahkan ke `ProductProduct` (compute, mirror pola `ProductTemplate`) + kolom baru "Incl. Tax" di list. Diverifikasi live: margin negatif tampil merah, kolom Incl. Tax terisi benar, tidak dobel dengan kolom `sale_margin_threshold` (marker dedup `MF-37` diterapkan juga di sisi `sale_margin_threshold`). | Rendah (cosmetic, sesuai prinsip source-of-truth "UX 20.0 harus identik 19.0") — **RESOLVED** | — |
 | `static/src/store/pos_store.js` `patch(PosStore.prototype.pay())` | `DIFF-06` | Tidak ada tindakan — guard baru `canPay()` di native tidak konflik dengan override modul. | Tidak ada | `BSL-004`..`BSL-007` |
 | Semua import path JS (`@point_of_sale/...`, `@web/core/...`) | `DIFF-07` | Tidak ada tindakan — seluruh import path modul stabil, tidak direstrukturisasi di 20.0. | Tidak ada | — |
 | `static/src/store/orderline.xml` xpath ke `//li[contains(@class,'orderline')]//ul[hasclass('info-list')]/t[@t-slot='default']` | `DIFF-08` | Tidak ada tindakan — struktur DOM target xpath tidak berubah, `t-att-class` native baru dan `t-attf-class` modul additive (tidak saling override). | Rendah, tidak perlu perubahan | `BSL-015` |
@@ -276,10 +282,31 @@ Lihat `06a_CODE_MIGRATION_PHASES.md` Fase E & F — untuk modul ini, Fase E/F mu
 | `DIFF-01` (`ir.access.csv`) | Kecil | Rename + reformat 1 baris, mekanis |
 | `DIFF-02` (`ref=` anchor kategori) | Kecil | Ganti 1 baris |
 | `DIFF-03`/`MF-29` (view kolom list baru) | Sedang | XML baru sudah konkret di §2a, tapi butuh review visual Step 10 (keputusan dev) + verifikasi cross-module Step 9 |
-| `DIFF-04` (options currency pada `list_price`) | Sangat kecil | 1 atribut tambahan, menunggu konfirmasi gate Step 4 |
-| `DIFF-05` (`comboParent`) | Nol (ditunda) | Tidak dikerjakan sampai `native-source` terisi ulang |
-| Python | Nol | Tidak ada perubahan wajib |
-| JS/Owl | Nol | Tidak ada perubahan wajib (`DIFF-06`..`DIFF-10`) |
+| `DIFF-04` (options currency pada `list_price`) | Sangat kecil | 1 atribut tambahan — **RESOLVED**, dikonfirmasi dev di gate Step 4 |
+| `DIFF-05`/`MF-34` (`combo_parent_id`) | Kecil | 1 rename identifier + komentar — **RESOLVED**, native-source terisi ulang, dev putuskan perbaiki |
+| `MF-38` (visual parity: field baru + 2 kolom list) | Kecil | Field compute baru + 2 atribut XML — **RESOLVED**, dikonfirmasi dev |
+| Python (sisanya) | Nol | Tidak ada perubahan wajib lain |
+| JS/Owl (sisanya) | Nol | Tidak ada perubahan wajib (`DIFF-06`..`DIFF-10`) |
+
+## 2c. Elemen Tanpa Risiko (kelengkapan cakupan Step 4, 2026-09-22)
+
+> Ditambahkan retroaktif setelah Step 4 (Spec Completeness Review) menemukan 10 file/elemen yang
+> belum pernah masuk enumerasi eksplisit `02_DIFF_ANALYSIS.md`/`03_MIGRATION_SPEC.md`. Semua
+> dicross-check independen terhadap `native-target` (`odoo20`) dan/atau `git diff migration/19.0` —
+> tidak ada indikasi install-blocking atau regresi fungsional. Ditulis di sini murni untuk
+> kelengkapan dokumentasi (100% coverage), bukan pekerjaan implementasi baru.
+
+| Elemen | Verifikasi | Kesimpulan |
+|---|---|---|
+| `models/pos_session.py` | `git diff migration/19.0` kosong; isi hanya komentar sejarah (override lama sudah dihapus sejak migrasi 18.0) | No action needed |
+| `views/products.xml` record `product_template_margin_sale_action_server`, `product_product_margin_sale_action_server` | `git diff migration/19.0` kosong; `ref="model_product_template"`/`model_product_product"` XML-ID inti stabil lintas versi | No action needed |
+| `views/res_config_settings.xml` | `git diff migration/19.0` kosong; anchor `<block id="pos_interface_section">` dikonfirmasi masih ada di `odoo20/addons/point_of_sale/views/res_config_settings_views.xml:159` | No action needed |
+| `wizard/wizard_margin_product.xml` | `git diff migration/19.0` kosong; view form mandiri, tanpa `inherit_id`/anchor eksternal | No action needed |
+| `static/tests/tours/margin_threshold_tour.js` | `git diff migration/19.0` kosong; import path (`chrome_util`/`product_screen_util`/`payment_screen_util`/`dialog_util`) dikonfirmasi masih ada persis sama di `odoo20/addons/point_of_sale/static/tests/...` | No action needed |
+| `tests/test_margin_threshold_tour.py` | `git diff migration/19.0` kosong; base class `TestPointOfSaleHttpCommon` dikonfirmasi masih ada di `odoo20/addons/point_of_sale/tests/test_frontend.py` | No action needed — tetap baseline eksekusi Step 9 |
+| `tests/test_margin_sale.py`, `tests/test_cross_module.py` | `git diff migration/19.0` kosong; test ORM murni, tidak bergantung API versi-spesifik | No action needed — tetap baseline eksekusi Step 9 |
+| `demo/demo.xml` | `git diff migration/19.0` kosong; seluruh isi XML comment (sisa scaffold, tidak pernah dipakai) | No action needed |
+| `i18n/ar_001.po`, `i18n/es.po`, `i18n/id.po`, `i18n/pt.po` | `git diff migration/19.0` kosong untuk keempatnya; kemungkinan sama nasibnya dengan `fr.po` (orphan entry pasca rename `MF-29`, sudah dicatat non-blocking) | No action needed, konsisten catatan `fr.po` yang sudah ada |
 
 ## 3. Data Migration (ringkas — detail di step 7)
 
@@ -313,8 +340,6 @@ N/A — port kode saja, tidak ada data produksi (`01a_MIGRATION_INTAKE.md` §3, 
   `action_assing_margin` — semua quirk warisan dipertahankan identik, tidak diperbaiki tanpa
   keputusan baru eksplisit dari user.
 - `views/product_template_views.xml` (dead file) — tetap mati, tidak dimasukkan ke manifest.
-- `DIFF-05`/`MF-34` (`line.comboParent`) — ditunda, bukan "di luar scope" permanen, menunggu
-  `native-source` diisi ulang.
 - Gap test AC-02-03/AC-02-04 (`BSL-018`) — carry-forward dua project migrasi sebelumnya, belum ada
   keputusan user untuk project ini (lihat "Ringkasan untuk Review" `01a_MIGRATION_INTAKE.md` poin
   6) — bukan bagian dari migration spec teknis (itu wewenang Step 5 test plan), disebut di sini

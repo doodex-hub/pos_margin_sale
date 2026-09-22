@@ -45,8 +45,14 @@ sebelum ditutup**:
    selesai — kalau tour itu gagal, itu jadi keputusan/eskalasi terpisah di Step 6 (mis. migrasi ke
    `useOnChange` mengikuti pola native), bukan diasumsikan sekarang.
 
-Sisanya (`DIFF-05` xpath anchor, `DIFF-06` `message.js`, `DIFF-07` business-rule fields) dikonfirmasi
-**tidak berubah** — tidak butuh aksi. Manifest version dibump ke `20.0.1.0`.
+**Update retroaktif (Step 4, 2026-09-22):** klaim asli `DIFF-05` ("xpath anchor stabil, tidak ada
+perubahan") **TERBUKTI TIDAK LENGKAP** — analisis awal cuma cek apakah xpath ANCHOR (target
+`position="replace"`) masih ada di native 20.0 (ya), tapi tidak cek apakah ISI node pengganti yang
+ditulis modul ini sendiri masih valid dikompilasi. `message_card_list.xml` punya bug bare-identifier
+IDENTIK `MF-33` (`ui.isSmall` bukan `this.ui.isSmall`) yang sempat salah-diagnosis sebagai bug native
+murni (`FINDINGS.md` `MF-36`, root cause sudah dikoreksi). Sudah diperbaiki — lihat baris `DIFF-05`
+di §2 tabel di bawah. `DIFF-06` `message.js` dan `DIFF-07` business-rule fields TETAP dikonfirmasi
+tidak berubah. Manifest version dibump ke `20.0.1.0`.
 
 ## 2. Strategi per File/Simbol (ringkasan umum)
 
@@ -55,10 +61,10 @@ Sisanya (`DIFF-05` xpath anchor, `DIFF-06` `message.js`, `DIFF-07` business-rule
 | `models/mail_message.py:22-36` — override `_to_store()` | `DIFF-01` | **Rewrite total nama+signature+body**, lihat kode konkret §2b Critical Blockers #2 | Kritis (silent — `is_pinned` hilang dari payload tanpa error), TAPI mekanis | `BSL-007` |
 | `static/src/js/pinMessage.js` (seluruh file, 27 baris) | `DIFF-02` | **Rewrite total**: `messageActionsRegistry.add()` → `registerMessageAction()`, `message.canAddReaction(thread)` → `message.canAddReaction` (getter, drop parameter `thread`), `icon: "fa fa-thumb-tack"` → `icon: "push_pin"`. Lihat kode konkret §2b Critical Blockers #3 | Kritis (silent — action "Pin" tidak pernah muncul), TAPI mekanis | `BSL-004`, `BSL-005`, `BSL-017` |
 | `static/src/js/chatter.js:4` — `import { Chatter } from "@mail/chatter/web_portal/chatter"` | `DIFF-03` | **Ganti import path SAJA** → `@mail/chatter/web_portal_project/chatter`. Body `patch()` (`setup`/`initialLoad`/`onMounted`/`onWillUpdateProps`) **tidak diubah** | **Tertinggi, BUKAN mekanis** — wajib tour "ganti thread" sebelum ditutup (lihat §1 butir 4, §2b) | `BSL-008`, `BSL-009`, `BSL-010` |
-| `static/src/xml/pinnedMessages.xml:12-13` (caret) dan `:40-45` (tombol pin inline) | `DIFF-04` | Ganti `<i class="fa ...">` → `<i class="oi" data-icon="...">`. Kode konkret §2b OWL Widget/Estimasi Effort | Tinggi (UI, fungsional tetap jalan tapi ikon bisa kotak kosong kalau tidak diganti) — mekanis | `BSL-011`, `BSL-017` |
+| `static/src/xml/pinnedMessages.xml:12-13` (caret) dan `:40-45` (tombol pin inline) | `DIFF-04` | Ganti `<i class="fa ...">` → `<i class="oi" data-icon="...">`. Kode konkret §2b OWL Widget/Estimasi Effort. **Update retroaktif Step 4:** file ini JUGA punya fix `MF-33` (bare identifier `pinnedMessages`/`state`/`togglePinnedMessages`/`props` diberi prefix `this.` eksplisit, 6+5 titik di `mail.Chatter`/`mail.Message` extension) — sudah diterapkan & diverifikasi di kode aktual, tapi tidak pernah ditulis di baris ini sebelumnya. Lihat `FINDINGS.md` `MF-33`. | Tinggi (UI, fungsional tetap jalan tapi ikon bisa kotak kosong kalau tidak diganti; bare-identifier kalau tidak diperbaiki = crash total) — mekanis, **RESOLVED** | `BSL-011`, `BSL-017` |
 | `static/tests/tours/pin_message_tour.js:35,55,101` — selector `.fa-thumb-tack.*`/`.fa-ellipsis-v` | `DIFF-04` | Update selector CSS ke `[data-icon="push_pin"]`/`[data-icon="more_vert"]` beserta class warna | Tinggi (test false-negative kalau tidak diupdate) — mekanis | — |
 | `static/src/js/message.js` (seluruh file) | `DIFF-06` | **Tidak ada perubahan** — path import, `setup()`, getter `this.message`, `this.props.message.id` semua dikonfirmasi stabil | Tidak ada | `BSL-002`, `BSL-003`, `BSL-015`, `BSL-016` |
-| `static/src/xml/message_card_list.xml` | `DIFF-05` | **Tidak ada perubahan** — xpath anchor `o-mail-MessageCard-jump` stabil | Tidak ada | `BSL-013` |
+| `static/src/xml/message_card_list.xml` | `DIFF-05` | **RESOLVED (2026-09-22, Step 4).** Kesimpulan asli "tidak ada perubahan" TIDAK LENGKAP — node pengganti `<button>` (xpath-replace tombol "Jump" native) menulis `ui.isSmall` bare, bug bare-identifier identik `MF-33`, sempat salah-diagnosis sebagai crash native murni (`MF-36`, root cause dikoreksi Step 4). Fix: `ui.isSmall` → `this.ui.isSmall`; `message` (parameter `onClickJump`) TETAP bare (variabel `t-foreach`/`t-as="message"`, bukan property instance, resolve benar tanpa prefix). Komentar XML (bahasa Inggris) ditambahkan. Diverifikasi live: expand "Pinned Messages" tidak lagi crash, tombol "See" (jump) berfungsi. | Tinggi tanpa fix (crash saat expand pinned messages) — **RESOLVED** | `BSL-013` |
 | `pinMessage.js` business-rule fields (`is_discussion`/`message_type`/`subtype_description`) | `DIFF-07` | **Tidak ada perubahan** — field-field ini stabil di `message_model.js` 20.0 | Rendah | `BSL-004` |
 | `__manifest__.py:3` | — | Bump `'version': '19.0.1.0'` → `'20.0.1.0'` | Tidak ada | — |
 
@@ -291,7 +297,20 @@ UI lewat Owl QWeb `t-inherit`, dikonfirmasi `01a_MIGRATION_INTAKE.md` §2b).
 | `messageActionsRegistry` rewrite (`pinMessage.js`) | Sedang | Tiga perubahan sekaligus (helper, getter, icon) dalam satu file kecil — perlu teliti, bukan tebak-tebak |
 | `chatter.js` import path | Kecil (kode) / **Sedang-Tinggi (testing)** | Satu baris impor, tapi wajib tour ganti-thread BARU yang belum ada di suite existing |
 | Icon FA→`oi` (`pinnedMessages.xml` + `pin_message_tour.js`) | Sedang | 2 file produksi (2 icon) + 1 file test (3 selector) — perlu cek visual manual Step 6/9, bukan cuma sintaks |
-| Sisanya (`message.js`, `message_card_list.xml`, `DIFF-07` fields) | Nol | Dikonfirmasi stabil, tidak perlu disentuh |
+| `message_card_list.xml` bare-identifier (`DIFF-05`, `MF-36`) | Kecil | Satu identifier (`ui.isSmall`→`this.ui.isSmall`), pola sudah dikenal dari `MF-33` — **RESOLVED** |
+| Sisanya (`message.js`, `DIFF-07` fields) | Nol | Dikonfirmasi stabil, tidak perlu disentuh |
+
+## 2c. Elemen Tanpa Risiko (kelengkapan cakupan Step 4, 2026-09-22)
+
+> Ditambahkan retroaktif setelah Step 4 (Spec Completeness Review) menemukan elemen yang belum
+> pernah masuk analisis eksplisit. Tidak ada indikasi risiko — ditulis murni untuk kelengkapan
+> dokumentasi.
+
+| Elemen | Verifikasi | Kesimpulan |
+|---|---|---|
+| `static/src/css/style.css` | `git diff migration/19.0` kosong; dua selector (`.o-mail-PinnedMessages .card`/`.card-body`) memakai class Bootstrap generik, tidak bersinggungan dengan perubahan FontAwesome→Odoo Icons (`DIFF-04`) | No action needed |
+| `tests/test_pin_message.py` (`TransactionCase`, `toggle_pin` single & multi-record) | `git diff migration/19.0` kosong; API `TransactionCase` stabil lintas versi, konsisten kesimpulan `toggle_pin()` tidak berubah | No action needed — tetap baseline eksekusi Step 9, sudah terbukti jalan di Docker 20.0 sesi ini |
+| `tests/test_pin_message_tour.py` (`HttpCase.start_tour()`) | `git diff migration/19.0` kosong; API `HttpCase.start_tour` stabil, terbukti jalan untuk smoke-test Docker sesi ini | No action needed — tetap baseline eksekusi Step 9 |
 
 ## 3. Data Migration (ringkas — detail di step 7)
 
@@ -322,5 +341,6 @@ perlu ditransformasi.
   `useOnChange`) — TIDAK dilakukan preventif. Hanya jadi in-scope kalau tour ganti-thread (§2b butir
   6 Urutan Prioritas Testing) di Step 6/9 MEMBUKTIKAN ada regresi nyata — keputusan itu dieskalasi
   terpisah saat itu terjadi, bukan diasumsikan sekarang.
-- `message.js` (`DIFF-06`), `message_card_list.xml` (`DIFF-05`), business-rule fields `pinMessage.js`
-  (`DIFF-07`) — dikonfirmasi stabil, tidak disentuh.
+- `message.js` (`DIFF-06`), business-rule fields `pinMessage.js` (`DIFF-07`) — dikonfirmasi stabil,
+  tidak disentuh. (`message_card_list.xml`/`DIFF-05` DIHAPUS dari daftar ini Step 4 — file ini
+  ternyata BUTUH fix bare-identifier, lihat §2 tabel.)
