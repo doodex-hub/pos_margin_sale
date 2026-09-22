@@ -29,8 +29,19 @@ services:
     ports:
       - "8079:8069"
     volumes:
-      - ../:/mnt/extra-addons
+      # PENTING (2026-09-22): TIDAK LAGI mount `../` langsung -- itu working tree branch
+      # migration/20.0 yang SAMA dipakai docker-compose.20.yml, dan sudah diedit untuk 20.0
+      # (versi manifest 20.0.1.0 dkk). Kalau tetap di-mount di sini, stack 19.0 ini salah baca
+      # kode 20.0 dan modul jadi "incompatible version" (insiden nyata, container ini sempat
+      # restart dan langsung rusak karenanya). Mount clone TERPISAH dari branch migration/19.0
+      # (read-only sejak baca kode aslinya, dibuat via `git clone --branch migration/19.0`,
+      # lihat CLAUDE.md/PROMPT_LOG.md) supaya stack 19.0 dan 20.0 genuinely independen.
+      - D:\Kuncoro\doodex\repo\pos-margin-sale-19.0-snapshot:/mnt/extra-addons:ro
       - ./logs:/var/log/odoo
+      # Enterprise 19.0 (untuk verifikasi MF-34/Rental exemption sale_margin_threshold) --
+      # ditambahkan 2026-09-22, read-only, dev konfirmasi path ini (BEDA dari enterprise19.0
+      # yang ternyata kosong di disk).
+      - D:\Kuncoro\doodex\repo\enterprise19:/mnt/enterprise19:ro
     # Mode D (Tour test headless Chrome asli, Step 6/9) -- aktif sekarang.
     # Mode G1 (install test polos) dan Mode G2 (server tetap hidup) di bawah,
     # tinggal uncomment salah satu kalau perlu ganti mode lagi.
@@ -61,7 +72,7 @@ services:
     command: >
       odoo -d pos_margin_sale_migration_19_qa
       -i pos_margin_threshold,sale_margin_threshold,pin_message
-      --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons
+      --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/enterprise19,/mnt/extra-addons
       --logfile=/var/log/odoo/odoo.log
 
 volumes:
