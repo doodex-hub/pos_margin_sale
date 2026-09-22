@@ -6,8 +6,8 @@
 
 **Modul:** pos_margin_threshold, sale_margin_threshold, pin_message
 **Migrasi:** 19.0 → 20.0
-**Terakhir update:** 2026-09-22 (`MF-34` cross-check tuntas — typo lama `comboParent`, bukan gap
-migrasi — masih menunggu keputusan dev soal pertahankan vs perbaiki)
+**Terakhir update:** 2026-09-22 (Step 4, `MF-36` root cause dikoreksi + RESOLVED — ternyata bug
+`pin_message` sendiri, bukan native, ditemukan lewat Spec Completeness Review)
 
 ---
 
@@ -31,7 +31,7 @@ migrasi — masih menunggu keputusan dev soal pertahankan vs perbaiki)
 | MF-33 | [pin_message] Crash `Chatter`/`Message` di 20.0 — 3 lapis bug (import path lama, bare identifier tidak auto-resolve ke `this.xxx` di node `t-inherit-mode="extension"`, dan salah ketik `--` di komentar XML) — **SEMUA DIPERBAIKI & DIVERIFIKASI** (2026-09-22) | Step 2 (risiko teoretis), 3 crash nyata ditemukan+diperbaiki via smoke-test Docker 2026-09-22 | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED — diverifikasi bersih di browser (0 error console terkait modul) |
 | MF-34 | [pos_margin_threshold] `line.comboParent` (styling combo di `orderline.xml`) — typo lama sejak branch `17.0` (seharusnya `combo_parent_id`) | Step 2, project 19.0→20.0 (2026-09-21); blocker infrastruktur resolved + cross-check tuntas 2026-09-22 | `[DIWARISI-SOURCE]` | Rendah | ✅ RESOLVED (2026-09-22) — **keputusan dev: perbaiki** (bukan pertahankan) — `line.comboParent` → `line.combo_parent_id`, styling combo-child aktif untuk pertama kali. Diverifikasi XML well-formed + module update bersih; verifikasi visual live di POS ditunda (butuh chart of accounts + config POS, belum tersedia di DB QA ini) |
 | MF-35 | [sale_margin_threshold] `price_unit` di list `sale.order` dibungkus `<column name="price_unit">` baru di native 20.0 (sengaja — komentar native eksplisit sebut modul seperti `sale_margin`) — xpath lama tidak resolve, install-blocking. Tidak ketahuan di Step 2/3 (file `views/sale_order.xml` tidak eksplisit dicek), baru ketemu dari smoke-install Docker nyata | Ditemukan dari smoke-install Docker 20.0, 2026-09-22 (di luar Step 2/3 formal) | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED (2026-09-22) — xpath diupdate, install sukses dikonfirmasi |
-| MF-36 | [pin_message] Crash di komponen **native** `mail.MessageCardList` (BUKAN kode modul ini) saat expand section "Pinned Messages" — `ctx['ui'].isSmall` tidak resolve ke `ctx['this'].ui.isSmall` untuk baris pertama setelah `t-foreach` masuk scope, padahal baris kedua di file yang sama resolve benar. Toggle pin sendiri (badge count) SUDAH terbukti berfungsi — ini murni soal expand-view | Ditemukan smoke-test Docker 20.0, 2026-09-22, saat verifikasi `MF-28`/`MF-32` | `[GAP-MIGRASI]` | Sedang | 🔴 Terbuka — kemungkinan bug/quirk native Odoo 20.0 dev-snapshot, di luar kendali modul ini |
+| MF-36 | [pin_message] **ROOT CAUSE DIKOREKSI (2026-09-22, Step 4).** Crash saat expand "Pinned Messages" — semula ditulis "100% native, `pin_message` tidak pernah menyentuh `message_card_list.js`/`.xml`", **KLAIM ITU SALAH**. Modul ini PUNYA override `static/src/xml/message_card_list.xml` (xpath replace tombol "Jump") yang menulis `ui.isSmall` bare — bug bare-identifier IDENTIK `MF-33`, bukan quirk native | Ditemukan smoke-test Docker 20.0, 2026-09-22, saat verifikasi `MF-28`/`MF-32`; root cause dikoreksi + diperbaiki Step 4, 2026-09-22 | `[GAP-MIGRASI]` | Sedang | ✅ RESOLVED (2026-09-22) — `ui.isSmall` → `this.ui.isSmall`, diverifikasi live (expand + klik "See" jump, 0 error console) |
 | MF-37 | [pos_margin_threshold][sale_margin_threshold] Kolom "Margin"/"Minimum sale price" DOBEL di list Product Variants 20.0 setelah eksekusi `MF-29` (kedua modul sama-sama inherit `product.product_product_tree_view` dan menambah field bernama sama) | Ditemukan review visual Docker 19.0 vs 20.0, 2026-09-22, saat verifikasi `MF-29` | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED (2026-09-22) — dedup via `ProductProduct._get_view()` di `sale_margin_threshold`, diverifikasi bersih di browser (1 set kolom, bukan 2) |
 | MF-38 | [pos_margin_threshold][sale_margin_threshold] Kolom list `MF-29` (pengganti popup `product_variant_easy_edit_view` yang dihapus native 20.0) tidak membawa 2 elemen visual yang ADA di popup 19.0: warna merah saat `margin_sale` negatif, dan kolom "Incl. Tax" (`minimum_sale_price_with_tax`) | Ditemukan review visual Docker 19.0 vs 20.0, 2026-09-22, saat konfirmasi ulang keputusan `MF-29` bersama dev | `[GAP-MIGRASI]` | Sedang | ✅ RESOLVED (2026-09-22) — **keputusan dev: diterapkan** (dijustifikasi `CLAUDE.md` §Source of Truth: "UX di 20.0 harus identik dengan 19.0"), diverifikasi live di kedua modul: margin negatif tampil merah, kolom Incl. Tax terisi benar, tidak dobel (field+kolom baru `minimum_sale_price_with_tax` di `ProductProduct` juga diberi marker dedup `MF-37` supaya tidak duplikat saat kedua modul terinstall bersamaan) |
 
@@ -380,10 +380,20 @@ POS terpasang, di luar scope perbaikan mekanis ini. Rekomendasi: verifikasi visu
 (Dev Testing) formal nanti, bukan diasumsikan otomatis benar dari baca kode saja (pola yang sama
 seperti `MF-33`).
 
-### MF-36 — Crash native `mail.MessageCardList` saat expand "Pinned Messages" (bukan bug modul ini)
+### MF-36 — Crash saat expand "Pinned Messages" — ROOT CAUSE DIKOREKSI, RESOLVED
 **Ditemukan di:** smoke-test Docker 20.0, 2026-09-22, saat verifikasi end-to-end `MF-28`/`MF-32`
 (toggle pin sendiri SUDAH terbukti berfungsi — badge count "Pinned Messages: 1" muncul benar begitu
 pesan di-pin; crash ini baru terjadi saat mengklik header section untuk EXPAND daftar pesannya).
+**Root cause DIKOREKSI Step 4 (2026-09-22):** klaim asli finding ini — "dikonfirmasi 100% NATIVE,
+`pin_message` tidak pernah menyentuh `message_card_list.js`/`.xml`" — **SALAH**. Investigasi awal
+membaca hasil kompilasi template dan menyimpulkan "native quirk" tanpa mengecek apakah modul punya
+override di file itu. Agent Step 4 (Spec Completeness Review) menemukan
+`pin_message/static/src/xml/message_card_list.xml` **memang ada** — sebuah `t-inherit="mail.MessageCardList"`
+yang xpath-replace tombol "Jump" (`<a>` native → `<button>` modul ini), dan tombol pengganti itu
+menulis `t-att-class="{ 'opacity-100 py-1 px-2': ui.isSmall }"` — bare `ui.isSmall`, BUKAN
+`this.ui.isSmall`. CSS class di override (`opacity-100 py-1 px-2`) **cocok persis** dengan class di
+baris crash pada stack trace kompilasi (`attr2`, lihat di bawah) — bukti langsung bahwa baris yang
+crash adalah node HASIL OVERRIDE modul ini, bukan node native asli.
 **Tag:** `[GAP-MIGRASI]`
 **Ref:** console browser + `odoo.__WOWL_DEBUG__.root.__owl__.app.templates['mail.MessageCardList'].toString()`
 (teknik debug yang sama dipakai `MF-33`):
@@ -391,39 +401,31 @@ pesan di-pin; crash ini baru terjadi saat mengklik header section untuk EXPAND d
 TypeError: Cannot read properties of undefined (reading 'isSmall')
     at MessageCardList.template_mail_MessageCardList ...
 ```
-Source kompilasi (dikonfirmasi 100% NATIVE, `pin_message` tidak pernah menyentuh
-`message_card_list.js`/`.xml`):
+Source kompilasi (baris yang crash adalah node hasil xpath-replace `pin_message`, BUKAN native):
 ```
 5:const [k_block2, v_block2, l_block2, c_block2] = prepareList(ctx['this'].props.messages);;
 ...
-11:let attr2 = {'opacity-100 py-1 px-2':ctx['ui'].isSmall};        // CRASH -- ctx['ui'] undefined
+11:let attr2 = {'opacity-100 py-1 px-2':ctx['ui'].isSmall};        // CRASH -- node pin_message
 ...
-14:  let attr3 = {'fs-5':ctx['this'].ui.isSmall};                  // baris SERUPA, resolve BENAR
+14:  let attr3 = {'fs-5':ctx['this'].ui.isSmall};                  // node NATIVE (tombol Unpin), resolve BENAR
 ```
-**Lokasi:** `odoo20/addons/mail/static/src/core/common/message_card_list.xml` (baris ~8, badge
-"Jump") — file native, tidak dimodifikasi modul manapun.
-**Deskripsi:** dua ekspresi `this.ui.isSmall` yang HAMPIR IDENTIK di file native yang sama
-dikompilasi BERBEDA — satu (baris pertama setelah `t-foreach` masuk scope baru) jadi
-`ctx['ui'].isSmall` (lookup context polos, `undefined`, CRASH), satu lagi (di dalam blok `t-if`
-bersarang tepat setelahnya) jadi `ctx['this'].ui.isSmall` (benar). Ini BUKAN pola bug yang sama
-dengan `MF-33` (yang ada di kode `pin_message` sendiri) — ini genuinely di kode native yang tidak
-pernah disentuh modul manapun, kemungkinan besar quirk/bug compiler Owl (kombinasi
-`useProps`/Owl 3 compatibility layer, lihat referensi `owl3_compatibility_layer.js` di stack trace)
-pada snapshot dev 20.0 yang dipakai (`odoo20`, belum ada rilis resmi `odoo:20.0` di Docker Hub per
-`knowledge/version-diffs/19-to-20.md`).
-**Dampak:** fitur INTI (pin/unpin, badge count) tetap berfungsi penuh. Yang crash HANYA saat user
-klik expand section "Pinned Messages" untuk melihat daftar pesannya — `MessageCardList` dipakai
-modul ini apa adanya (`t-if="this.state.showPinnedMessages"` lalu render komponen native), tidak
-ada workaround sisi modul yang jelas tanpa mengubah/patch file native (di luar scope migrasi
-mekanis, dan berisiko besar men-patch komponen inti Discuss yang dipakai luas).
-**Rekomendasi:** (1) uji ulang begitu image resmi `odoo:20.0` (rilis stabil, bukan dev-snapshot)
-tersedia — kemungkinan bug ini sudah diperbaiki upstream sebelum rilis final; (2) kalau masih
-terjadi di rilis stabil, ini keputusan/eskalasi terpisah untuk dev — apakah cukup laporkan sebagai
-bug ke Odoo, atau perlu workaround sisi modul (mis. render list pesan pinned sendiri tanpa
-`MessageCardList`, mengubah UI dari desain asli). **Jangan coba modifikasi file native
-`message_card_list.xml`/`.js` untuk "fix" ini** — itu di luar scope perbaikan modul migrasi.
-**Keputusan pemilik modul:** *(kosong — butuh keputusan setelah re-test di rilis 20.0 stabil, bukan
-sesuatu yang bisa diputuskan sekarang dari dev-snapshot)*
+**Lokasi:** `pin_message/static/src/xml/message_card_list.xml` — sama persis pola bug bare-identifier
+`MF-33` di `pinnedMessages.xml` (bare identifiers pada node hasil `t-inherit-mode="extension"` tidak
+auto-resolve ke `this.xxx` di 20.0), cuma belum ketahuan sebelumnya karena file ini tidak dicek saat
+investigasi awal `MF-36`.
+**Dampak:** fitur INTI (pin/unpin, badge count) tetap berfungsi penuh sebelum fix. Yang crash HANYA
+saat user klik expand section "Pinned Messages".
+**Fix (2026-09-22):** `ui.isSmall` → `this.ui.isSmall`. `message` (parameter `onClickJump`) TETAP
+bare — dikonfirmasi itu variabel `t-foreach`/`t-as="message"` dari parent, bukan property instance,
+resolve benar tanpa prefix baik di native maupun modul ini. Komentar XML (bahasa Inggris) ditambahkan
+menjelaskan kedua hal ini sekaligus (kenapa `ui` diberi `this.`, kenapa `message` TIDAK).
+**Verifikasi live (2026-09-22):** log note pada produk → pin pesan → expand "Pinned Messages" → TIDAK
+crash (sebelumnya crash persis di titik ini) → klik tombol "See" (jump) → scroll+highlight ke pesan
+asli di thread utama, berfungsi normal → 0 error console selain noise service-worker yang sudah
+dikenal tidak terkait. Unpin dikonfirmasi berfungsi (section hilang otomatis).
+**Keputusan pemilik modul:** tidak perlu — ini bug migrasi bare-identifier standar, pola sama persis
+`MF-33` yang modul ini SUDAH diperbaiki di titik lain, jadi konsisten memperbaikinya di sini juga
+(bukan keputusan desain baru, murni menyelesaikan pola fix yang sudah disetujui).
 
 ---
 

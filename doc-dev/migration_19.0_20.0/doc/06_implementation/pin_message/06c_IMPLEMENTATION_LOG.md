@@ -1,10 +1,8 @@
 # Implementation Log — pin_message (19.0 → 20.0)
 
-**Status:** 🔄 Hampir selesai — `MF-28`/`MF-32`/`MF-33`/`DIFF-04` semua diterapkan & diverifikasi
-lebih awal dari urutan fase normal, atas permintaan dev untuk investigasi crash nyata yang ditemukan
-saat review visual Docker 19.0 vs 20.0. Fitur pin/unpin end-to-end dikonfirmasi berfungsi via UI
-nyata. Satu bug baru ditemukan (`MF-36`) di komponen NATIVE (bukan kode modul ini) saat expand
-daftar pesan yang di-pin — di luar kendali modul, lihat `FINDINGS.md`.
+**Status:** 🔄 Hampir selesai — `MF-28`/`MF-32`/`MF-33`/`MF-36`/`DIFF-04` semua diterapkan &
+diverifikasi. Fitur pin/unpin DAN expand/jump "Pinned Messages" end-to-end dikonfirmasi berfungsi
+via UI nyata.
 
 **Tanggal:** 2026-09-22
 
@@ -21,19 +19,23 @@ daftar pesan yang di-pin — di luar kendali modul, lihat `FINDINGS.md`.
 | `MF-32` | Rewrite total: `messageActionsRegistry.add()` → `registerMessageAction()`, `canAddReaction(thread)` → getter `canAddReaction`, icon `"fa fa-thumb-tack"` → `"push_pin"` | `static/src/js/pinMessage.js` | `03_MIGRATION_SPEC.md` §2b Blocker #3 |
 | `DIFF-04` | Icon FontAwesome → Odoo Icons: caret collapse (`arrow_drop_down`/`arrow_right`) + tombol pin inline (`push_pin`) | `static/src/xml/pinnedMessages.xml` | `03_MIGRATION_SPEC.md` §2b |
 | `DIFF-04` | Update 3 selector tour test: `.fa-thumb-tack.*` → `i[data-icon='push_pin'].*`, `.fa-ellipsis-v` → `i[data-icon='more_vert']` | `static/tests/tours/pin_message_tour.js` | `03_MIGRATION_SPEC.md` §2b |
+| `MF-36` (Step 4, root cause dikoreksi) | Investigasi awal salah menyimpulkan crash ini "100% native". Agent Step 4 (Spec Completeness Review) menemukan modul ini PUNYA override `message_card_list.xml` (tidak pernah dicek sebelumnya) berisi bug bare-identifier IDENTIK `MF-33` (`ui.isSmall` bukan `this.ui.isSmall`). Diperbaiki, `message` (parameter t-foreach) sengaja TETAP bare (dikonfirmasi benar tanpa prefix, beda kasus dari `ui`). | `static/src/xml/message_card_list.xml` (file ini sendiri tidak pernah tercatat di spec/implementation log manapun sebelumnya) | `FINDINGS.md` `MF-36` |
 
 **Verifikasi end-to-end (browser nyata, bukan cuma baca kode):** tulis log note pada record Product
 → klik tombol pin inline → `is_pinned` tersimpan, section "Pinned Messages" muncul dengan badge
 count "1" yang benar. Membuktikan `MF-28` (persistensi field) DAN `MF-32` (action/tombol genuinely
 render & berfungsi) bekerja sama-sama, bukan cuma tidak error.
 
+**Verifikasi live `MF-36` (2026-09-22):** log note → pin pesan → expand "Pinned Messages" (TIDAK
+crash, sebelumnya crash persis di titik ini) → klik tombol "See" (jump ke pesan asli, berfungsi) →
+0 error console selain noise service-worker yang sudah dikenal. Unpin dikonfirmasi berfungsi.
+
 ## Belum diterapkan / masih terbuka
 
 - Tour test "pindah thread" untuk `MF-33` (rekomendasi asli finding, verifikasi manual sudah
   dilakukan tapi tour test otomatis formal belum ditulis).
-- `MF-36` — crash di komponen native `mail.MessageCardList` saat expand section "Pinned Messages"
-  (BUKAN bug modul ini, kemungkinan quirk dev-snapshot Odoo 20.0) — perlu re-test di rilis 20.0
-  stabil, keputusan lanjutan ditunda sampai itu tersedia.
+- Tour test otomatis untuk expand/jump "Pinned Messages" (`MF-36`) — verifikasi manual sudah
+  dilakukan, tour otomatis belum ditulis.
 
 ## Catatan proses — metodologi debug
 

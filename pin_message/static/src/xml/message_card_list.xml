@@ -1,9 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-inherit="mail.MessageCardList" t-inherit-mode="extension">
+        <!-- MF-36 corrected root cause (was misattributed to native code): in 20.0, bare
+             component-instance identifiers (ui) do not auto resolve to this.xxx in xpath
+             inserted (t-inherit-mode="extension") nodes, same root cause as MF-33 in
+             pinnedMessages.xml. ui.isSmall compiled to ctx['ui'] (undefined, crash). `message`
+             stays bare (unchanged) - it is the t-foreach loop variable from the parent
+             <div t-foreach="this.props.messages" t-as="message">, correctly unprefixed in
+             native too (see odoo/addons/mail/.../message_card_list.xml line 8). -->
         <xpath expr="//a[contains(@class, 'o-mail-MessageCard-jump')]" position="replace">
             <button class="o-mail-MessageCard-jump btn rounded bg-400 badge opacity-0 flex-shrink-0"
-                    t-att-class="{ 'opacity-100 py-1 px-2': ui.isSmall }"
+                    t-att-class="{ 'opacity-100 py-1 px-2': this.ui.isSmall }"
                     t-on-click="() => this.onClickJump(message)">
                 See
             </button>
