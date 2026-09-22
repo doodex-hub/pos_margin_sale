@@ -32,7 +32,8 @@ registry.category("web_tour.tours").add("pin_message_toggle_pin_tour", {
             {
                 content: "click the inline pin button (pinnedMessages.xml patch, next to author name)",
                 trigger:
-                    ".o-mail-Message:contains('Pin message migration test note') button:has(.fa-thumb-tack.text-muted)",
+                    // 20.0 (DIFF-04): FontAwesome -> Odoo Icons, .fa-thumb-tack -> [data-icon='push_pin']
+                    ".o-mail-Message:contains('Pin message migration test note') button:has(i[data-icon='push_pin'].text-muted)",
                 run: "click",
             },
             {
@@ -52,7 +53,7 @@ registry.category("web_tour.tours").add("pin_message_toggle_pin_tour", {
             {
                 content: "unpin via the same inline button (now showing the pinned icon)",
                 trigger:
-                    ".o-mail-Message:contains('Pin message migration test note') button:has(.fa-thumb-tack.text-primary)",
+                    ".o-mail-Message:contains('Pin message migration test note') button:has(i[data-icon='push_pin'].text-primary)",
                 run: "click",
             },
             {
@@ -97,8 +98,9 @@ registry.category("web_tour.tours").add("pin_message_action_menu_pin_visible_tou
             {
                 content: "the 'Pin' action-menu entry is present (as a quick action or inside the '...' overflow menu)",
                 trigger:
+                    // 20.0 (DIFF-04): FontAwesome -> Odoo Icons, .fa-ellipsis-v -> [data-icon='more_vert']
                     ".o-mail-Message:contains('Action menu visibility test note') .o-mail-Message-actions button[name='pins'], " +
-                    ".o-mail-Message:contains('Action menu visibility test note') .o-mail-Message-actions button:has(.fa-ellipsis-v)",
+                    ".o-mail-Message:contains('Action menu visibility test note') .o-mail-Message-actions button:has(i[data-icon='more_vert'])",
                 run: "click",
             },
             {

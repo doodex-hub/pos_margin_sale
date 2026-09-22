@@ -22,14 +22,15 @@
 | MF-25 | [pos_margin_threshold] Instance KEDUA `position="replace"` (pola sama `MF-24`) di `lst_price`, `product_variant_easy_edit_view_margin_sale` — belum pernah dicatat | Step 1, project 19.0→20.0 (2026-09-21) | `[DIWARISI-SOURCE]` | Sedang | 🔵 Terbuka — baru ditemukan, belum ada keputusan user |
 | MF-26 | [sale_margin_threshold] Singleton-assumption bug KEDUA (beda method dari `MF-08`) di `_compute_is_rental_order_installed` | Step 1, project 19.0→20.0 (2026-09-21) | `[DIWARISI-SOURCE]` | Sedang | 🔵 Terbuka — baru ditemukan, belum ada keputusan user |
 | MF-27 | [sale_margin_threshold] `position="replace"` pada `list_price`/`lst_price` (pola sama `MF-24`/`MF-25`, modul berbeda) — belum pernah dicatat | Step 1, project 19.0→20.0 (2026-09-21) | `[DIWARISI-SOURCE]` | Sedang | 🔵 Terbuka — baru ditemukan, belum ada keputusan user |
-| MF-28 | [pin_message] native 20.0 `mail.message` tidak punya `_to_store()` lagi — **solusi mekanis SUDAH DITEMUKAN Step 2** (`res.attr("is_pinned")` via `_store_message_fields()`, pola native `rating`/`im_livechat`) | Step 1, riset selesai Step 2 (2026-09-21) | `[GAP-MIGRASI]` | Tinggi | 🟡 Solusi ditemukan — siap diimplementasi Step 6, belum ada keputusan/eksekusi |
+| MF-28 | [pin_message] native 20.0 `mail.message` tidak punya `_to_store()` lagi — diganti `_store_message_fields()`/`res.attr("is_pinned")` | Step 1, solusi Step 2, **diterapkan & diverifikasi 2026-09-22** | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED — `is_pinned` dikonfirmasi tersimpan+toggle benar via UI nyata |
 | MF-29 | [pos_margin_threshold][sale_margin_threshold] view `product.product_variant_easy_edit_view` DIHAPUS TOTAL di native 20.0 — **keputusan desain SUDAH DIAMBIL dev**: pindah ke kolom baru di `product_product_tree_view` (list Product Variants, native 20.0 sudah `editable="bottom"`/`multi_edit="1"`) | Step 2, project 19.0→20.0 (2026-09-21) | `[GAP-MIGRASI]` | Tinggi | 🟡 Keputusan diambil (2026-09-21) — siap dieksekusi Step 3/6, plus item review visual Step 10 |
 | MF-30 | [pos_margin_threshold][sale_margin_threshold] `ir.model.access.csv`→`ir.access.csv` — model lama dihapus total, kedua modul akan gagal install kalau tidak direname+reformat | Step 2, project 19.0→20.0 (2026-09-21) | `[GAP-MIGRASI]` | Tinggi | 🟡 Fix mekanis diketahui — rename file + reformat 1 baris ke skema `operation`/`domain` |
 | MF-31 | [pos_margin_threshold] Anchor inherit `stock_account.view_category_property_form_stock` pindah jadi `account.view_category_property_form` | Step 2, project 19.0→20.0 (2026-09-21) | `[GAP-MIGRASI]` | Sedang | 🟡 Fix mekanis diketahui — ganti `ref=` satu baris, field target tidak berubah |
-| MF-32 | [pin_message] `messageActionsRegistry` berubah lagi di 20.0 — 3 breaking point konkret (getter `canAddReaction`, filter `IS_ACTION_DEFINITION_SYM`, FontAwesome→Odoo Icons `push_pin`) | Step 2, project 19.0→20.0 (2026-09-21) | `[GAP-MIGRASI]` | Tinggi | 🟡 Fix mekanis diketahui untuk ketiganya — lihat `02_DIFF_ANALYSIS.md` |
+| MF-32 | [pin_message] `messageActionsRegistry` berubah lagi di 20.0 — 3 breaking point (getter `canAddReaction`, filter `IS_ACTION_DEFINITION_SYM`, FontAwesome→Odoo Icons `push_pin`) | Step 2, **diterapkan & diverifikasi 2026-09-22** | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED — action "Pin" dikonfirmasi muncul+berfungsi via UI nyata (badge count benar) |
 | MF-33 | [pin_message] Crash `Chatter`/`Message` di 20.0 — 3 lapis bug (import path lama, bare identifier tidak auto-resolve ke `this.xxx` di node `t-inherit-mode="extension"`, dan salah ketik `--` di komentar XML) — **SEMUA DIPERBAIKI & DIVERIFIKASI** (2026-09-22) | Step 2 (risiko teoretis), 3 crash nyata ditemukan+diperbaiki via smoke-test Docker 2026-09-22 | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED — diverifikasi bersih di browser (0 error console terkait modul) |
 | MF-34 | [pos_margin_threshold] `line.comboParent` (styling combo di `orderline.xml`) kemungkinan sudah jadi no-op — TIDAK bisa dipastikan murni gap 19→20 karena `native-source` (`enterprise19.0`) ternyata folder KOSONG di disk | Step 2, project 19.0→20.0 (2026-09-21) | `[PERLU-KEPUTUSAN]` | Rendah | 🔵 Terbuka — blocker infrastruktur (native-source kosong), bukan cuma keputusan konten |
 | MF-35 | [sale_margin_threshold] `price_unit` di list `sale.order` dibungkus `<column name="price_unit">` baru di native 20.0 (sengaja — komentar native eksplisit sebut modul seperti `sale_margin`) — xpath lama tidak resolve, install-blocking. Tidak ketahuan di Step 2/3 (file `views/sale_order.xml` tidak eksplisit dicek), baru ketemu dari smoke-install Docker nyata | Ditemukan dari smoke-install Docker 20.0, 2026-09-22 (di luar Step 2/3 formal) | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED (2026-09-22) — xpath diupdate, install sukses dikonfirmasi |
+| MF-36 | [pin_message] Crash di komponen **native** `mail.MessageCardList` (BUKAN kode modul ini) saat expand section "Pinned Messages" — `ctx['ui'].isSmall` tidak resolve ke `ctx['this'].ui.isSmall` untuk baris pertama setelah `t-foreach` masuk scope, padahal baris kedua di file yang sama resolve benar. Toggle pin sendiri (badge count) SUDAH terbukti berfungsi — ini murni soal expand-view | Ditemukan smoke-test Docker 20.0, 2026-09-22, saat verifikasi `MF-28`/`MF-32` | `[GAP-MIGRASI]` | Sedang | 🔴 Terbuka — kemungkinan bug/quirk native Odoo 20.0 dev-snapshot, di luar kendali modul ini |
 
 ---
 
@@ -158,9 +159,13 @@ def _store_message_fields(self, res, **kwargs):
 Ini LEBIH SEDERHANA dari pola `store.add_records_fields()` yang dipakai di 19.0 — bukan tebakan,
 diverifikasi langsung dari 2 override native yang sudah berjalan. Detail lengkap:
 `02_diff/pin_message/02_DIFF_ANALYSIS.md`.
-**Rekomendasi:** siap dieksekusi mekanis di Step 6, tidak perlu eskalasi lagi untuk bagian `_to_store()`
-ini. Sisa risiko `pin_message` sekarang pindah ke `MF-32` (registry) dan `MF-33` (arsitektur Chatter).
-**Keputusan pemilik modul:** *(tidak perlu keputusan — solusi teknis, tinggal dieksekusi Step 6)*
+**✅ RESOLVED 2026-09-22:** rewrite diterapkan persis seperti di atas
+(`pin_message/models/mail_message.py`), modul di-update di Docker 20.0, dan **diverifikasi via UI
+nyata** — tulis log note → klik tombol pin → `is_pinned` tersimpan dan section "Pinned Messages"
+muncul dengan badge count benar. `store.py`/`_store_message_fields` genuinely mengirim field ini
+ke frontend.
+**Keputusan pemilik modul:** *(tidak perlu keputusan — solusi teknis, sudah diterapkan &
+diverifikasi)*
 
 ### MF-29 — `product.product_variant_easy_edit_view` dihapus total di native 20.0 (KRITIS, lintas-modul)
 **Ditemukan di:** Step 2, project 19.0→20.0 (2026-09-21), kedua agent `pos_margin_threshold` DAN
@@ -245,11 +250,12 @@ pernah muncul); (3) FontAwesome dihapus total dari template `mail` (0 match `fa 
 Icons — ikon pengganti yang benar sudah dikonfirmasi: `"push_pin"`.
 **Dampak:** tanpa fix, action pin kemungkinan tidak muncul sama sekali di UI (silent, bukan crash) —
 lebih berbahaya dari error karena tidak kelihatan saat testing sekilas.
-**Rekomendasi:** fix mekanis untuk ketiganya, gunakan `registerMessageAction()` helper native alih-alih
-`.add()` langsung. Test tour lama (`pin_message_tour.js`) juga pakai selector
-`.fa-thumb-tack`/`.fa-ellipsis-v` yang akan gagal match — perlu diupdate juga.
-**Keputusan pemilik modul:** *(tidak perlu keputusan — fix mekanis, tapi WAJIB dikerjakan bareng
-`MF-28` supaya action pin genuinely muncul)*
+**✅ RESOLVED 2026-09-22:** ketiga fix diterapkan (`registerMessageAction`, getter `canAddReaction`
+tanpa parameter, icon `push_pin`) di `pinMessage.js`, plus `DIFF-04` (icon FA→`oi` di
+`pinnedMessages.xml`, selector tour test di `pin_message_tour.js`). **Diverifikasi via UI nyata** —
+tombol pin inline (`pinnedMessages.xml`) diklik, badge "Pinned Messages: 1" muncul benar.
+**Keputusan pemilik modul:** *(tidak perlu keputusan — fix mekanis, sudah diterapkan &
+diverifikasi bareng `MF-28`)*
 
 ### MF-33 — Arsitektur `Chatter` di-rewrite — CRASH NYATA dikonfirmasi (bukan cuma risiko re-trigger)
 **Ditemukan di:** Step 2 (risiko teoretis), **dikonfirmasi crash nyata 2026-09-22** via smoke-test
@@ -347,12 +353,57 @@ menutup finding ini dengan pasti.
 **Keputusan pemilik modul:** *(kosong — perlu tindakan infrastruktur dev dulu, bukan keputusan
 konten)*
 
+### MF-36 — Crash native `mail.MessageCardList` saat expand "Pinned Messages" (bukan bug modul ini)
+**Ditemukan di:** smoke-test Docker 20.0, 2026-09-22, saat verifikasi end-to-end `MF-28`/`MF-32`
+(toggle pin sendiri SUDAH terbukti berfungsi — badge count "Pinned Messages: 1" muncul benar begitu
+pesan di-pin; crash ini baru terjadi saat mengklik header section untuk EXPAND daftar pesannya).
+**Tag:** `[GAP-MIGRASI]`
+**Ref:** console browser + `odoo.__WOWL_DEBUG__.root.__owl__.app.templates['mail.MessageCardList'].toString()`
+(teknik debug yang sama dipakai `MF-33`):
+```
+TypeError: Cannot read properties of undefined (reading 'isSmall')
+    at MessageCardList.template_mail_MessageCardList ...
+```
+Source kompilasi (dikonfirmasi 100% NATIVE, `pin_message` tidak pernah menyentuh
+`message_card_list.js`/`.xml`):
+```
+5:const [k_block2, v_block2, l_block2, c_block2] = prepareList(ctx['this'].props.messages);;
+...
+11:let attr2 = {'opacity-100 py-1 px-2':ctx['ui'].isSmall};        // CRASH -- ctx['ui'] undefined
+...
+14:  let attr3 = {'fs-5':ctx['this'].ui.isSmall};                  // baris SERUPA, resolve BENAR
+```
+**Lokasi:** `odoo20/addons/mail/static/src/core/common/message_card_list.xml` (baris ~8, badge
+"Jump") — file native, tidak dimodifikasi modul manapun.
+**Deskripsi:** dua ekspresi `this.ui.isSmall` yang HAMPIR IDENTIK di file native yang sama
+dikompilasi BERBEDA — satu (baris pertama setelah `t-foreach` masuk scope baru) jadi
+`ctx['ui'].isSmall` (lookup context polos, `undefined`, CRASH), satu lagi (di dalam blok `t-if`
+bersarang tepat setelahnya) jadi `ctx['this'].ui.isSmall` (benar). Ini BUKAN pola bug yang sama
+dengan `MF-33` (yang ada di kode `pin_message` sendiri) — ini genuinely di kode native yang tidak
+pernah disentuh modul manapun, kemungkinan besar quirk/bug compiler Owl (kombinasi
+`useProps`/Owl 3 compatibility layer, lihat referensi `owl3_compatibility_layer.js` di stack trace)
+pada snapshot dev 20.0 yang dipakai (`odoo20`, belum ada rilis resmi `odoo:20.0` di Docker Hub per
+`knowledge/version-diffs/19-to-20.md`).
+**Dampak:** fitur INTI (pin/unpin, badge count) tetap berfungsi penuh. Yang crash HANYA saat user
+klik expand section "Pinned Messages" untuk melihat daftar pesannya — `MessageCardList` dipakai
+modul ini apa adanya (`t-if="this.state.showPinnedMessages"` lalu render komponen native), tidak
+ada workaround sisi modul yang jelas tanpa mengubah/patch file native (di luar scope migrasi
+mekanis, dan berisiko besar men-patch komponen inti Discuss yang dipakai luas).
+**Rekomendasi:** (1) uji ulang begitu image resmi `odoo:20.0` (rilis stabil, bukan dev-snapshot)
+tersedia — kemungkinan bug ini sudah diperbaiki upstream sebelum rilis final; (2) kalau masih
+terjadi di rilis stabil, ini keputusan/eskalasi terpisah untuk dev — apakah cukup laporkan sebagai
+bug ke Odoo, atau perlu workaround sisi modul (mis. render list pesan pinned sendiri tanpa
+`MessageCardList`, mengubah UI dari desain asli). **Jangan coba modifikasi file native
+`message_card_list.xml`/`.js` untuk "fix" ini** — itu di luar scope perbaikan modul migrasi.
+**Keputusan pemilik modul:** *(kosong — butuh keputusan setelah re-test di rilis 20.0 stabil, bukan
+sesuatu yang bisa diputuskan sekarang dari dev-snapshot)*
+
 ---
 
 ## Cara Pakai
 
 Sama seperti `migration-tool/templates/FINDINGS.md` — lihat file itu untuk skema `MF-NNN`, kapan
 pakai `[PERLU-KEPUTUSAN]`/`[DIWARISI-SOURCE]`/`[GAP-MIGRASI]`, dan kewajiban Step 4/Step 8 membaca
-file ini sebagai bagian gate. `MF-25`..`MF-35` sudah dipakai (`MF-25`..`MF-28` Step 1, `MF-29`..`MF-34`
-Step 2, `MF-35` smoke-install Docker 2026-09-22) — ID lanjutan finding BARU selanjutnya mulai dari
-`MF-36`.
+file ini sebagai bagian gate. `MF-25`..`MF-36` sudah dipakai (`MF-25`..`MF-28` Step 1, `MF-29`..`MF-34`
+Step 2, `MF-35`/`MF-36` smoke-test Docker 2026-09-22) — ID lanjutan finding BARU selanjutnya mulai dari
+`MF-37`.

@@ -14,8 +14,11 @@
                      t-on-click="this.togglePinnedMessages">
                     <hr class="flex-grow-1 fs-3"/>
                     <div class="d-flex align-items-center px-3">
-                        <i class="fa fa-fw"
-                           t-att-class="this.state.showPinnedMessages ? 'fa-caret-down' : 'fa-caret-right'"/>
+                        <!-- 20.0 (DIFF-04): FontAwesome dihapus total dari template mail, diganti
+                             Odoo Icons, pola persis native chatter.xml (this.state.showActivities
+                             caret): oi/data-icon, arrow_drop_down/arrow_right. -->
+                        <i class="oi oi-fw"
+                           t-att-data-icon="this.state.showPinnedMessages ? 'arrow_drop_down' : 'arrow_right'"/>
                         Pinned Messages
                         <span t-if="!this.state.showPinnedMessages"
                               class="badge rounded-pill ms-2 text-bg-primary">
@@ -44,10 +47,12 @@
             <t t-if="this.props.message.message_type !== 'notification' and this.props.message.message_type !== 'auto_comment' and this.props.message.message_type !== 'user_notification' and !this.props.message.is_discussion and this.props.message.thread?.model !== 'mail.activity.thread'">
                 <button class="btn btn-link"
                         t-on-click="() => this.onMessagePin(this.props.message.id)">
-                    <!-- Font Awesome 4.7 (shipped by Odoo) has no outline thumb-tack variant:
-                         fa-thumb-tack-o maps to no glyph and renders as an empty box, so the
-                         unpinned state uses the solid icon dimmed instead. -->
-                    <i t-attf-class="fa {{ this.props.message.is_pinned ? 'fa-thumb-tack text-primary' : 'fa-thumb-tack text-muted' }}"
+                    <!-- 20.0 (DIFF-04): FontAwesome dihapus total dari template mail,
+                         "push_pin" dikonfirmasi nama ikon resmi (dipakai native sendiri,
+                         message_model.js get notificationIcon() case "pin"), tinted text-primary/
+                         text-muted sama seperti sebelumnya untuk state pinned/unpinned. -->
+                    <i t-attf-class="oi {{ this.props.message.is_pinned ? 'text-primary' : 'text-muted' }}"
+                       data-icon="push_pin"
                        role="img"
                        t-att-aria-label="this.props.message.is_pinned ? 'Unpin Message' : 'Pin Message'"/>
                 </button>

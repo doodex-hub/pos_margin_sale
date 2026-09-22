@@ -1,4 +1,5 @@
 from odoo import models, fields, api
+from odoo.addons.mail.tools.discuss import Store
 
 
 class Message(models.Model):
@@ -19,18 +20,13 @@ class Message(models.Model):
             )
         return True
 
-    def _to_store(self, store, fields, **kwargs):
-        # 18.0: field ke frontend TIDAK LAGI diambil lewat Chatter.load() dengan
-        # messageFields custom (mekanisme itu sudah dihapus, lihat MF-xx) -- pindah ke
-        # override _to_store() ini, dipanggil server-side setiap message diserialisasi ke
-        # frontend (chatter, discuss, dst).
-        # 19.0: `fields` jadi parameter positional wajib di core (dulu keyword-only
-        # opsional) -- diteruskan apa adanya ke super(), tidak pernah dipakai langsung
-        # di sini karena is_pinned selalu ditambahkan tanpa syarat.
-        super()._to_store(store, fields, **kwargs)
-        # 19.0: store.add(message, {...}) sekarang selalu re-entry ke _to_store() (tidak ada
-        # lagi jalur pintas "raw values dict" seperti 18.0) -- akan infinite-recurse kalau
-        # dipanggil dari sini. store.add_records_fields() adalah API 19.0 yang eksplisit
-        # dibuat untuk menambah field dari dalam _to_store() tanpa re-trigger (dipakai core
-        # sendiri, mis. mail_message.py/discuss_channel.py).
-        store.add_records_fields(self, ['is_pinned'])
+    def _store_message_fields(self, res: Store.FieldList, **kwargs):
+        # 20.0: `_to_store(self, store, fields, **kwargs)` dihapus total dari core -- diganti pola
+        # serializer field-list `_store_message_fields(self, res: Store.FieldList, **kwargs)`
+        # (odoo20/addons/mail/models/mail_message.py:1177, tipe Store.FieldList didefinisikan di
+        # odoo20/addons/mail/tools/discuss.py:830-963). Pola rewrite ini sama persis dengan dua
+        # override native yang sudah jalan untuk kasus identik (tambah satu field ke store pesan
+        # tanpa syarat): odoo20/addons/rating/models/mail_message.py dan
+        # odoo20/addons/im_livechat/models/mail_message.py.
+        super()._store_message_fields(res, **kwargs)
+        res.attr("is_pinned")

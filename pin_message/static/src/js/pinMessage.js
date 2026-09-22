@@ -1,10 +1,10 @@
 /* @odoo-module */
 import { _t } from "@web/core/l10n/translation";
-import { messageActionsRegistry } from "@mail/core/common/message_actions";
+import { registerMessageAction } from "@mail/core/common/message_actions";
 
-messageActionsRegistry.add("pins", {
-    condition: ({ message, thread }) => {
-        if (!message.canAddReaction(thread)) {
+registerMessageAction("pins", {
+    condition: ({ message }) => {
+        if (!message.canAddReaction) {
             return false;
         }
 
@@ -18,9 +18,14 @@ messageActionsRegistry.add("pins", {
 
         return isNote && isNotChangeLog;
     },
-    // Odoo 18.0+ message actions carry the full icon class, family prefix included
-    // ("fa fa-reply" in core); 17.0 supplied the "fa" base class from the template.
-    icon: "fa fa-thumb-tack",
+    // 20.0: registerMessageAction() (bukan messageActionsRegistry.add() langsung) -- tanpa helper
+    // ini, entry lolos registrasi tanpa error tapi difilter keluar diam-diam sebelum dirender
+    // (action.js filter berbasis Symbol privat yang cuma dipasang helper ini). canAddReaction juga
+    // sudah jadi getter di native (bukan method), sehingga parameter thread di destructure dibuang.
+    // FontAwesome dihapus total dari template mail -- ikon sekarang nama Odoo Icon polos,
+    // "push_pin" dikonfirmasi nama resmi (dipakai native sendiri, message_model.js
+    // get notificationIcon() case "pin").
+    icon: "push_pin",
     name: _t("Pin"),
     onSelected: ({ owner }) => owner.onClickPin(),
     sequence: 15,
