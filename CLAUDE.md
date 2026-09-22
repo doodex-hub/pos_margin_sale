@@ -377,10 +377,30 @@ disetujui eksplisit. Diverifikasi: XML well-formed + update modul bersih; verifi
 POS (combo product sungguhan) BELUM dilakukan (DB QA belum ada chart of accounts/config POS),
 ditunda ke Step 9. Detail di `FINDINGS.md` `MF-34`.
 
-**Belum dikerjakan:** Step 4 (Spec Completeness Review), Step 5 (Acceptance Criteria & Test Plan)
-untuk ketiga modul. Step 6 belum resmi menjalankan Applicability Check penuh (Fase A→G) — fix di
-atas dieksekusi dini/parsial di luar urutan normal atas permintaan dev, akan direview ulang sebagai
-bagian gate Step 6 formal nanti.
+**Step 4 (Spec Completeness Review) — SELESAI untuk ketiga modul (2026-09-22), gate LULUS setelah
+sinkronisasi.** Dikerjakan via 3 agent riset paralel, masing-masing enumerasi PENUH file source
+19.0 (`git ls-tree` di branch `migration/19.0`) dicocokkan ke `03_MIGRATION_SPEC.md` + kode aktual.
+Ketiga review awalnya **FAIL** (spec drift — banyak fix Step 6 dini sesi ini belum di-backport ke
+dokumen spec) — semua gap dokumentasi sudah disinkronkan, gate sekarang **LULUS** untuk
+`pos_margin_threshold`/`pin_message`.
+
+**Temuan PALING PENTING Step 4 — `MF-36` root cause DIKOREKSI.** Finding lama menyebut crash saat
+expand "Pinned Messages" sebagai "100% native, `pin_message` tidak pernah menyentuh
+`message_card_list.js`/`.xml`" — **klaim itu SALAH**. Agent Step 4 menemukan modul ini PUNYA override
+`message_card_list.xml` (xpath-replace tombol "Jump") dengan bug bare-identifier IDENTIK `MF-33`
+(`ui.isSmall` bukan `this.ui.isSmall`) — CSS class di override cocok persis dengan baris crash di
+stack trace. Diperbaiki & diverifikasi live (expand + klik "See" jump, 0 error console). `FINDINGS.md`
+`MF-36` sudah dikoreksi root cause-nya (bukan sekadar ditandai resolved — investigasi awal genuinely
+salah, bukan cuma belum tuntas).
+
+**Satu item masih terbuka, butuh keputusan dev:** `sale_margin_threshold` — `i18n/*.po` (5 file
+bahasa) belum pernah dicek kelengkapan terjemahannya terhadap string UI baru (kolom "Incl. Tax" dst,
+`MF-29`/`MF-38`). Perlu keputusan: in-scope (update terjemahan) atau eksplisit out-of-scope untuk
+migrasi "port kode saja" ini — lihat `doc-dev/migration_19.0_20.0/doc/04_completeness/sale_margin_threshold/04_SPEC_COMPLETENESS_REVIEW.md`.
+
+**Belum dikerjakan:** Step 5 (Acceptance Criteria & Test Plan) untuk ketiga modul. Step 6 belum
+resmi menjalankan Applicability Check penuh (Fase A→G) — fix di atas dieksekusi dini/parsial di luar
+urutan normal atas permintaan dev, akan direview ulang sebagai bagian gate Step 6 formal nanti.
 
 ---
 
@@ -415,9 +435,9 @@ satu-satunya yang tersisa sebelum gate Step 1 ditutup dan lanjut ke Step 2.
 | 1 | Intake & Scope | ✔️ Gate lulus (2026-09-21) | ✔️ Gate lulus (2026-09-21) | ✔️ Gate lulus (2026-09-21) |
 | 2 | Diff & Compatibility Analysis | ✅ Selesai — 1 kritis lintas-modul (`MF-29`) | ✅ Selesai — 1 kritis lintas-modul (`MF-29`) | ✅ Selesai — `MF-28` solusi ditemukan, `MF-32`/`33` fix diketahui |
 | 3 | Migration Spec | ✅ Selesai — 2 item nunggu konfirmasi dev | ✅ Selesai — 2 detail visual parity nunggu konfirmasi | ✅ Selesai — mekanis, `MF-33` jadi syarat tour test Step 6 |
-| 4 | Spec Completeness Review | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
+| 4 | Spec Completeness Review | ✔️ Gate lulus (2026-09-22, setelah sinkronisasi spec) | 🟡 Gate hampir lulus — 1 item nunggu keputusan dev (`i18n`) | ✔️ Gate lulus (2026-09-22) — `MF-36` root cause dikoreksi + fix |
 | 5 | Acceptance Criteria & Test Plan | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
-| 6 | Code Migration | 🔄 Sebagian (`DIFF-01/02/03/04`+`MF-34/38` diterapkan; `MF-34` verifikasi visual live ditunda Step 9) | 🔄 Sebagian (`DIFF-01/08`+`MF-35/37/38` diterapkan+diverifikasi Docker) | 🔄 Sebagian (`MF-28/32/33`+`DIFF-04` diterapkan+diverifikasi Docker; `MF-36` native, ditunda) |
+| 6 | Code Migration | 🔄 Sebagian (`DIFF-01/02/03/04`+`MF-34/38` diterapkan; `MF-34` verifikasi visual live ditunda Step 9) | 🔄 Sebagian (`DIFF-01/08`+`MF-35/37/38` diterapkan+diverifikasi Docker) | 🔄 Sebagian (`MF-28/32/33/36`+`DIFF-04` semua diterapkan+diverifikasi Docker, tidak ada lagi item native yang ditunda) |
 | 7 | Data Migration Scripts | — (asumsi N/A) | — (asumsi N/A) | — (asumsi N/A) |
 | 8 | Code Review | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 9 | Dev Testing | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
