@@ -14,7 +14,7 @@
     'website': "https://www.doodex.net",
     'license': "AGPL-3",
     'category': 'Sales',
-    'version': '19.0.1.0',
+    'version': '20.0.1.0',
 
     'depends': [
         'base', 
@@ -25,7 +25,7 @@
 
     'data': [
         'security/groups.xml',
-        'security/ir.model.access.csv',
+        'security/ir.access.csv',
         'views/product_template_views.xml',
         'views/products.xml',
         'views/res_config_settings.xml',

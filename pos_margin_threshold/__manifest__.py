@@ -14,7 +14,7 @@
     'website': "https://www.doodex.net",
     'license': "AGPL-3",
     'category': 'Point of Sale',
-    'version': '19.0.1.0',
+    'version': '20.0.1.0',
 
     'depends': [
         'base', 
@@ -24,7 +24,7 @@
     ],
 
     'data': [
-        'security/ir.model.access.csv',          
+        'security/ir.access.csv',
         'views/res_config_settings.xml',         
         'views/products.xml',                           
         'wizard/wizard_margin_product.xml',      

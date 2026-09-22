@@ -5,7 +5,7 @@
     <record id="product_category_form_view_inherit_margin_sale" model="ir.ui.view">
         <field name="name">product.category.form.view.inherit.margin.sale</field>
         <field name="model">product.category</field>
-        <field name="inherit_id" ref="stock_account.view_category_property_form_stock"/>
+        <field name="inherit_id" ref="account.view_category_property_form"/>
         <field name="arch" type="xml">
             <field name="property_cost_method" position="before">
                 <label for="margin_sale"/>
@@ -87,36 +87,20 @@
         </field>
     </record>
 
-    <record id="product_variant_easy_edit_view_margin_sale" model="ir.ui.view">
-        <field name="name">product.variant.easy.edit.view.margin.sale</field>
+    <record id="product_product_tree_view_inherit_margin_sale" model="ir.ui.view">
+        <field name="name">product.product.tree.view.inherit.margin.sale</field>
         <field name="model">product.product</field>
-        <field name="inherit_id" ref="product.product_variant_easy_edit_view"/>
+        <field name="inherit_id" ref="product.product_product_tree_view"/>
         <field name="arch" type="xml">
-            <field name="lst_price" position="replace">
-                <field name="lst_price" decoration-danger="is_less_minimum_sale" widget="monetary" />
+            <field name="lst_price" position="attributes">
+                <attribute name="decoration-danger">is_less_minimum_sale</attribute>
             </field>
-            <group name="pricing" position="inside">
-                <label for="margin_sale" />
-                <div class="d-inline-block" >
-                  <field name="margin_sale" widget="float" class="oe_inline o_input_6ch" decoration-danger="margin_sale &lt; 0.0"/>
-                  <span class="oe_grey"> %</span>
-                </div>
-                <field name="is_product_variant" invisible="1"/>
-                <label for="minimum_sale_price" invisible="product_variant_count &gt; 1 and not is_product_variant"/>
-                <div class="row" invisible="product_variant_count &gt; 1 and not is_product_variant">
-                    <div class="col-md-6">
-                        <field name="minimum_sale_price" widget="monetary"/>
-                    </div>
-                    <div class="col-md-2">
-                        <field name="minimum_sale_price_with_tax" widget="monetary" />
-                    </div>
-                    <div class="col-md-4">
-                        <span>Incl. Tax</span>
-                    </div>
-                </div>
-                <!-- <field name="minimum_sale_price" widget="monetary"/> -->
-                <field name="is_less_minimum_sale" invisible="1" />
-            </group>
+            <field name="lst_price" position="after">
+                <field name="margin_sale" optional="show" widget="float"/>
+                <field name="minimum_sale_price" optional="show" widget="monetary"
+                       options="{'currency_field': 'currency_id'}"/>
+                <field name="is_less_minimum_sale" column_invisible="True"/>
+            </field>
         </field>
     </record>
 
