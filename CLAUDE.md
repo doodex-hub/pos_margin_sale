@@ -42,9 +42,10 @@ saat ini" di bawah — jangan tunggu user menjelaskan project dari nol.
 
 > **Larangan mutlak (default): JANGAN jalankan command `git` apapun di repo manapun yang terhubung
 > ke project ini** (`migration-tool`, `native-target` = `odoo20`, `native-target-enterprise` =
-> `enterprise20`, `native-source` = `enterprise19.0`), KECUALI di `target-codebase` (repo ini) sesuai
-> scope Mode Git di atas. Command non-git (`ls`/`find`/`grep`/`diff`/`cat`) tetap aman dipakai kapan
-> saja.
+> `enterprise20`, `native-source` = `odoo19` + `enterprise19` — diisi ulang dev 2026-09-22 sebagai
+> dua clone terpisah, menggantikan `enterprise19.0` lama yang kosong, lihat §Folder), KECUALI di
+> `target-codebase` (repo ini) sesuai scope Mode Git di atas. Command non-git
+> (`ls`/`find`/`grep`/`diff`/`cat`) tetap aman dipakai kapan saja.
 
 > **Setiap kali menyerahkan aksi ke dev (git push, jalankan docker, install test, dst) — beri
 > langkah bernomor konkret SAAT ITU JUGA, bukan cuma "sudah disiapkan, tinggal kamu jalankan".**
@@ -362,11 +363,19 @@ catatan efek samping (`ProductProduct._load_pos_data_fields()` di `pos_margin_th
 19.0 mereferensikan field ini padahal sebelumnya belum ada) di `FINDINGS.md` `MF-38` dan kedua
 `06c_IMPLEMENTATION_LOG.md`.
 
+**`MF-34` — blocker infrastruktur RESOLVED, cross-check TUNTAS (2026-09-22).** Dev mengisi ulang
+`native-source` sebagai `odoo19` (Community) + `enterprise19` (Enterprise), dua clone terpisah.
+Cross-check ke `point_of_sale/static/src/app/components/orderline/orderline.js` native (19.0 DAN
+20.0) mengonfirmasi: `line.comboParent` di `pos_margin_threshold/static/src/store/orderline.xml`
+adalah **typo lama** (seharusnya `line.combo_parent_id`, field asli yang dipakai native) — styling
+combo-child sudah no-op SEJAK 19.0, **BUKAN gap migrasi 19→20**. Detail di `FINDINGS.md` `MF-34`.
+**Perlu keputusan dev:** pertahankan typo (identik 19.0, rekomendasi) atau perbaiki (styling jadi
+aktif pertama kali, behavior baru yang terlihat, butuh persetujuan eksplisit).
+
 **Belum dikerjakan:** Step 4 (Spec Completeness Review), Step 5 (Acceptance Criteria & Test Plan)
 untuk ketiga modul. Step 6 belum resmi menjalankan Applicability Check penuh (Fase A→G) — fix di
 atas dieksekusi dini/parsial di luar urutan normal atas permintaan dev, akan direview ulang sebagai
-bagian gate Step 6 formal nanti. `MF-34` (folder `native-source` kosong) masih blocker infrastruktur
-terbuka.
+bagian gate Step 6 formal nanti.
 
 ---
 
@@ -423,7 +432,7 @@ Legenda: ⬜ Belum mulai · 🔄 Sedang dikerjakan · ✅ Draft/selesai ditulis 
 | Source 19.0 | 1, 2, 4, 8 | Ya | **Tidak ada folder terpisah** — baca lewat `git show migration/19.0:<path>` di repo yang sama (lihat §"Adaptasi dual-branch") |
 | `native-target` (Odoo 20.0 Community) | 2 | Ya | **Sudah ada, dikonfirmasi 2026-09-21:** `D:\Kuncoro\doodex\repo\odoo20` — clone git resmi `odoo/odoo`, branch `20.0` |
 | `native-target-enterprise` (Odoo 20.0 Enterprise) | 2 (wajib — `sale_margin_threshold` punya dependency Rental) | Ya | **Sudah ada, dikonfirmasi 2026-09-21:** `D:\Kuncoro\doodex\repo\enterprise20` — clone git resmi Enterprise, branch `20.0`. **Folder TERPISAH dari `native-target`** (pola dua-clone standar, bukan gabungan seperti project 18.0→19.0) — pastikan KEDUANYA dicek untuk dependency Enterprise, jangan asumsikan cukup dari Community saja (lesson `purchase_product_optional`). |
-| `native-source` (Odoo 19.0, opsional) | 2 | Ya | **Sudah ada (peninggalan project 18.0→19.0):** `D:\Kuncoro\doodex\repo\enterprise19.0` — Community+Enterprise 19.0 gabungan, **BUKAN git repo** (hasil extract, tidak ada `.git/`) — JANGAN jalankan git apapun di folder ini. |
+| `native-source` (Odoo 19.0) | 2 | Ya | **Diisi ulang dev 2026-09-22** (folder lama `enterprise19.0` kosong, sempat memblokir `MF-34`) — sekarang DUA clone terpisah: `D:\Kuncoro\doodex\repo\odoo19` (Community, clone git resmi, branch `19.0`) + `D:\Kuncoro\doodex\repo\enterprise19` (Enterprise, clone git resmi, branch `19.0`) — pola dua-clone standar, bukan folder gabungan seperti `enterprise19.0` lama. Sudah dipakai untuk cross-check `MF-34` (`line.comboParent`), hasil: dikonfirmasi typo lama, bukan gap migrasi. |
 | `third-party-*` | 2 (kalau ada dependency OCA) | Ya | Belum dicek ulang untuk pasangan 19.0→20.0 — project 18.0→19.0 tidak menemukan indikasi OCA untuk ketiga modul, tapi harus dikonfirmasi ulang di intake, bukan diasumsikan permanen. |
 
 ---
