@@ -1,7 +1,10 @@
 /** @odoo-module **/
 
 import { useService } from "@web/core/utils/hooks";
-import { Chatter } from "@mail/chatter/web_portal/chatter";
+// 20.0: Chatter dipindah dari `chatter/web_portal/chatter` ke `chatter/web_portal_project/chatter`
+// (MF-33) -- path lama tidak ada lagi di asset bundle, patch ke `undefined` menyebabkan crash
+// `TypeError` di setiap render form manapun yang punya chatter.
+import { Chatter } from "@mail/chatter/web_portal_project/chatter";
 import { onMounted, onWillUpdateProps } from "@odoo/owl";
 import { patch } from "@web/core/utils/patch";
 import { MessageCardList } from "@mail/core/common/message_card_list";
