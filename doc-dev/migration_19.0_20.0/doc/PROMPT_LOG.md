@@ -18,7 +18,7 @@ Tidak dihitung).
 | 2 — Diff & Compatibility Analysis | ? | ? | Belum di-backfill retroaktif (dikerjakan sesi sebelum compaction) — perlu sesi berikutnya mengisi dari transcript kalau data ini dibutuhkan untuk `ROADMAP.md` §5. |
 | 3 — Migration Spec | ? | ? | Sama seperti di atas — belum di-backfill. |
 | 4 — Spec Completeness Review | 1 | 1 | 1 prompt normal ("LANJUT step 4") memicu 3 agent riset paralel (satu per modul); 1 tool-fix diam-diam (bukan diminta user) — koreksi root cause `MF-36` (salah-diagnosis "100% native" sebelumnya, ternyata bug `pin_message` sendiri) ditemukan & diperbaiki sebagai bagian gate ini, bukan dari prompt tool-fix eksplisit user. |
-| 5 — Acceptance Criteria & Test Plan | | | |
+| 5 — Acceptance Criteria & Test Plan | 1 | 0 | 1 prompt normal ("LANJUT step 4" yang lalu diikuti kelanjutan otomatis ke step 5 tanpa tanya ulang, sesuai prinsip "jalan terus") memicu 3 agent riset paralel (satu per modul), 87 AC total ditulis, tidak ada tool-fix. |
 | 6 — Code Migration (semua fase A-G2) | | | |
 | 7 — Data Migration Scripts | | | — (N/A, port kode saja) |
 | 8 — Code Review | | | |

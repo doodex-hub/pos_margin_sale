@@ -400,9 +400,29 @@ untuk string baru, tidak ada dampak fungsional.
 
 **Gate Step 4 LULUS untuk ketiga modul.**
 
-**Belum dikerjakan:** Step 5 (Acceptance Criteria & Test Plan) untuk ketiga modul. Step 6 belum
-resmi menjalankan Applicability Check penuh (Fase A→G) — fix di atas dieksekusi dini/parsial di luar
-urutan normal atas permintaan dev, akan direview ulang sebagai bagian gate Step 6 formal nanti.
+**Step 5 (Acceptance Criteria & Test Plan) — SELESAI untuk ketiga modul (2026-09-22, tidak ada
+gate).** 87 AC total (37 `pos_margin_threshold`, 29 `sale_margin_threshold`, 21 `pin_message`),
+format Given/When/Then, tiap AC ditelusuri ke `BSL-NNN` di `01b_BASELINE_SPEC.md` masing-masing
+(bukan ke migration spec — kesetaraan diukur ke kode 19.0 yang berjalan). Test plan (`05b`) memetakan
+tiap AC ke Step 9/10/11, merujuk test/tour yang SUDAH ADA (bukan asumsi semua perlu ditulis baru).
+
+**Gap yang di-flag (informasional, tidak blocking, tapi layak ditindaklanjuti):**
+- **`BSL-018`** [pos_margin_threshold] — sudah dibawa TANPA KEPUTUSAN lewat TIGA project migrasi
+  berturut-turut (17→18, 18→19, 19→20) — pola carry-forward berulang yang di-flag agent Step 5
+  sebagai butuh keputusan dev nyata, bukan carry-forward keempat kalinya secara diam-diam.
+- `MF-34` (styling combo POS, AKTIF pertama kali di 20.0) belum ada test sama sekali — prioritas
+  tertinggi untuk tour test baru.
+- Jalur "decline" dialog pembayaran POS belum pernah di-tour-test (cuma jalur confirm).
+- `MF-37` (dedup kolom) baru diverifikasi manual sekali via Docker, belum ada regression test otomatis.
+- [sale_margin_threshold] `01b_BASELINE_SPEC.md` punya 2 klaim behavior tanpa `BSL-NNN` (formula
+  compute inti §3, guard visibility popup §6) — perlu nomor `BSL-NNN` retroaktif.
+- [pin_message] Tour existing SEBENARNYA sudah punya langkah expand yang mestinya menangkap crash
+  `MF-36`, tapi tidak pernah benar-benar dijalankan sebagai test otomatis sesi ini — `MF-36`
+  (expand/jump) dan `MF-33` (ganti thread) masih murni terverifikasi manual, belum ada tour baru.
+
+**Belum dikerjakan:** Step 6 belum resmi menjalankan Applicability Check penuh (Fase A→G) — fix
+Step 6 yang sudah dieksekusi dini/parsial di luar urutan normal atas permintaan dev akan direview
+ulang sebagai bagian gate Step 6 formal nanti.
 
 ---
 
@@ -438,7 +458,7 @@ satu-satunya yang tersisa sebelum gate Step 1 ditutup dan lanjut ke Step 2.
 | 2 | Diff & Compatibility Analysis | ✅ Selesai — 1 kritis lintas-modul (`MF-29`) | ✅ Selesai — 1 kritis lintas-modul (`MF-29`) | ✅ Selesai — `MF-28` solusi ditemukan, `MF-32`/`33` fix diketahui |
 | 3 | Migration Spec | ✅ Selesai — 2 item nunggu konfirmasi dev | ✅ Selesai — 2 detail visual parity nunggu konfirmasi | ✅ Selesai — mekanis, `MF-33` jadi syarat tour test Step 6 |
 | 4 | Spec Completeness Review | ✔️ Gate lulus (2026-09-22, setelah sinkronisasi spec) | ✔️ Gate lulus (2026-09-22) — `i18n` diputuskan out-of-scope (`MF-39`) | ✔️ Gate lulus (2026-09-22) — `MF-36` root cause dikoreksi + fix |
-| 5 | Acceptance Criteria & Test Plan | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
+| 5 | Acceptance Criteria & Test Plan | ✅ Selesai (2026-09-22, 37 AC) — tidak ada gate | ✅ Selesai (2026-09-22, 29 AC) — tidak ada gate | ✅ Selesai (2026-09-22, 21 AC) — tidak ada gate |
 | 6 | Code Migration | 🔄 Sebagian (`DIFF-01/02/03/04`+`MF-34/38` diterapkan; `MF-34` verifikasi visual live ditunda Step 9) | 🔄 Sebagian (`DIFF-01/08`+`MF-35/37/38` diterapkan+diverifikasi Docker) | 🔄 Sebagian (`MF-28/32/33/36`+`DIFF-04` semua diterapkan+diverifikasi Docker, tidak ada lagi item native yang ditunda) |
 | 7 | Data Migration Scripts | — (asumsi N/A) | — (asumsi N/A) | — (asumsi N/A) |
 | 8 | Code Review | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
