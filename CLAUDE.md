@@ -343,7 +343,7 @@ satu-satunya yang tersisa sebelum gate Step 1 ditutup dan lanjut ke Step 2.
 |---|---|---|---|---|
 | 1 | Intake & Scope | ✔️ Gate lulus (2026-09-21) | ✔️ Gate lulus (2026-09-21) | ✔️ Gate lulus (2026-09-21) |
 | 2 | Diff & Compatibility Analysis | ✅ Selesai — 1 kritis lintas-modul (`MF-29`) | ✅ Selesai — 1 kritis lintas-modul (`MF-29`) | ✅ Selesai — `MF-28` solusi ditemukan, `MF-32`/`33` fix diketahui |
-| 3 | Migration Spec | ⬜ Belum mulai — tunggu `MF-29`/`MF-34` | ⬜ Belum mulai — tunggu `MF-29` | ⬜ Belum mulai |
+| 3 | Migration Spec | ✅ Selesai — 2 item nunggu konfirmasi dev | ✅ Selesai — 2 detail visual parity nunggu konfirmasi | ✅ Selesai — mekanis, `MF-33` jadi syarat tour test Step 6 |
 | 4 | Spec Completeness Review | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 5 | Acceptance Criteria & Test Plan | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 6 | Code Migration | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
