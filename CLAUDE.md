@@ -306,10 +306,43 @@ via 3 agent riset paralel.** 6 finding baru ditemukan dan dicatat ke `FINDINGS.m
 pengganti `_store_message_fields()` + `res.attr("is_pinned")`, diverifikasi dari 2 override native
 yang sudah berjalan (`rating`, `im_livechat`) — siap dieksekusi mekanis di Step 6.
 
-**Belum dikerjakan:** Step 3 (Migration Spec) untuk ketiga modul — `MF-29` (view popup hilang) dan
-`MF-34` (folder `native-source` kosong) sebaiknya diselesaikan/diklarifikasi dulu sebelum Step 3
-`pos_margin_threshold`/`sale_margin_threshold` ditulis final, supaya spec tidak berasumsi kosong di
-area itu.
+**`MF-29` — keputusan desain diambil dev (2026-09-21):** pindah customization margin dari popup
+(hilang) ke kolom baru di list Product Variants (`product_product_tree_view`), `optional="show"`,
+replikasi pola koordinasi lintas-modul (`module_pos_margin_threshold`) yang sudah ada.
+
+**Step 3 (Migration Spec) — SELESAI untuk ketiga modul (2026-09-22, tidak ada gate).** Spec konkret
+ditulis untuk semua fix wajib (lihat `03_spec/<modul>/03_MIGRATION_SPEC.md`).
+
+**Review visual Docker 19.0 vs 20.0 (2026-09-22) — atas permintaan dev, sebagian eksekusi Step 6
+dini di luar urutan fase normal:**
+- Dua environment Docker independen dibuat: 19.0 (`docker-compose.yml`, port 8079, mount clone
+  terpisah `pos-margin-sale-19.0-snapshot` — **jangan pernah mount `../` langsung di sini**, insiden
+  pernah terjadi saat working tree yang sama dipakai bareng compose 20.0) dan 20.0
+  (`docker-compose.20.yml`, port 8078, build dari source `odoo20`+`enterprise20` karena belum ada
+  image resmi `odoo:20.0`). `sale_renting` (Enterprise Rental) terinstall di kedua sisi dari
+  `enterprise19`/`enterprise20` untuk verifikasi `BSL-001` — **dikonfirmasi identik** (order Rental
+  skip validasi margin di kedua versi).
+- **`pos_margin_threshold`:** `DIFF-01`/`DIFF-02`/`DIFF-03`(`MF-29`) diterapkan & diverifikasi
+  install sukses di 20.0. `DIFF-04` (options currency `list_price`) **belum** diterapkan, masih
+  menunggu konfirmasi dev ringan.
+- **`sale_margin_threshold`:** `DIFF-01`(`MF-30`)/`DIFF-08`(`MF-29`) diterapkan. **`MF-35` (baru,
+  ditemukan dari smoke-install, bukan Step 2/3)** — `views/sale_order.xml` xpath `price_unit` tidak
+  resolve karena native 20.0 membungkusnya dalam `<column name="price_unit">` baru — **sudah
+  diperbaiki & diverifikasi**. Dua detail visual-parity (`minimum_sale_price_with_tax`, warning
+  merah di field margin) masih menunggu konfirmasi dev soal full parity dengan 19.0.
+- **`pin_message`:** `MF-28`/`MF-32`/`MF-33`/`DIFF-04` semua diterapkan & **diverifikasi end-to-end
+  via UI nyata** (tulis log note → klik pin → badge "Pinned Messages: 1" muncul benar). **`MF-36`
+  (baru)** — crash di komponen NATIVE `mail.MessageCardList` (bukan kode modul ini, dikonfirmasi
+  dari baca langsung hasil kompilasi template) saat expand daftar pesan pinned — kemungkinan quirk
+  dev-snapshot Odoo 20.0 (belum ada rilis stabil), direkomendasikan re-test nanti, BUKAN ditambal
+  dari sisi modul.
+
+**Belum dikerjakan:** Step 4 (Spec Completeness Review), Step 5 (Acceptance Criteria & Test Plan)
+untuk ketiga modul. Step 6 belum resmi menjalankan Applicability Check penuh (Fase A→G) — fix di
+atas dieksekusi dini/parsial di luar urutan normal atas permintaan dev, akan direview ulang sebagai
+bagian gate Step 6 formal nanti. `DIFF-04` `pos_margin_threshold` dan 2 detail visual-parity
+`sale_margin_threshold` masih menunggu keputusan dev. `MF-34` (folder `native-source` kosong) masih
+blocker infrastruktur terbuka.
 
 ---
 
@@ -346,7 +379,7 @@ satu-satunya yang tersisa sebelum gate Step 1 ditutup dan lanjut ke Step 2.
 | 3 | Migration Spec | ✅ Selesai — 2 item nunggu konfirmasi dev | ✅ Selesai — 2 detail visual parity nunggu konfirmasi | ✅ Selesai — mekanis, `MF-33` jadi syarat tour test Step 6 |
 | 4 | Spec Completeness Review | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 5 | Acceptance Criteria & Test Plan | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
-| 6 | Code Migration | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
+| 6 | Code Migration | 🔄 Sebagian (`DIFF-01/02/03` diterapkan+diverifikasi Docker, `DIFF-04` blm) | 🔄 Sebagian (`DIFF-01/08`+`MF-35` diterapkan+diverifikasi Docker) | 🔄 Sebagian (`MF-28/32/33`+`DIFF-04` diterapkan+diverifikasi Docker; `MF-36` native, ditunda) |
 | 7 | Data Migration Scripts | — (asumsi N/A) | — (asumsi N/A) | — (asumsi N/A) |
 | 8 | Code Review | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 9 | Dev Testing | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
