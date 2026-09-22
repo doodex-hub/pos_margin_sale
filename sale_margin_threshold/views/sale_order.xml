@@ -17,7 +17,11 @@
             </xpath>
 
             <!-- Add conditional decoration based on 'minimum_sale_price' and 'is_rental_order_installed_true' -->
-            <xpath expr="//page[@name='order_lines']/field[@name='order_line']/list/field[@name='price_unit']" position="attributes">
+            <!-- 20.0: price_unit is now wrapped in <column name="price_unit"> (native comment:
+                 added specifically so inheriting modules like this one can target it without
+                 replacing the field node) - xpath updated to go through that column, field itself
+                 unchanged. -->
+            <xpath expr="//page[@name='order_lines']/field[@name='order_line']/list[@name='sol_list']/column[@name='price_unit']/field[@name='price_unit']" position="attributes">
                 <!-- Only apply red color if the order is not a rental order -->
                 <attribute name="decoration-danger">minimum_sale_price &gt; price_unit and not parent.is_rental_order_installed_true</attribute>
             </xpath>

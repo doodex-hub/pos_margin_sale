@@ -29,6 +29,7 @@
 | MF-32 | [pin_message] `messageActionsRegistry` berubah lagi di 20.0 — 3 breaking point konkret (getter `canAddReaction`, filter `IS_ACTION_DEFINITION_SYM`, FontAwesome→Odoo Icons `push_pin`) | Step 2, project 19.0→20.0 (2026-09-21) | `[GAP-MIGRASI]` | Tinggi | 🟡 Fix mekanis diketahui untuk ketiganya — lihat `02_DIFF_ANALYSIS.md` |
 | MF-33 | [pin_message] Komponen `Chatter` di-rewrite arsitektural (Owl signals) + pindah path modul — patch modul ini secara statis masih valid tapi behavior re-trigger saat ganti thread BELUM bisa dipastikan dari baca kode saja | Step 2, project 19.0→20.0 (2026-09-21) | `[GAP-MIGRASI]` | Sedang | 🔴 Terbuka — WAJIB diverifikasi via tour test nyata di Step 6/9, jangan diasumsikan aman |
 | MF-34 | [pos_margin_threshold] `line.comboParent` (styling combo di `orderline.xml`) kemungkinan sudah jadi no-op — TIDAK bisa dipastikan murni gap 19→20 karena `native-source` (`enterprise19.0`) ternyata folder KOSONG di disk | Step 2, project 19.0→20.0 (2026-09-21) | `[PERLU-KEPUTUSAN]` | Rendah | 🔵 Terbuka — blocker infrastruktur (native-source kosong), bukan cuma keputusan konten |
+| MF-35 | [sale_margin_threshold] `price_unit` di list `sale.order` dibungkus `<column name="price_unit">` baru di native 20.0 (sengaja — komentar native eksplisit sebut modul seperti `sale_margin`) — xpath lama tidak resolve, install-blocking. Tidak ketahuan di Step 2/3 (file `views/sale_order.xml` tidak eksplisit dicek), baru ketemu dari smoke-install Docker nyata | Ditemukan dari smoke-install Docker 20.0, 2026-09-22 (di luar Step 2/3 formal) | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED (2026-09-22) — xpath diupdate, install sukses dikonfirmasi |
 
 ---
 
@@ -266,6 +267,25 @@ dibuktikan lewat eksekusi nyata, bukan dianggap aman.
 hanya dari review kode.
 **Keputusan pemilik modul:** *(kosong — perlu bukti eksekusi Step 6/9, bukan keputusan dev)*
 
+### MF-35 — `price_unit` dibungkus `<column>` baru di list `sale.order` native 20.0
+**Ditemukan di:** smoke-install Docker 20.0 nyata (2026-09-22), BUKAN Step 2/3 formal — file
+`views/sale_order.xml` tidak eksplisit masuk cakupan agent riset Step 2/3 untuk modul ini (celah
+proses, dicatat supaya tidak terulang: Step 2 berikutnya harus eksplisit cek SEMUA file `views/*.xml`
+satu per satu, bukan cuma yang "kelihatan berisiko" dari nama file).
+**Tag:** `[GAP-MIGRASI]`
+**Ref:** `odoo20/addons/sale/views/sale_order_views.xml:832-845` — komentar native persis:
+*"price_unit is wrapped in a column so inheriting modules (e.g. sale_margin) can add fields to it
+via position="inside" instead of replacing the price_unit field node."*
+**Lokasi:** `sale_margin_threshold/views/sale_order.xml`, record `view_order_form_inherit_sale`.
+**Deskripsi:** xpath lama `//page[@name='order_lines']/field[@name='order_line']/list/field[@name='price_unit']`
+tidak resolve lagi karena `price_unit` sekarang anak dari `<column name="price_unit">` baru di dalam
+`<list name="sol_list">`. Install gagal total (`ParseError`) sampai diperbaiki.
+**Fix diterapkan (2026-09-22):** xpath diupdate jadi
+`//page[@name='order_lines']/field[@name='order_line']/list[@name='sol_list']/column[@name='price_unit']/field[@name='price_unit']`
+— dikonfirmasi resolve, install sukses (`SELECT state FROM ir_module_module` → `installed`, smoke-test
+Docker 20.0 port 8078).
+**Keputusan pemilik modul:** *(tidak perlu keputusan — fix mekanis, sudah diterapkan & diverifikasi)*
+
 ### MF-34 — `line.comboParent` kemungkinan no-op, blocker infrastruktur `native-source`
 **Ditemukan di:** Step 2, `pos_margin_threshold`
 **Tag:** `[PERLU-KEPUTUSAN]`
@@ -291,5 +311,6 @@ konten)*
 
 Sama seperti `migration-tool/templates/FINDINGS.md` — lihat file itu untuk skema `MF-NNN`, kapan
 pakai `[PERLU-KEPUTUSAN]`/`[DIWARISI-SOURCE]`/`[GAP-MIGRASI]`, dan kewajiban Step 4/Step 8 membaca
-file ini sebagai bagian gate. `MF-25`..`MF-34` sudah dipakai (`MF-25`..`MF-28` Step 1, `MF-29`..`MF-34`
-Step 2, 2026-09-21) — ID lanjutan finding BARU selanjutnya mulai dari `MF-35`.
+file ini sebagai bagian gate. `MF-25`..`MF-35` sudah dipakai (`MF-25`..`MF-28` Step 1, `MF-29`..`MF-34`
+Step 2, `MF-35` smoke-install Docker 2026-09-22) — ID lanjutan finding BARU selanjutnya mulai dari
+`MF-36`.
