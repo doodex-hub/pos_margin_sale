@@ -41,7 +41,8 @@ class TestActionConfirm(TransactionCase):
 
     def test_action_confirm_blocking_below_minimum(self):
         """AC-01-01: blocking_transaction_order=True, harga di bawah minimum -> ValidationError."""
-        self.env['ir.config_parameter'].sudo().set_param(
+        # MF-40: set_param() removed in native 20.0, replaced by typed set_bool()/set_str()/etc.
+        self.env['ir.config_parameter'].sudo().set_bool(
             'post_margin_sale.blocking_transaction_order', True)
         product = self._make_product('BACKFILL Product AC-01-01', standard_price=100.0)
         self.assertEqual(product.minimum_sale_price, 120.0)
@@ -52,7 +53,7 @@ class TestActionConfirm(TransactionCase):
 
     def test_action_confirm_wizard_path_when_not_blocking(self):
         """AC-01-02: blocking_transaction_order=False -> wizard konfirmasi, order belum confirm."""
-        self.env['ir.config_parameter'].sudo().set_param(
+        self.env['ir.config_parameter'].sudo().set_bool(
             'post_margin_sale.blocking_transaction_order', False)
         product = self._make_product('BACKFILL Product AC-01-02', standard_price=100.0)
         order = self._make_order(product, price_unit=50.0)
@@ -67,7 +68,7 @@ class TestActionConfirm(TransactionCase):
 
     def test_action_confirm_normal_no_price_issue(self):
         """AC-01-03: harga di atas minimum -> confirm langsung tanpa popup/wizard."""
-        self.env['ir.config_parameter'].sudo().set_param(
+        self.env['ir.config_parameter'].sudo().set_bool(
             'post_margin_sale.blocking_transaction_order', False)
         product = self._make_product('BACKFILL Product AC-01-03', standard_price=100.0)
         order = self._make_order(product, price_unit=150.0)

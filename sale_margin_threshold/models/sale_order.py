@@ -23,7 +23,10 @@ class SaleOrder(models.Model):
 
         skip_check_price = self.env.context.get('skip_check_price')
         check_product = self.check_product_price()
-        blocking_warning = self.env['ir.config_parameter'].sudo().get_param('post_margin_sale.blocking_transaction_order')
+        # MF-40: ir.config_parameter.get_param()/set_param() removed entirely in native 20.0,
+        # replaced by typed get_bool()/get_str()/etc (this field is Boolean,
+        # config_parameter=...). Confirmed install-succeeds-but-crashes-at-runtime.
+        blocking_warning = self.env['ir.config_parameter'].sudo().get_bool('post_margin_sale.blocking_transaction_order')
         if len(check_product) > 0 and not skip_check_price:
             product_str = ('\n').join(f" {i + 1}. {product.display_name} minimum price is {product.currency_id.symbol}. {product.minimum_sale_price:.2f}" for i,product in enumerate(check_product))
             product_str_fr = ('\n').join(f" {i + 1}. {product.display_name} le prix minimum est {product.currency_id.symbol}. {product.minimum_sale_price:.2f}" for i,product in enumerate(check_product))

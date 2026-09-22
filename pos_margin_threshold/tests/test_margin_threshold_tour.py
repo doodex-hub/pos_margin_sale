@@ -15,7 +15,8 @@ class TestMarginThresholdTour(TestPointOfSaleHttpCommon):
         # `--load-language=fr_FR` (dipasang di docker-compose.yml untuk MF-21) membuat UI
         # ter-render Prancis kalau tidak dipaksa eksplisit -- tour ini mencocokkan teks Inggris.
         cls.pos_admin.write({'lang': 'en_US'})
-        cls.env['ir.config_parameter'].sudo().set_param(
+        # MF-40: set_param() removed in native 20.0, replaced by typed set_bool()/set_str()/etc.
+        cls.env['ir.config_parameter'].sudo().set_bool(
             'post_margin_sale.blocking_transaction_pos', False
         )
         cls.margin_test_product = cls.env['product.template'].create({
@@ -37,7 +38,7 @@ class TestMarginThresholdTour(TestPointOfSaleHttpCommon):
     def test_pos_margin_threshold_below_minimum_blocked_tour(self):
         # Step 9 addendum: closes the AC-02-01 gap flagged in Step 8 Code Review -- the confirm
         # path (above) had Tour coverage, the blocking path did not.
-        self.env['ir.config_parameter'].sudo().set_param(
+        self.env['ir.config_parameter'].sudo().set_bool(
             'post_margin_sale.blocking_transaction_pos', True
         )
         self.main_pos_config.open_ui()

@@ -46,6 +46,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
+# MF-40/Step 9 (2026-09-22): headless Chrome + websocket-client, same pattern as the 19.0
+# Dockerfile (see Dockerfile, "Mode D: real Chrome tour test") -- needed for Odoo's own
+# HttpCase-based Tour tests (--test-tags) to actually run instead of skipping with "Chrome
+# executable not found". Not needed for the plain visual-comparison use case this file was
+# originally written for, but IS needed for Step 9 Dev Testing. Uses curl (already installed
+# above) + gnupg instead of wget (not in the base apt list) for the repo signing key.
+RUN apt-get update && apt-get install -y --no-install-recommends gnupg \
+    && curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends google-chrome-stable \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --no-cache-dir websocket-client
+
 # Non-root user matching the pattern of the 19.0 image (odoo user), source itself
 # is bind-mounted read-only at runtime, not copied here.
 RUN useradd -m -d /home/odoo -s /bin/bash odoo

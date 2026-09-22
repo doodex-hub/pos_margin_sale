@@ -6,8 +6,9 @@
 
 **Modul:** pos_margin_threshold, sale_margin_threshold, pin_message
 **Migrasi:** 19.0 → 20.0
-**Terakhir update:** 2026-09-22 (Step 4, `MF-36` root cause dikoreksi + RESOLVED — ternyata bug
-`pin_message` sendiri, bukan native, ditemukan lewat Spec Completeness Review)
+**Terakhir update:** 2026-09-22 (Step 9, `MF-40` RESOLVED — `ir.config_parameter.get_param()`/
+`set_param()` dihapus total di native 20.0, severity tertinggi project ini, ditemukan begitu test
+suite existing dijalankan sungguhan untuk pertama kali)
 
 ---
 
@@ -36,6 +37,7 @@
 | MF-38 | [pos_margin_threshold][sale_margin_threshold] Kolom list `MF-29` (pengganti popup `product_variant_easy_edit_view` yang dihapus native 20.0) tidak membawa 2 elemen visual yang ADA di popup 19.0: warna merah saat `margin_sale` negatif, dan kolom "Incl. Tax" (`minimum_sale_price_with_tax`) | Ditemukan review visual Docker 19.0 vs 20.0, 2026-09-22, saat konfirmasi ulang keputusan `MF-29` bersama dev | `[GAP-MIGRASI]` | Sedang | ✅ RESOLVED (2026-09-22) — **keputusan dev: diterapkan** (dijustifikasi `CLAUDE.md` §Source of Truth: "UX di 20.0 harus identik dengan 19.0"), diverifikasi live di kedua modul: margin negatif tampil merah, kolom Incl. Tax terisi benar, tidak dobel (field+kolom baru `minimum_sale_price_with_tax` di `ProductProduct` juga diberi marker dedup `MF-37` supaya tidak duplikat saat kedua modul terinstall bersamaan) |
 
 | MF-39 | [sale_margin_threshold] `i18n/*.po` (5 file bahasa) tidak pernah dicek kelengkapan terjemahannya terhadap string UI baru dari `DIFF-08`/`MF-29`/`MF-38` (kolom "Incl. Tax" dst) | Ditemukan Step 4 (Spec Completeness Review), 2026-09-22 | `[PERLU-KEPUTUSAN]` → **DIPUTUSKAN** | Rendah | ✅ RESOLVED (2026-09-22) — **keputusan dev: out-of-scope**, tidak diupdate. Migrasi ini "port kode saja", tidak ada keputusan sebelumnya soal update terjemahan. Fallback ke string Inggris untuk string baru, tidak crash — dampak murni kosmetik (UI campur bahasa untuk 2-3 string) |
+| MF-40 | [pos_margin_threshold][sale_margin_threshold] `ir.config_parameter.get_param()`/`set_param()` **dihapus total** di native 20.0, diganti method typed (`get_bool`/`set_bool`/`get_str`/dst) — install sukses, TAPI **crash saat runtime** setiap kali kode ini genuinely dieksekusi (klik "Pay" di POS / confirm Sale Order dengan produk di bawah minimum) | Ditemukan Step 9 (Dev Testing), 2026-09-22, saat menjalankan test suite existing sungguhan untuk pertama kali (`--test-enable`) — TIDAK ketahuan di Step 1-4 manapun karena hanya muncul saat compute yang memakainya benar-benar jalan, bukan saat install modul | `[GAP-MIGRASI]` | **Kritis** | ✅ RESOLVED (2026-09-22) — `get_param`→`get_bool` di `pos_margin_threshold/models/pos_config.py` + `sale_margin_threshold/models/sale_order.py` (keduanya field `Boolean` via `config_parameter=`, dikonfirmasi dari definisi field di `res_config_settings.py` dan pola native `res.config.settings.default_get`/`set_values`), `set_param`→`set_bool` di 2 file test yang juga memakai API lama. Diverifikasi: 0 failed, 0 error di 22 test (sebelumnya 4 error, semua akibat bug ini) |
 
 **`DIFF-04` [pos_margin_threshold] — dikonfirmasi dev 2026-09-22, diterapkan.** Field pengganti
 `list_price` (form Product Template, bug lama `MF-24` yang dipertahankan) ditambah
@@ -481,10 +483,65 @@ modul menyentuh view yang sama), bukan ambiguitas desain (desain sudah diputuska
 
 ---
 
+### MF-40 — `ir.config_parameter.get_param()`/`set_param()` dihapus total di native 20.0 — RESOLVED
+**Ditemukan di:** Step 9 (Dev Testing), 2026-09-22 — saat menjalankan test suite existing
+(`odoo-bin --test-enable --test-tags /pos_margin_threshold,/sale_margin_threshold,/pin_message`)
+untuk **pertama kalinya sungguhan** untuk pasangan 19.0→20.0 ini (sebelumnya cuma `-u <module>`
+tanpa `--test-enable`, yang tidak menjalankan test sama sekali).
+**Tag:** `[GAP-MIGRASI]`
+**Kenapa TIDAK ketahuan di Step 1-4:** `get_param`/`set_param` adalah API generik yang dipakai di
+MANA SAJA di seluruh ekosistem Odoo — bukan sesuatu yang di-grep khusus di analisis diff manapun
+(Step 2/3 fokus ke elemen spesifik modul: view, security, field). Modul tetap **install sukses**
+tanpa error (Python syntax valid, cuma runtime `AttributeError` saat method itu benar-benar
+DIPANGGIL) — jadi tidak muncul di log instalasi, dan tidak muncul di review kode manapun yang cuma
+baca struktur tanpa eksekusi. Baru ketahuan begitu test suite di-eksekusi SUNGGUHAN dengan
+`--test-enable` (bukan cuma `-u <module>` biasa).
+**Deskripsi:** Native `ir.orm.addons.base.models.ir_config_parameter.IrConfig_Parameter` di 20.0
+tidak lagi punya method `get_param(key, default)`/`set_param(key, value)` generik — diganti method
+per-tipe: `get_bool`/`get_int`/`get_float`/`get_str` dan `set_bool`/`set_int`/`set_float`/`set_str`
+(dikonfirmasi baca langsung `odoo20/odoo/addons/base/models/ir_config_parameter.py`, tidak ada shim
+kompatibilitas apapun di core). Ini pola yang sama dipakai native `res.config.settings` sendiri
+(`default_get`/`set_values` di `odoo/addons/base/models/res_config.py` memilih method berdasarkan
+`field.type` — untuk field `Boolean` pakai `get_bool`/`set_bool`).
+**Lokasi kode terdampak (produksi, BUKAN cuma test):**
+- `pos_margin_threshold/models/pos_config.py` — `PosConfig._compute_blocked_warning()`, dipanggil
+  setiap kali field `is_blocked_warning` di-compute (dipakai untuk menentukan dialog
+  blocking/confirm/tanpa-dialog saat klik "Pay" di POS — AC-03 di `05a_MIGRATION_ACCEPTANCE_CRITERIA.md`).
+- `sale_margin_threshold/models/sale_order.py` — `SaleOrder.action_confirm()`, dipanggil setiap kali
+  Sale Order di-confirm (fitur INTI modul ini).
+- Plus 2 file test (`sale_margin_threshold/tests/test_action_confirm.py`,
+  `pos_margin_threshold/tests/test_margin_threshold_tour.py`) yang memakai `set_param` untuk setup
+  data test.
+
+Keduanya field `Boolean` didefinisikan via `config_parameter="post_margin_sale.blocking_transaction_{pos,order}"`
+di `res_config_settings.py` masing-masing modul — dikonfirmasi tipe field sebelum memilih method
+pengganti yang benar (`get_bool`/`set_bool`, bukan `get_str`/`set_str`).
+**Dampak sebelum fix:** **install sukses, TAPI crash runtime** — setiap kali kasir klik "Pay" di POS
+dengan produk di bawah minimum (`pos_margin_threshold`), atau setiap kali Sale Order dengan produk
+di bawah minimum di-confirm (`sale_margin_threshold`), method itu raise `AttributeError` — fitur
+INTI kedua modul (validasi margin minimum) akan crash total, bukan cuma degradasi. Ini SEVERITY
+TERTINGGI dari seluruh finding project ini — lebih parah dari `MF-29`/`MF-36` karena tidak ada jalan
+pintas (bukan satu skenario visual, tapi jalur transaksi utama modul).
+**Catatan efek samping (transparansi, bukan "fix bug"):** kode lama (`get_param` mengembalikan
+string, string `'False'` selalu truthy di Python) sudah punya bug laten identik di 19.0 (dikonfirmasi
+`git show migration/19.0`) — `get_bool` (wajib dipakai, API lama sudah dihapus total) otomatis
+menghilangkan bug laten itu sebagai efek samping tak terhindarkan, BUKAN perbaikan yang disengaja.
+**Fix:** `get_param(key)` → `get_bool(key)` (2 lokasi produksi), `set_param(key, value)` →
+`set_bool(key, value)` (5 lokasi test, value sudah Python `bool` di semua kasus, tidak perlu
+konversi). Komentar Python ditambahkan di tiap lokasi.
+**Verifikasi:** re-run `--test-enable --test-tags /pos_margin_threshold,/sale_margin_threshold,/pin_message`
+— **0 failed, 0 error dari 22 test** (sebelumnya 4 error, semuanya `AttributeError` ini). Tour test
+(HttpCase) masih skip di percobaan ini karena Docker image belum punya Chrome — infrastruktur
+terpisah, lihat catatan Dockerfile.20 di `06_implementation/` masing-masing modul.
+**Keputusan pemilik modul:** tidak perlu — perbaikan API wajib (API lama sudah tidak ada sama sekali
+di 20.0, bukan pilihan desain), murni mekanis.
+
+---
+
 ## Cara Pakai
 
 Sama seperti `migration-tool/templates/FINDINGS.md` — lihat file itu untuk skema `MF-NNN`, kapan
 pakai `[PERLU-KEPUTUSAN]`/`[DIWARISI-SOURCE]`/`[GAP-MIGRASI]`, dan kewajiban Step 4/Step 8 membaca
-file ini sebagai bagian gate. `MF-25`..`MF-36` sudah dipakai (`MF-25`..`MF-28` Step 1, `MF-29`..`MF-34`
-Step 2, `MF-35`/`MF-36` smoke-test Docker 2026-09-22) — ID lanjutan finding BARU selanjutnya mulai dari
-`MF-37`.
+file ini sebagai bagian gate. `MF-25`..`MF-40` sudah dipakai (`MF-25`..`MF-28` Step 1, `MF-29`..`MF-34`
+Step 2, `MF-35`/`MF-36` smoke-test Docker 2026-09-22, `MF-37`/`MF-38` Step 6 dini, `MF-39` Step 4,
+`MF-40` Step 9) — ID lanjutan finding BARU selanjutnya mulai dari `MF-41`.
