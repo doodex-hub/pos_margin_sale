@@ -23,7 +23,7 @@ Tidak dihitung).
 | 7 — Data Migration Scripts | | | — (N/A, port kode saja) |
 | 8 — Code Review | | | |
 | 9 — Dev Testing | | | |
-| 10 — QA Testing | | | |
+| 10 — QA Testing | 2 (1 pin_message, 1 pos_margin_threshold) | 0 | `pin_message`: 1 prompt normal memicu eksekusi Step 10 — live Playwright BLOCKED total (browser shared antar sibling agent Step 10 paralel + webclient blank container-wide, `MF-46`), 11 skenario ditulis (0 `[DIKONFIRMASI]`, 7 `[HASIL-BACA]` ref Step 9 Tour, 3 `[HASIL-BACA-MURNI]`, 1 `[PERLU-KEPUTUSAN]` untuk `AC-06-01`), verdict Lulus Bersyarat. `pos_margin_threshold`: 1 prompt normal, blocker `MF-46` direplikasi independen (dikorroborasi sebelum sadar sudah dicatat `pin_message`) — dimitigasi dengan database throwaway sendiri (`..._qa_step10`) + verifikasi RPC/ORM live langsung (bukan hanya Desk Review) untuk 3 AC risiko tinggi (`AC-07`/`AC-09-03` kolom+dedup — genuinely `[DIKONFIRMASI]`) dan bukti backend baru untuk `AC-05-01`/`MF-34` (kontrak data combo). 21 skenario ditulis (3 `[DIKONFIRMASI]`, 15 `[HASIL-BACA]`, 1 `[HASIL-BACA-MURNI]`, 2 `[PERLU-KEPUTUSAN]`: `AC-03-03` decline path blocked-by-environment, `AC-03-05`/`BSL-018` carry-forward 3x perlu keputusan desain). Verdict Lulus Bersyarat. `sale_margin_threshold` dikerjakan agent sibling terpisah, lihat baris ini kalau sudah di-backfill. |
 | 11 — UAT Sign-off | | | |
 | **Total** | 3+ | 1+ | Step 2/3 belum di-backfill (lihat catatan baris masing-masing) — total ini undercount sampai itu diisi. |
 

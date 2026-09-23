@@ -46,7 +46,8 @@ berturut-turut pasca kedua fix.)
 | MF-40 | [pos_margin_threshold][sale_margin_threshold] `ir.config_parameter.get_param()`/`set_param()` **dihapus total** di native 20.0, diganti method typed (`get_bool`/`set_bool`/`get_str`/dst) — install sukses, TAPI **crash saat runtime** setiap kali kode ini genuinely dieksekusi (klik "Pay" di POS / confirm Sale Order dengan produk di bawah minimum) | Ditemukan Step 9 (Dev Testing), 2026-09-22, saat menjalankan test suite existing sungguhan untuk pertama kali (`--test-enable`) — TIDAK ketahuan di Step 1-4 manapun karena hanya muncul saat compute yang memakainya benar-benar jalan, bukan saat install modul | `[GAP-MIGRASI]` | **Kritis** | ✅ RESOLVED (2026-09-22) — `get_param`→`get_bool` di `pos_margin_threshold/models/pos_config.py` + `sale_margin_threshold/models/sale_order.py` (keduanya field `Boolean` via `config_parameter=`, dikonfirmasi dari definisi field di `res_config_settings.py` dan pola native `res.config.settings.default_get`/`set_values`), `set_param`→`set_bool` di 2 file test yang juga memakai API lama. Diverifikasi: 0 failed, 0 error di 22 test (sebelumnya 4 error, semua akibat bug ini) |
 | MF-41 | [pos_margin_threshold] DUA bug bertumpuk di `static/src/store/orderline.xml` (`DIFF-08`), keduanya baru ketahuan begitu Tour test (real Chrome) genuinely jalan untuk pertama kali: (1) xpath anchor `t[@t-slot='default']` tidak pernah resolve — native 20.0 rename total jadi `t-call-slot`; (2) setelah #1 diperbaiki, SEMUA 4 pemakaian identifier bare `line` di file yang sama ternyata bug bare-identifier IDENTIK `MF-33`/`MF-36` (`line` harus `this.line`) | Ditemukan Step 9 (Dev Testing), 2026-09-22, tour pertama kali benar-benar jalan dengan Chrome sungguhan (sebelumnya Chrome belum terpasang di image Docker) | `[GAP-MIGRASI]` | **Kritis** | ✅ RESOLVED (2026-09-22) — (1) xpath diupdate ke `t[@t-call-slot='default']`, dikonfirmasi dari `odoo20/addons/point_of_sale/static/src/app/components/orderline/orderline.xml`; (2) `line.combo_parent_id`/`line.isLessMinimumSalePrice` (di `position="attributes"`) dan `line.isLessMinimumSalePrice`/`line.minimumSalePriceWithTax` (di node baru hasil `position="before"`) semua diberi prefix `this.` — dikonfirmasi native 20.0 sendiri tidak pernah bind bare `line` di scope ini, hanya `this.line` (getter component). `03_MIGRATION_SPEC.md` `DIFF-08` awalnya menulis "tidak ada tindakan, xpath anchor stabil" — kesimpulan itu SALAH, cuma dari baca kode, tidak pernah diverifikasi dengan menjalankan tour sungguhan. Diverifikasi ulang setelah kedua fix: lihat catatan hasil test di bawah |
 | MF-42 | [pos_margin_threshold] **BUKAN bug modul ini** — native 20.0's numpad tombol "Price" (`access_right_plugin.js` `get disablePriceButton()`) punya logic TERBALIK dari help text field-nya sendiri: `restrict_price_control` (help: "Only users with Manager access rights... can modify prices") justru membuat tombol Price DISABLED untuk cashier role "manager" saat `False` (default) — kebalikan dari yang diimplikasikan help text. Dikonfirmasi 19.0 punya logic SAMA SEKALI BEDA (`cashierHasPriceControlRights()`), bukan regresi dari kode lama, genuinely fitur/logic baru 20.0 yang tampak salah | Ditemukan Step 9 (Dev Testing), 2026-09-22, tour `pos_margin_threshold` gagal di step numpad "Price" ("Element is not enabled") setelah `MF-41` diperbaiki | `[GAP-MIGRASI]` (native, di luar kendali modul) | Sedang — blocking test tour, TIDAK blocking fungsi inti manapun di modul ini | ✅ WORKAROUND (2026-09-22) — `restrict_price_control=True` ditambahkan ke setup POS config test (`tests/test_margin_threshold_tour.py`), TIDAK menyentuh file native manapun. Kalau perilaku ini genuinely bug (bukan intentional design 20.0), sebaiknya dilaporkan ke Odoo terpisah dari migrasi ini — di luar scope perbaikan modul |
-| MF-43 | [pos_margin_threshold] **BELUM RESOLVED.** Tour `pos_margin_threshold_below_minimum_confirm_tour`/`..._blocked_tour` (setelah `MF-41`/`MF-42` diperbaiki, tour sudah sampai step klik "Pay") — dialog "Price unit less than minimum price" (`PosStore.pay()` patch, `pos_store.js`) **TIDAK PERNAH muncul**. Root cause BELUM ditemukan meski sudah investigasi mendalam — lihat detail di bawah | Ditemukan Step 9 (Dev Testing), 2026-09-22, setelah `MF-41`/`MF-42` diperbaiki dan tour berhasil sampai step "Pay" | `[GAP-MIGRASI]` | **Kritis** (fitur inti: validasi harga di bawah minimum di POS tidak berfungsi via jalur normal) | 🔴 **TERBUKA — butuh investigasi lanjutan** |
+| MF-43 | [pos_margin_threshold] Tour `pos_margin_threshold_below_minimum_confirm_tour`/`..._blocked_tour` sempat gagal — dialog "Price unit less than minimum price" (`PosStore.pay()` patch) kadang tidak muncul. Root cause final: `setUpClass()` test kurang `env.flush_all()` setelah `create()` produk ber-compute-chain — lihat detail lengkap di bawah | Ditemukan Step 9 (Dev Testing), 2026-09-22 | `[GAP-MIGRASI]` | Kritis (fitur inti POS) | ✅ **RESOLVED (2026-09-23)** — fix `env.flush_all()` di test, diverifikasi 3+ run bersih berturut-turut |
+| MF-46 | [pin_message][process] Step 10 live Playwright execution (`AC-06-01` thread-switch, prioritas #1) BLOCKED total sesi ini — browser Playwright MCP genuinely SHARED antar agent sibling konkuren (bukan cuma container/DB), tab saling timpa terus-menerus, DAN container `pos_margin_sale_migration_20` sempat mengalami I/O contention berat (checkpoint Postgres >100 detik) akibat beban gabungan Step 10 paralel 3 modul — webclient Odoo blank/`document.body` kosong di SEMUA tab (bukan cuma punya AI ini), bukan bug kode `pin_message` | Ditemukan Step 10 (QA Testing), 2026-09-23, saat mencoba eksekusi live skenario `AC-06-01` | `[PERLU-KEPUTUSAN]` | Tinggi (satu-satunya AC berisiko tertinggi di modul ini jadi TIDAK bisa ditutup `[DIKONFIRMASI]`) | 🟡 **Bukan bug modul — blocker infrastruktur test, butuh keputusan dev**: ulangi eksekusi live `AC-06-01`/`AC-04-02` di browser/instance TERISOLASI (bukan MCP shared) sebelum Step 11, atau terima risiko residual berdasar analisis desk-review tambahan (lihat `10_qa/pin_message/10_BUSINESS_FLOW_MIGRATION.md` S-06/S-07) |
 
 **`DIFF-04` [pos_margin_threshold] — dikonfirmasi dev 2026-09-22, diterapkan.** Field pengganti
 `list_price` (form Product Template, bug lama `MF-24` yang dipertahankan) ditambah
@@ -751,10 +752,246 @@ bukan perubahan business rule atau bug lama yang harus dipertahankan.
 
 ---
 
+### MF-46 [pin_message][process] — Step 10 live execution BLOCKED — bukan bug kode, blocker infrastruktur test bersama
+
+**Ditemukan di:** Step 10 (QA Testing), 2026-09-23, saat mencoba eksekusi live prioritas #1
+(`AC-06-01`, thread-switch refresh Chatter) via Playwright MCP terhadap `http://localhost:8078`.
+
+**Tag:** `[PERLU-KEPUTUSAN]` — bukan gap migrasi kode, murni keterbatasan lingkungan eksekusi test
+sesi ini (3 agent sibling Step 10 + 1 Cross-Version-Compare berjalan paralel terhadap container yang
+sama).
+
+**Gejala (STOP-rule, ≥6 percobaan berbeda, signature identik tiap kali):**
+1. Browser Playwright MCP yang dipakai **genuinely SHARED** antar seluruh agent sibling konkuren
+   (bukan cuma container/DB Odoo-nya) — `browser_tabs list` menunjukkan tab bertambah dari 1 → 6+
+   selama sesi, dengan URL yang berubah sendiri di antara panggilan tool (contoh: tab yang baru saja
+   di-`select` sebagai "current" berubah lagi ke tab lain, atau URL tab "current" berpindah halaman
+   TANPA aku memanggil `navigate`) — konsisten sibling lain memanggil `browser_tabs`/`navigate`/
+   `click` pada instance browser yang SAMA di waktu bersamaan.
+2. Terlepas dari tab mana yang dipakai (tab baru, tab yang sudah stabil beberapa panggilan berturut,
+   dengan/tanpa patch `document.hidden` manual via `browser_evaluate`), webclient Odoo 20.0
+   (`/odoo`, `/odoo/contacts`, dst) **konsisten render blank** — `document.body.innerHTML` hanya 15
+   karakter (shell kosong), 0 console message (log/warn/error) sama sekali, hanya 1 request RPC
+   (`load_menus`) yang benar-benar selesai, TIDAK ADA call lanjutan (`get_views`/`web_search_read`/
+   dst) — aplikasi Owl tidak pernah genuinely mounting.
+3. **Dikonfirmasi BUKAN spesifik ke tab/agen ini** — tab milik sibling lain (index lain, URL
+   `/odoo/sales` dst, dicek langsung via `browser_evaluate` setelah `select`) **SAMA-SAMA** blank
+   (`bodyLen: 15`) di saat yang sama — jadi ini kondisi window/container-wide sesaat, bukan artefak
+   metodologi satu agent.
+4. `docker compose -f docker-compose.20.yml logs db` (read-only, dijalankan untuk diagnosis, TIDAK
+   ada restart/perubahan apapun dilakukan) menunjukkan **checkpoint Postgres yang sangat berat**
+   (`write=104.891 s` untuk satu checkpoint), beberapa `ERROR: could not serialize access due to
+   concurrent update` dan satu traceback `psycopg2.OperationalError: ... database system is starting
+   up` dari proses lain (bukan proses ini) — konsisten beban gabungan berat dari Step 10 tiga modul
+   + Cross-Version-Compare yang jalan bersamaan terhadap satu Postgres/Odoo worker pool yang sama.
+
+**Dampak:** `AC-06-01` (prioritas #1 task ini) dan `AC-04-02` ("See"/jump button, prioritas #2) TIDAK
+BISA genuinely dieksekusi live sesi ini — keduanya jatuh ke Desk Review (`[HASIL-BACA]`/
+`[HASIL-BACA-MURNI]`, lihat `10_qa/pin_message/10_BUSINESS_FLOW_MIGRATION.md` S-06/S-07), bukan
+`[DIKONFIRMASI]`. `AC-06-01` khususnya SUDAH diberi analisis tambahan (bukan cuma re-sitir Step 8) —
+menelusuri bahwa refresh badge pinned-messages kemungkinan besar tetap benar lewat mekanisme
+`useOnChange`/`changeThread()` NATIVE (independen dari hook `onWillUpdateProps` milik modul ini) —
+tapi kesimpulan itu tetap analisis statis, BUKAN pengganti tour/klik nyata.
+
+**Rekomendasi eksplisit ke dev:**
+1. Jalankan ulang Step 10 skenario S-06 (`AC-06-01`)/S-07 (`AC-04-02`) di sesi TERPISAH, browser
+   Playwright yang TIDAK dipakai bersamaan agent lain (mis. jadwalkan bergiliran, bukan paralel) —
+   atau tunggu jam sepi container, lalu retry.
+2. Kalau live execution genuinely tidak memungkinkan lagi sebelum Step 11 harus ditutup: terima
+   status `[PERLU-KEPUTUSAN]` untuk `AC-06-01` sebagai risiko residual terdokumentasi (bukan
+   disamarkan jadi "Pass"), dengan catatan mitigasi: logic port sudah benar sejauh 3 lapis
+   pembacaan statis independen (Step 8, Step 10 ini) tidak menemukan indikasi KONKRET kegagalan,
+   hanya ketidakpastian timing yang tidak bisa dipastikan tanpa eksekusi nyata.
+3. Pertimbangkan tidak menjalankan >2 sesi Step 10/Cross-Version-Compare truly paralel terhadap
+   container Docker yang sama di masa depan — beban I/O Postgres gabungan yang teramati (checkpoint
+   >100 detik) berisiko memperlambat/mengganggu SEMUA sesi, bukan cuma menyebabkan browser blank.
+
+**Keputusan pemilik modul:** belum — menunggu keputusan dev (lihat rekomendasi di atas).
+
+**Bukti korroboratif tambahan (2026-09-23, dari sesi Cross-Version Compare — lihat
+`CROSS_VERSION_COMPARE.md`):** independen dari diagnosis di atas (yang fokus ke checkpoint Postgres
++ `bodyLen: 15`), sesi Cross-Version Compare menemukan gejala versi lebih presisi lewat Browser pane
+privat (bukan Playwright yang shared): request langsung ke bundle asset (`web.assets_web.min.js`,
+`web.assets_web.min.css`, `web.assets_web_print.min.css`) di `http://localhost:8078` mengembalikan
+`HTTP 200` dengan **`content-length: 0`** (byte asli, dikonfirmasi 3x retry + fetch `arraybuffer()`
+langsung dari browser, bukan cuma header) — TAPI `ir.attachment` record untuk bundle yang SAMA
+(dibaca via `search_read` RPC, request ini TIDAK blank/berhasil normal) melaporkan `file_size` benar
+(mis. `8375005` byte untuk `web.assets_web.min.js`). Dicek juga lewat `docker exec` (read-only,
+`find .../filestore/pos_margin_sale_migration_20_qa -type f | wc -l`): folder filestore database
+UTAMA (`pos_margin_sale_migration_20_qa`) cuma berisi **8 file / 4.5MB total** — jauh lebih kecil dari
+yang seharusnya untuk bundle sebesar itu saja — sementara ada 8+ folder filestore SIBLING
+(`..._qa_v2` s.d. `..._v10`, `..._step10`) di direktori yang sama, hasil clone/restore DB berulang
+oleh agent Step 10 paralel. **Kesimpulan gabungan (dengan diagnosis asli di atas):** byte asset
+fisik untuk bundle DB utama kemungkinan besar hilang/tidak tersinkron ke disk akibat clone/restore DB
+paralel yang sama yang menyebabkan beban Postgres berat — konsisten satu akar masalah, dua gejala
+(checkpoint lambat -> body blank karena RPC timeout/reject; DAN attachment metadata vs byte fisik
+tidak sinkron -> asset bundle 0-byte utk sesi/browser BARU yang belum punya cache lama). **TIDAK
+dilakukan percobaan perbaikan mutating** (mis. `unlink()` attachment attau restart container) —
+sempat mencoba `docker exec ... odoo-bin shell` untuk sekadar MEMBACA record (bukan menulis), tapi
+proses shell terpisah itu sendiri collision dengan registry proses utama yang sedang aktif
+(`psycopg2.errors.SerializationFailure: could not serialize access due to concurrent update` pada
+`res_groups` — kemungkinan menyebabkan satu write sibling agent lain di-rollback) — **pelajaran
+tambahan untuk rekomendasi dev di atas: JANGAN jalankan `odoo-bin shell`/proses `odoo-bin` kedua
+apapun terhadap DB yang sedang dipakai proses lain, sekalipun read-only, karena tetap membuka
+registry baru yang bisa colliding write dengan proses utama.** Verifikasi live 20.0 untuk task
+Cross-Version-Compare (popup↔list `MF-29`, pin_message icon/feel) akhirnya dilakukan sebagian besar
+lewat JSON-RPC `call_kw` langsung (bypass kebutuhan render JS penuh) alih-alih klik UI — lihat
+`CROSS_VERSION_COMPARE.md` §Live-Test untuk detail per kandidat.
+
+**Bukti korroboratif tambahan (2026-09-23, dari sesi Step 10 `pos_margin_threshold`):** diagnosis
+independen (sebelum membaca entri di atas) menghasilkan gejala BYTE-IDENTIK: `browser_tabs` di
+Playwright MCP menunjukkan tab bertambah dari 1 ke 6+ dengan URL berubah sendiri di antara panggilan
+tool; `browser_tabs select`/`new` DITOLAK permission classifier ("Interfere With Workloads");
+`document.body.innerHTML` konsisten 15 karakter (shell kosong) di 3 percobaan berbeda (action URL
+langsung, dashboard app tile, DB lain via `?db=`), 0 console message, `document.hidden=false` tapi
+Playwright sendiri menilai `<body>` "not visible" (bounding box kosong) — ini SEBELUM tahu ada `MF-46`,
+jadi mengonfirmasi independen bukan artefak satu metodologi. **Percobaan `docker compose restart odoo`
+di awal sesi (untuk memastikan fix `MF-45` ter-refresh) juga DITOLAK permission classifier yang sama**
+— dikonfirmasi lewat analisis lain (lihat `06_implementation/pos_margin_threshold/06c_IMPLEMENTATION_LOG.md`
+tidak perlu, catatan cukup di sini) bahwa fix `MF-45` (`@api.depends` di `models/product.py`) TIDAK
+mempengaruhi skenario Step 10 yang diuji (perubahan hanya soal staleness-recompute, bukan nilai awal),
+jadi tidak diulang paksa.
+
+**Kesalahan proses yang perlu diakui (bukan disembunyikan):** sebelum membaca peringatan Cross-Version-
+Compare di atas ("JANGAN jalankan `odoo-bin shell` kedua terhadap DB yang sedang dipakai proses lain"),
+sesi ini SEMPAT menjalankan `odoo-bin shell` READ-ONLY (tanpa `env.cr.commit()`) terhadap DB utama
+`pos_margin_sale_migration_20_qa` (query `get_view()` + baca field beberapa produk existing, untuk
+verifikasi `AC-07`/dedup) SEBELUM entri `MF-46` di atas dibaca. Tidak ada error yang terlihat dari sisi
+sesi ini, tapi risiko `SerializationFailure`/rollback ke write sibling lain (persis yang dilaporkan
+Cross-Version-Compare di atas) tetap mungkin terjadi tanpa sesi ini menyadarinya. **Tidak diulang
+lagi setelah titik ini** — verifikasi `AC-07` lanjutan dipindah seluruhnya ke database throwaway sendiri
+(`pos_margin_sale_migration_20_qa_step10`, dibuat via one-off `-i pos_margin_threshold` terpisah,
+tanpa `sale_margin_threshold`/`pin_message`). Direkomendasikan ke dev: tambahkan catatan eksplisit di
+`CLAUDE.md`/`USAGE_GUIDE.md` bahwa **`odoo-bin shell` (bahkan read-only) terhadap DB yang sedang aktif
+dipakai proses lain TERMASUK aksi mutating-risk**, bukan cuma `-u`/restart — supaya sesi Step 10
+berikutnya (modul manapun) tidak mengulang kesalahan yang sama.
+
+**Nilai tambah untuk `pos_margin_threshold` secara spesifik (lihat detail penuh di
+`10_qa/pos_margin_threshold/10_BUSINESS_FLOW_MIGRATION.md`):** `AC-07-01/02/03/04`/`AC-09-03`
+(kolom list + dedup) berhasil diverifikasi via RPC `get_view()` + baca field produk nyata (bukan
+sekadar baca kode) di DUA database independen (DB utama dengan kedua modul margin terinstall, DAN
+DB throwaway dengan `pos_margin_threshold` SENDIRIAN) — hasilnya konsisten dengan `RMV-01`/`RMV-02`
+di bawah. `AC-05-01` (`MF-34`, styling combo) mendapat bukti BARU yang belum pernah ada sebelumnya:
+kontrak data backend (`pos.order.line.combo_parent_id` ter-set benar merujuk parent line) dikonfirmasi
+via eksekusi ORM nyata (create order+lines) di DB throwaway — TAPI rendering CSS
+(`border-start border-3 ms-4`) itu sendiri tetap TIDAK bisa dikonfirmasi visual sesi ini (blocker
+sama seperti di atas), jadi `AC-05-01` tetap `[HASIL-BACA]` (dengan bukti lebih kuat dari sebelumnya),
+bukan `[DIKONFIRMASI]` penuh. `AC-03-03` (decline dialog POS) tidak punya jalur RPC-proxy sama sekali
+(murni interaksi Owl `Dialog` component) — tetap `[HASIL-BACA]`/`[PERLU-KEPUTUSAN]` seperti sebelumnya,
+tidak ada kemajuan baru untuk item ini spesifik.
+
+---
+
+### RMV-01 [pos_margin_threshold][sale_margin_threshold] — MF-29 popup↔list: paritas kapabilitas dikonfirmasi, satu trade-off UX disengaja dicatat
+**Ditemukan di:** Cross-Version Compare, 2026-09-23 — item review visual Step 10 yang sudah dijanjikan
+eksplisit di keputusan desain `MF-29` ("dicatat untuk review visual Step 10... bandingkan tampilan
+19.0 popup vs 20.0 kolom list berdampingan").
+**Tag:** `NATIVE-DIFF` (redesign disengaja, sudah diputuskan dev di `MF-29`) — bukan `REGRESI`.
+**Metode:** live-compare langsung — popup 19.0 dibuka nyata (`http://localhost:8079`, produk
+"Test Visual Parity QA 19", browser pane privat, bukan Playwright shared yang macet — lihat `MF-46`)
+dan struktur kolom list 20.0 diverifikasi via `product.product.get_views()` RPC (`http://localhost:8078`,
+arch hasil merge TERMASUK override dedup `_get_view()` `MF-37`, dengan `pos_margin_threshold` DAN
+`sale_margin_threshold` keduanya terinstall).
+**Hasil:**
+- Popup 19.0: field `Margin` (%), `Minimum sale price` (dua kotak: base + "Incl. Tax"), semuanya di
+  bawah heading "PRICING" pada halaman per-variant dengan **pager Previous/Next** (navigasi cepat
+  antar-variant satu-per-satu tanpa kembali ke list) — dikonfirmasi editable (uji ketik `25` di field
+  Margin, field benar-benar berubah, lalu di-discard tanpa disimpan supaya tidak mengubah data QA
+  bersama).
+- List 20.0 (arch RPC): `lst_price` (`decoration-danger="is_less_minimum_sale"`), `margin_sale`
+  (`decoration-danger="margin_sale < 0.0"`), `minimum_sale_price`, `minimum_sale_price_with_tax`
+  (`string="Incl. Tax"`) — **satu set kolom saja** (dedup `MF-37` dikonfirmasi masih berfungsi di
+  HEAD saat ini), semuanya `optional="show"`, `editable="bottom"`/`multi_edit="1"` pada root `<list>`
+  — TIDAK ada elemen popup 19.0 yang hilang dari sisi DATA/FIELD (`Sales Price`/`Cost`/`Margin`/
+  `Minimum sale price`/`Incl. Tax` semua punya padanan kolom).
+- **Trade-off UX nyata (dicatat, bukan gap):** popup 19.0 memberi fokus satu-variant-sekaligus
+  (pager) dengan konteks penuh (gambar, semua field) dalam satu layar kecil; list 20.0 dense-table
+  TIDAK punya pager per-variant setara, tapi SEBALIQNYA punya `multi_edit="1"` (edit banyak variant
+  sekaligus) yang TIDAK MUNGKIN dilakukan di popup 19.0 — ini pertukaran kapabilitas dua arah, bukan
+  downgrade satu arah. Tidak ditemukan kapabilitas yang HILANG tanpa pengganti.
+**Dampak:** tidak ada — mengkonfirmasi keputusan desain `MF-29` sudah tepat, item "review visual
+Step 10" yang dijanjikan `MF-29`/`03_MIGRATION_SPEC.md` (`pos_margin_threshold`) sekarang genuinely
+terpenuhi.
+**Keputusan pemilik modul:** tidak perlu — konfirmasi, bukan temuan baru yang butuh keputusan.
+
+### RMV-02 [pos_margin_threshold][sale_margin_threshold] — Shared view `product.product_product_tree_view`: tidak ada efek samping ke kolom native tak terkait
+**Ditemukan di:** Cross-Version Compare, 2026-09-23 — kandidat prioritas #4 task ("cek view core yang
+disentuh modul, pastikan produk tanpa relevansi margin/POS tetap normal").
+**Tag:** `NATIVE-DIFF` / tidak ada temuan — verifikasi bersih.
+**Metode:** `product.product.get_views([[false,'list']])` RPC terhadap `http://localhost:8078` (kedua
+modul margin terinstall) — arch hasil merge PENUH diperiksa, bukan cuma field custom.
+**Hasil:** seluruh kolom native (`default_code`, `image_128`, `name`,
+`product_template_variant_value_ids`, `currency_id`/`cost_currency_id` (column_invisible, dipakai
+widget monetary), `standard_price`, `barcode`, `qty_available`, `free_qty`, `volume`, `weight`,
+`virtual_available`, `is_storable`) tampil identik strukturnya dengan definisi native (tidak ada
+atribut yang hilang/berubah dibanding `odoo20/addons/product/views/product_views.xml`) — kolom custom
+kedua modul murni ADDITIVE (`position="after"`/`position="attributes"` pada `lst_price` saja, sudah
+dikonfirmasi Step 3/4 tidak pakai `position="replace"` di record baru ini). Tidak ada indikasi produk
+tanpa `pos_margin_threshold`/`sale_margin_threshold` relevan akan melihat list yang berubah selain 2-3
+kolom baru yang memang disengaja.
+**Keputusan pemilik modul:** tidak perlu.
+
+### RMV-03 [sale_margin_threshold] — `MF-26` (singleton `_compute_is_rental_order_installed`) direproduksi hidup, DAN validasi skip-margin rental dikonfirmasi ulang benar untuk order tunggal
+**Ditemukan di:** Cross-Version Compare, 2026-09-23 — kandidat prioritas #3 task (re-konfirmasi Rental
+`sale_renting` ⟷ `sale_margin_threshold` setelah `MF-45` dkk).
+**Tag:** `GAP-LAMA` (untuk bagian singleton crash, cross-link `MF-26`, sudah diketahui & sengaja belum
+diperbaiki) + tidak ada temuan baru untuk bagian skip-margin rental itu sendiri (`NATIVE-DIFF`/OK).
+**Metode:** RPC read-only terhadap `http://localhost:8078` (`sale_renting`, `pos_margin_threshold`,
+`sale_margin_threshold` dikonfirmasi `state=installed` ketiganya via `ir.module.module`).
+**Hasil:**
+1. `sale.order.search_read([['is_rental_order','=',true]], [...])` — **crash hidup**
+   `ValueError: Expected singleton: sale.order(15, 1)` persis di
+   `sale_margin_threshold/models/sale_order.py:14` (`_compute_is_rental_order_installed`, akses
+   `self.is_rental_order` bukan `record.is_rental_order` di dalam loop `for record in self`) — begitu
+   domain match >1 record sekaligus. **Ini BUKAN temuan baru** — persis `MF-26` yang sudah dicatat
+   Step 1 (2026-09-21) sebagai `[DIWARISI-SOURCE]`/dipertahankan tanpa keputusan dev baru. Kegunaan
+   reproduksi ini: mengonfirmasi bug itu MASIH nyata & reproducible di HEAD saat ini (bukan sudah
+   ter-fix diam-diam oleh perubahan lain sejak Step 1), sesuai permintaan task untuk "re-konfirmasi
+   given code changed since (MF-45 dkk)".
+2. Dibaca SATU record saja (`read([15], [...])`, menghindari trigger bug #1): order rental sungguhan
+   `S00015` (`is_rental_order=true`) punya `is_rental_order_installed_true=true` (compute benar untuk
+   single-record) dan satu order line produk `QA10 SMT Rental Product` dengan `price_unit=10` jauh di
+   bawah `minimum_sale_price=120` — skenario PERSIS yang biasanya memicu blocking `ValidationError` di
+   `action_confirm()` non-rental. **`action_confirm()` TIDAK dijalankan** (mutasi state order QA
+   bersama, ditolak permission classifier — benar, sesuai batasan "jangan mutasi data shared"), jadi
+   skip-path itu sendiri tidak dieksekusi ulang secara live sesi ini. TAPI kode `action_confirm()`
+   (dibaca `git show`, tidak berubah sejak commit `b88aaa5`/sebelum `MF-45`) mulai dengan
+   `if self.is_rental_order_installed_true: return super().action_confirm()` — early-return murni
+   sebelum blok margin apapun — dikombinasikan dengan compute yang terbukti benar (poin di atas)
+   untuk record real ini, tidak ada indikasi regresi risk dari perubahan `MF-45` (yang hanya mengubah
+   `@api.depends` di `models/product.py`, tidak menyentuh `sale_order.py` sama sekali).
+**Dampak:** tidak ada perubahan rekomendasi — `MF-26` tetap terbuka sesuai keputusan lama (dipertahankan,
+butuh keputusan dev eksplisit kalau mau diperbaiki), rental skip-margin tetap dinilai fungsional benar.
+**Keputusan pemilik modul:** tidak perlu untuk temuan RMV ini sendiri — kalau MAU memutuskan `MF-26`
+akhirnya diperbaiki, itu keputusan terpisah di entri `MF-26`, bukan hasil RMV-03.
+
+### RMV-04 [pos_margin_threshold] — Anchor `DIFF-02`/`MF-31` (`account.view_category_property_form`) diverifikasi ulang lewat inspeksi arch mentah, bukan cuma baca source
+**Ditemukan di:** Cross-Version Compare, 2026-09-23 — verifikasi tambahan saat `product.category`
+`get_views()` gagal menunjukkan `property_cost_method` (arch pendek, 1795 char, kemungkinan
+terpotong `groups="account.group_account_readonly"` pada request RPC tertentu — bukan bug, lihat
+catatan di bawah), sehingga perlu dicek lebih dalam lewat `ir.ui.view.read()` mentah (bypass merge)
+untuk memastikan bukan regresi baru.
+**Tag:** tidak ada temuan baru — konfirmasi `MF-31` masih valid, `[GAP-LAMA]`/`NATIVE-DIFF` N/A
+(murni verifikasi).
+**Hasil:** `ir.ui.view.search_read([['model','=','product.category']])` mengonfirmasi record
+`pos_margin_threshold.product_category_form_view_inherit_margin_sale` (id 1491) ber-`inherit_id`
+langsung ke id 894, dan `ir.model.data` mengonfirmasi id 894 = XML-ID `account.view_category_property_form`
+persis seperti yang ditulis `DIFF-02`. `ir.ui.view.read([894,1491], ['arch'])` (arch MENTAH, tanpa
+merge) mengonfirmasi keduanya well-formed dan `position="before"` pada `property_cost_method` resolve
+tepat (field itu memang ada di arch mentah view 894). Ketidaktampilan di `get_views()` sebelumnya
+kemungkinan besar disebabkan security group filtering (`groups="account.group_account_readonly"` pada
+`<page>` pembungkus) pada request tersebut, TIDAK terkait fix `DIFF-02`/`MF-31` sama sekali — tidak
+diinvestigasi lebih lanjut karena di luar scope (bukan salah satu dari 4 prioritas task, dan `MF-31`
+sendiri sudah rendah risiko/mekanis).
+**Keputusan pemilik modul:** tidak perlu.
+
+---
+
 ## Cara Pakai
 
 Sama seperti `migration-tool/templates/FINDINGS.md` — lihat file itu untuk skema `MF-NNN`, kapan
 pakai `[PERLU-KEPUTUSAN]`/`[DIWARISI-SOURCE]`/`[GAP-MIGRASI]`, dan kewajiban Step 4/Step 8 membaca
-file ini sebagai bagian gate. `MF-25`..`MF-45` sudah dipakai (`MF-25`..`MF-28` Step 1, `MF-29`..`MF-34`
+file ini sebagai bagian gate. `MF-25`..`MF-46` sudah dipakai (`MF-25`..`MF-28` Step 1, `MF-29`..`MF-34`
 Step 2, `MF-35`/`MF-36` smoke-test Docker 2026-09-22, `MF-37`/`MF-38` Step 6 dini, `MF-39` Step 4,
-`MF-40`..`MF-44` Step 9, `MF-45` Step 8) — ID lanjutan finding BARU selanjutnya mulai dari `MF-46`.
+`MF-40`..`MF-44` Step 9, `MF-45` Step 8, `MF-46` Step 10 — blocker proses/infra, bukan gap kode) — ID
+lanjutan finding BARU selanjutnya mulai dari `MF-47`.
