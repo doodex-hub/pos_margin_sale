@@ -14,7 +14,11 @@ tour), (2) test `setUpClass()` kurang `env.flush_all()` setelah `create()` produ
 membuat browser Chrome (thread/cursor terpisah) kadang membaca baris DB yang belum ter-flush (fix:
 tambah `env.flush_all()`). Kesimpulan awal "transient race condition, self-heals" TERBUKTI SALAH dan
 sudah diralat eksplisit di entri `MF-43`. Kedua tour `pos_margin_threshold` lolos bersih 3 run
-berturut-turut pasca kedua fix.)
+berturut-turut pasca kedua fix. **Step 10 (2026-09-23):** ketiga modul lulus bersyarat (`MF-46`,
+blocker infra test paralel, lihat entri sendiri), `MF-26` diperbaiki (keputusan dev: 20.0 saja),
+`AC-06-01` [pin_message] akhirnya `[DIKONFIRMASI]` lewat rerun terisolasi, DAN ditemukan `MF-47`
+(native 20.0 ternyata punya fitur pin/unpin pesan sendiri, berjalan paralel dengan modul custom ini —
+belum ada keputusan dev, tidak blocking gate).
 
 ---
 
@@ -889,6 +893,70 @@ bukan `[DIKONFIRMASI]` penuh. `AC-03-03` (decline dialog POS) tidak punya jalur 
 (murni interaksi Owl `Dialog` component) — tetap `[HASIL-BACA]`/`[PERLU-KEPUTUSAN]` seperti sebelumnya,
 tidak ada kemajuan baru untuk item ini spesifik.
 
+**LANJUTAN (2026-09-23, sesi terpisah, TERISOLASI) — `AC-06-01` [pin_message] BERHASIL dieksekusi
+live, `[DIKONFIRMASI]` PENUH, menutup gap ini.** Semua sibling agent Step 10/Cross-Version-Compare
+sudah selesai, environment genuinely tidak lagi dipakai bersamaan — root cause asli (byte fisik
+bundle asset hilang dari filestore DB utama, lihat bukti korroboratif di atas) masih ada di DB utama
+`pos_margin_sale_migration_20_qa`, jadi **fix**: tambah port kedua (`8182:8182`) di
+`docker-compose.20.yml`, `docker compose up -d` (recreate, wajar karena `ports:` cuma bisa diubah
+lewat recreate container, BUKAN mutasi data — filestore ephemeral konsekuensinya sudah diketahui,
+diterima), lalu database BARU (`pos_margin_sale_migration_20_qa_thread`) diinstall `pin_message`
+sendirian, dijalankan sebagai proses `odoo-bin` KEDUA di port itu (tidak menyentuh DB utama sama
+sekali). Skenario: 2 record `res.partner` (thread A & B, sesuai model NYATA yang dipakai tour test
+asli — `pin_message_tour.js`'s Python wrapper, BUKAN Discuss channel yang sempat dicoba lebih dulu
+dan salah target, lihat catatan di bawah), pin 1 pesan di thread A, navigasi client-side (Owl action
+`doAction`, BUKAN full page reload) ke thread B, lalu balik ke thread A — badge "Pinned Messages (1)"
+**muncul kembali dengan benar**, expand tanpa crash, 0 console error selain noise service-worker yang
+sudah dikenal. **`AC-06-01` PASS, `[PERLU-KEPUTUSAN]` di `10_qa/pin_message/10_BUSINESS_FLOW_MIGRATION.md`
+S-06 diupdate jadi `[DIKONFIRMASI]`/Pass.**
+**Catatan proses (kesalahan awal, transparan):** percobaan PERTAMA pakai Discuss channel (bukan
+`res.partner`) sebagai thread A/B — pin BERHASIL server-side (`is_pinned=true` dikonfirmasi via RPC)
+TAPI panel "Pinned Messages" tidak pernah menampilkannya, bahkan setelah full page reload. Ini BUKAN
+bug — Discuss channel memakai komponen UI berbeda dari Chatter (`pinnedMessages.xml`'s override
+kemungkinan besar cuma nempel di komponen Chatter, bukan Discuss thread view), jadi itu skenario yang
+salah target, bukan reproduksi gejala nyata. Setelah pindah ke `res.partner` (model yang SAMA PERSIS
+dipakai tour test asli yang sudah terbukti lolos), hasilnya bersih seperti dijelaskan di atas.
+
+---
+
+### MF-47 [pin_message] — Native 20.0 TERNYATA sudah punya fitur pin/unpin pesan sendiri, berjalan PARALEL dengan modul ini — TERBUKA, perlu keputusan dev
+**Ditemukan di:** Step 10, 2026-09-23, saat verifikasi live `AC-06-01` — menu aksi pesan (klik "...")
+menampilkan **DUA entry "Pin" identik** pada thread `res.partner` yang sama.
+**Tag:** `[PERLU-KEPUTUSAN]` — bukan gap port kode, temuan arsitektural: fitur native BARU yang tidak
+ada di 19.0 (atau versi manapun sebelumnya modul ini pernah dimigrasikan), jadi tidak pernah bisa
+terdeteksi dari proses diff/port biasa manapun (Step 2, Step 8 code review, Cross-Version Compare
+sekalipun — semuanya fokus ke "apakah kode KITA masih benar", bukan "apakah NATIVE sekarang punya
+fitur yang tumpang tindih dengan kode kita").
+**Bukti konkret:** `odoo20/addons/mail/models/mail_message.py` baris 283 — `mail.message` native
+sekarang punya field sendiri `pinned_at = fields.Datetime('Pinned', ...)`, DAN
+`odoo20/addons/mail/static/src/core/public_web/message_actions_patch.js` mendaftarkan action
+`registerMessageAction("pin", {..., name: _t("Pin"), onSelected: ... messagePin(...), sequence: 70})`
++ `"unpin"` pasangannya — mekanisme LENGKAP, independen 100% dari field `is_pinned` (`MF-28`) dan
+`onClickPin()` custom milik modul `pin_message` sendiri (`static/src/js/pinMessage.js`,
+`registerMessageAction("pins", {..., sequence: 15})`). Dua sistem BEDA field, BEDA method
+(`messagePin()` thread native vs `onClickPin()` custom), yang KEBETULAN sama-sama pakai icon
+`push_pin` dan label "Pin" — makanya user melihat 2 entry identik di menu yang sama.
+**Karena sequence modul kita (15) lebih kecil dari native (70), entry KITA yang tampil LEBIH DULU di
+menu** — jadi behavior fungsional modul (`AC-06-01` dkk, panel "Pinned Messages" custom) tetap benar
+selama user klik entry PERTAMA. Tapi kalau user (tidak sengaja atau sengaja mencoba) klik entry KEDUA
+(punya native), pesan itu akan ter-set `pinned_at` TAPI TIDAK muncul di panel "Pinned Messages" custom
+milik modul ini (yang cuma cek `is_pinned`) — kebingungan UX nyata, dan berpotensi native punya
+UI/badge sendiri untuk `pinned_at` di tempat lain yang belum ditelusuri sesi ini.
+**Dampak:** (1) UX membingungkan — 2 tombol "Pin" identik tanpa pembeda visual jelas; (2) 2 state
+pin independen yang bisa divergen (pesan bisa "pinned" menurut native tapi "not pinned" menurut modul
+custom, atau sebaliknya); (3) BELUM ditelusuri apakah native juga punya UI list "pinned messages"
+sendiri yang sekarang JUGA berjalan paralel dengan panel custom `pinnedMessages.xml`.
+**Rekomendasi lanjutan (belum dieksekusi, murni investigasi tambahan yang disarankan):** (a) cek
+apakah native 20.0 punya UI "pinned messages" list sendiri (selain menu aksi), untuk memetakan
+duplikasi secara lengkap; (b) opsi jangka panjang — pertimbangkan apakah modul `pin_message` custom
+ini masih perlu dipertahankan sama sekali di 20.0 ke depan (di luar scope migrasi INI, migrasi ini
+tetap port 1:1 sesuai mandat), atau cukup disembunyikan/dinonaktifkan action custom-nya supaya HANYA
+native yang tampil (mengurangi kebingungan tanpa kehilangan fungsi, karena native tampaknya punya
+kapabilitas setara/lebih).
+**Keputusan pemilik modul:** belum — murni temuan baru, perlu keputusan dev tentang langkah
+selanjutnya (di luar scope Step 10 gate-closing untuk migrasi 1:1 ini, TIDAK memblokir gate Step 10
+karena modul KITA sendiri tetap berfungsi benar sesuai `01b_BASELINE_SPEC.md`).
+
 ---
 
 ### RMV-01 [pos_margin_threshold][sale_margin_threshold] — MF-29 popup↔list: paritas kapabilitas dikonfirmasi, satu trade-off UX disengaja dicatat
@@ -1000,7 +1068,8 @@ sendiri sudah rendah risiko/mekanis).
 
 Sama seperti `migration-tool/templates/FINDINGS.md` — lihat file itu untuk skema `MF-NNN`, kapan
 pakai `[PERLU-KEPUTUSAN]`/`[DIWARISI-SOURCE]`/`[GAP-MIGRASI]`, dan kewajiban Step 4/Step 8 membaca
-file ini sebagai bagian gate. `MF-25`..`MF-46` sudah dipakai (`MF-25`..`MF-28` Step 1, `MF-29`..`MF-34`
+file ini sebagai bagian gate. `MF-25`..`MF-47` sudah dipakai (`MF-25`..`MF-28` Step 1, `MF-29`..`MF-34`
 Step 2, `MF-35`/`MF-36` smoke-test Docker 2026-09-22, `MF-37`/`MF-38` Step 6 dini, `MF-39` Step 4,
-`MF-40`..`MF-44` Step 9, `MF-45` Step 8, `MF-46` Step 10 — blocker proses/infra, bukan gap kode) — ID
-lanjutan finding BARU selanjutnya mulai dari `MF-47`.
+`MF-40`..`MF-44` Step 9, `MF-45` Step 8, `MF-46` Step 10 — blocker proses/infra, bukan gap kode,
+`MF-47` Step 10 — native 20.0 punya fitur pin/unpin sendiri, tumpang tindih modul `pin_message`) — ID
+lanjutan finding BARU selanjutnya mulai dari `MF-48`.

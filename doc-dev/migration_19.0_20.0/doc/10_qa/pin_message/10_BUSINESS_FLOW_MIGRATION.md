@@ -160,22 +160,32 @@ eksplisit sebagai gap parsial oleh Step 9 sendiri).
 
 ---
 
-### S-06: Refresh section "Pinned Messages" saat ganti thread (`AC-06-01`, `MF-33`/`DIFF-03`) — PRIORITAS TERTINGGI, GENUINELY BELUM TERBUKTI
+### S-06: Refresh section "Pinned Messages" saat ganti thread (`AC-06-01`, `MF-33`/`DIFF-03`) — DIKONFIRMASI LIVE (2026-09-23, sesi terisolasi)
 
 **Level:** Detail *(lihat catatan level di bawah — bukan Smoke/Negative murni, tapi tetap dieskalasi
 karena risiko berulang kali ditandai Step 8/9)*
 **Precondition:** Chatter terbuka di record A dengan ≥1 pesan pinned; record B (thread lain) tanpa
 pesan pinned atau dengan jumlah pinned berbeda.
-**Mode eksekusi:** AI-interaktif (Playwright MCP) — **BLOCKED total, lihat §0/`FINDINGS.md` MF-46.**
-Dicoba ≥6 kali dengan pendekatan berbeda (tab baru, select tab eksplisit, patch `document.hidden`
-manual, wait diperpanjang 2s/5s/10s) — signature kegagalan identik setiap kali (webclient blank,
-dikonfirmasi bukan spesifik ke tab/agent ini). STOP-rule ditegakkan setelah percobaan ke-2+.
-**Steps (yang SEHARUSNYA dijalankan):** 1) Buka chatter record A, pin 1 pesan, konfirmasi badge "1".
-2) TANPA reload halaman, navigasi ke record B (form view lain) sehingga `threadId`/`threadModel`
-berubah. 3) Amati section Pinned Messages di record B — harus KOSONG (kalau B tidak punya pinned)
-atau menampilkan count B yang benar (BUKAN sisa data A).
-**Expected:** Section ter-refresh benar sesuai thread B.
-**Actual:** **Tidak bisa dieksekusi live sama sekali sesi ini.**
+**Mode eksekusi:** AI-interaktif (Browser pane privat, bukan Playwright MCP yang shared) — dijalankan
+di sesi TERPISAH setelah semua sibling agent Step 10/Cross-Version-Compare selesai (lihat `FINDINGS.md`
+`MF-46` untuk root cause blocker sebelumnya dan bagaimana ini diatasi: port kedua `8182` ditambah ke
+`docker-compose.20.yml`, database baru `pos_margin_sale_migration_20_qa_thread` dengan `pin_message`
+sendirian, TIDAK menyentuh DB utama yang filestore-nya corrupt).
+**Steps (genuinely dijalankan):** 1) Dua record `res.partner` baru dibuat via RPC (Thread A id=6,
+Thread B id=7 — model SAMA PERSIS dengan yang dipakai `pin_message_tour.js`'s Python wrapper, bukan
+Discuss channel yang sempat dicoba lebih dulu dan ternyata salah target UI, lihat catatan di
+`FINDINGS.md` `MF-46`). 2) Buka chatter Thread A, kirim 1 pesan, pin via menu aksi (`registerMessageAction`
+sequence terendah = entry pertama, dikonfirmasi benar milik modul ini — lihat `MF-47` soal kenapa ada
+2 entry "Pin"), konfirmasi badge "Pinned Messages (1)" muncul. 3) Navigasi client-side (Owl
+`action.doAction({res_model:'res.partner', res_id:7, target:'current'})` — BUKAN full page reload,
+breadcrumb mengonfirmasi ini SPA route-change nyata) ke Thread B — badge pinned tidak ada (benar,
+B tidak punya pinned). 4) Navigasi client-side balik ke Thread A.
+**Expected:** Section ter-refresh benar sesuai thread B, lalu benar lagi saat balik ke A.
+**Actual:** **Persis seperti Expected.** Badge "Pinned Messages (1)" muncul kembali dengan benar di
+Thread A setelah pulang-pergi ke Thread B, expand section tanpa crash, isi pesan benar (bukan data
+basi/tercampur dari thread lain). 0 console error selain noise service-worker yang sudah dikenal
+tidak terkait (`Failed to register a ServiceWorker`, muncul di SEMUA sesi Browser pane sejak awal
+project, tidak spesifik skenario ini).
 
 **Analisis desk-review TAMBAHAN (lebih dalam dari Step 8, ditelusuri sesi ini via baca source
 langsung, BUKAN eksekusi):**
@@ -209,10 +219,11 @@ langsung, BUKAN eksekusi):**
   untuk kasus umum, residual risk pada race timing halus + kasus pesan pinned di luar paginasi" —
   TAPI ini TETAP bukan pengganti eksekusi nyata, terutama karena precise microtask/effect ordering
   Owl2 (`signal`/`computed`/`untrack`) tidak sepenuhnya bisa dipastikan dari baca kode statis semata.
-**Status:** [ ] Pass / [ ] Fail — **Pending, TIDAK ditandai Pass** (lihat aturan Provenance).
-**Provenance:** `[PERLU-KEPUTUSAN]` — eksekusi live genuinely gagal (bukan diabaikan), risiko sudah
-diturunkan lewat analisis tambahan tapi belum dibuktikan. Lihat `FINDINGS.md` `MF-46` untuk detail
-teknis STOP-rule dan rekomendasi konkret ke dev.
+**Status:** [x] Pass / [ ] Fail
+**Provenance:** `[DIKONFIRMASI]` — eksekusi live genuinely berhasil di sesi terisolasi 2026-09-23.
+Lihat `FINDINGS.md` `MF-46` (bagaimana blocker awal diatasi) dan `MF-47` (temuan sampingan: native
+20.0 punya fitur pin/unpin sendiri, 2 entry "Pin" muncul di menu — tidak memblokir hasil test ini,
+entry milik modul tetap yang pertama/dipakai).
 
 ---
 
@@ -322,13 +333,13 @@ Level Negative — **direkomendasikan jadi follow-up tour test berikutnya bersam
 
 | Provenance | Jumlah | Skenario |
 |---|---|---|
-| `[DIKONFIRMASI]` | 0 | — (semua live execution blocked sesi ini, lihat §0/`MF-46`) |
-| `[HASIL-BACA]` | 6 | S-01, S-02, S-03, S-04, S-05, S-09, S-10 *(7, koreksi: lihat catatan)* |
+| `[DIKONFIRMASI]` | 1 | S-06 (rerun terisolasi 2026-09-23, lihat `MF-46`) |
+| `[HASIL-BACA]` | 7 | S-01, S-02, S-03, S-04, S-05, S-09, S-10 |
 | `[HASIL-BACA-MURNI]` | 3 | S-07, S-08, S-11 |
-| `[PERLU-KEPUTUSAN]` | 1 | S-06 |
+| `[PERLU-KEPUTUSAN]` | 0 | — (S-06 sudah resolved) |
 
-**Catatan hitung:** tabel di atas 11 skenario total (S-01..S-11): 7 `[HASIL-BACA]` (S-01, S-02, S-03,
-S-04, S-05, S-09, S-10), 3 `[HASIL-BACA-MURNI]` (S-07, S-08, S-11), 1 `[PERLU-KEPUTUSAN]` (S-06).
+**Catatan hitung:** tabel di atas 11 skenario total (S-01..S-11): 1 `[DIKONFIRMASI]` (S-06), 7
+`[HASIL-BACA]` (S-01, S-02, S-03, S-04, S-05, S-09, S-10), 3 `[HASIL-BACA-MURNI]` (S-07, S-08, S-11).
 
 **Kenapa ada `[HASIL-BACA]`/`[HASIL-BACA-MURNI]`/`[PERLU-KEPUTUSAN]` di Level Smoke/Negative:**
 - S-01/S-02 (Smoke): tidak dieskalasi ke `[PERLU-KEPUTUSAN]` karena Step 9 **genuinely** membuktikan
@@ -350,25 +361,20 @@ Digenerate di `human_qa/` (folder yang sama) — `00_README.md` + `01_SMOKE.md` 
 
 ## Loop-back
 
-**Tidak ada skenario berstatus Fail** di dokumen ini — tapi ada 1 `[PERLU-KEPUTUSAN]` (S-06) dan 3
-`[HASIL-BACA-MURNI]` (S-07, S-08, S-11) yang genuinely belum terbukti via eksekusi nyata. Sesuai
-aturan Verdict template, ini TIDAK bisa diteruskan ke Step 11 dengan status "known issue" tanpa
-tindak lanjut — lihat Verdict di bawah untuk keputusan yang diminta dari dev.
+**Tidak ada skenario berstatus Fail** di dokumen ini. `S-06` (risiko tertinggi, `AC-06-01`) sudah
+`[DIKONFIRMASI]` lewat rerun terisolasi 2026-09-23 — lihat `FINDINGS.md` `MF-46`. 3
+`[HASIL-BACA-MURNI]` (S-07, S-08, S-11) masih genuinely belum terbukti via eksekusi nyata, dicatat
+sebagai follow-up non-blocking (risiko rendah, sudah didisclosure eksplisit).
 
 ## Verdict
 
-- [ ] ✅ Lulus
-- [x] ⚠️ **Lulus Bersyarat** — `AC-06-01` (S-06, risiko tertinggi berulang kali ditandai Step 8/9)
-  BELUM dieksekusi live sama sekali (bukan `[x] Pass`, statusnya Pending) karena blocker infrastruktur
-  test bersama (`FINDINGS.md` `MF-46`) yang genuinely di luar kendali sesi ini (bukan jalan pintas
-  menghindari kerja) — **dieskalasi eksplisit ke dev untuk keputusan lanjut**:
-  1. **Opsi A (direkomendasikan):** jadwalkan ulang eksekusi live S-06 (+S-07, S-11 sekalian karena
-     murah dilakukan bersamaan) di sesi TERISOLASI (browser Playwright tidak dipakai bersamaan agent
-     lain) sebelum Step 11 ditutup untuk modul ini.
-  2. **Opsi B:** terima risiko residual berdasar analisis desk-review tambahan di S-06 (risiko
-     diturunkan dari "genuinely tidak diketahui" ke "kemungkinan besar benar untuk kasus umum,
-     residual risk pada race timing halus") — DAN catat penerimaan risiko ini eksplisit sebelum Step
-     11.
-  Tidak menahan modul lain (`pos_margin_threshold`/`sale_margin_threshold`) — murni catatan khusus
-  modul `pin_message`.
+- [x] ✅ **Lulus** — semua skenario `[DIKONFIRMASI]`/`[HASIL-BACA]` (bukan `[HASIL-BACA-MURNI]`) sudah
+  Pass, termasuk `AC-06-01` (S-06) yang sebelumnya jadi satu-satunya `[PERLU-KEPUTUSAN]` — sekarang
+  `[DIKONFIRMASI]` lewat rerun terisolasi (lihat `FINDINGS.md` `MF-46`). 3 `[HASIL-BACA-MURNI]`
+  tersisa (S-07 jump button, S-08 empty-state, S-11 negative guard) berisiko RENDAH (behavior warisan/
+  logic tidak berubah) — dicatat sebagai follow-up non-blocking, bukan alasan menahan gate.
+  **Temuan sampingan (tidak blocking, lihat `FINDINGS.md` `MF-47`):** native 20.0 ternyata punya
+  fitur pin/unpin pesan sendiri, berjalan paralel dengan modul custom ini (2 entry "Pin" identik di
+  menu aksi) — modul KITA tetap berfungsi benar, tapi ini investigasi arsitektural tambahan untuk
+  dev pertimbangkan di luar scope migrasi 1:1 ini.
 - [ ] ❌ Ada kegagalan
