@@ -10,8 +10,12 @@ class SaleOrder(models.Model):
     is_rental_order_installed_true = fields.Boolean(default=False, compute='_compute_is_rental_order_installed', store=False)
 
     def _compute_is_rental_order_installed(self):
+        # MF-26 (fixed 20.0 only, per dev decision -- kept as-is in 19.0 and earlier):
+        # `self.is_rental_order` inside this loop read the WHOLE recordset instead of the
+        # current `record`, so it raised "Expected singleton" whenever called on more than
+        # one order at once (e.g. any batch action touching sale.order). Changed to `record`.
         for record in self:
-            if hasattr(self, 'is_rental_order') and self.is_rental_order:
+            if hasattr(record, 'is_rental_order') and record.is_rental_order:
                 record.is_rental_order_installed_true = True
             else:
                 record.is_rental_order_installed_true = False

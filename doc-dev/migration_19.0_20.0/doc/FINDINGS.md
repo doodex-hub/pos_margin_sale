@@ -145,16 +145,25 @@ Step 8 Code Review (`08_review/pos_margin_threshold/08_CODE_REVIEW.md`), tidak p
 lebih lanjut untuk finding INI (beda dari `MF-24` yang masih terbuka di lokasi lain).
 **Keputusan pemilik modul:** *(tidak perlu — moot secara struktural, bukan keputusan desain)*
 
-### MF-26 — Singleton-assumption kedua di `_compute_is_rental_order_installed`
-**Ditemukan di:** Step 1, project 19.0→20.0 (2026-09-21)
-**Tag:** `[DIWARISI-SOURCE]`
-**Ref:** *(baru, tidak ada rujukan project sebelumnya)*
-**Lokasi:** `sale_margin_threshold` — method `_compute_is_rental_order_installed`.
-**Deskripsi:** pola bug yang sama dengan `MF-08` (asumsi singleton di method yang bisa dipanggil
-batch) tapi di method berbeda — ditemukan saat cross-check baseline spec ke kode aktual.
-**Dampak:** belum diukur skenario trigger konkretnya — perlu tes eksplisit di Step 5/9 kalau
-diputuskan relevan.
-**Keputusan pemilik modul:** *(kosong — baru ditemukan)*
+### MF-26 — Singleton-assumption kedua di `_compute_is_rental_order_installed` — ✅ RESOLVED (20.0 saja)
+**Ditemukan di:** Step 1, project 19.0→20.0 (2026-09-21); direproduksi live Step 10 (`RMV-03`,
+2026-09-23, Cross-Version Compare)
+**Tag:** `[DIWARISI-SOURCE]` → **diperbaiki di 20.0 saja** (lihat keputusan di bawah)
+**Ref:** `RMV-03` (Cross-Version Compare, konfirmasi live bug-nya nyata sebelum fix)
+**Lokasi:** `sale_margin_threshold/models/sale_order.py` — method
+`_compute_is_rental_order_installed`.
+**Deskripsi:** pola bug yang sama dengan `MF-08` (asumsi singleton) tapi di method berbeda — di
+dalam `for record in self:`, baris kondisinya membaca `self.is_rental_order` (recordset UTUH)
+bukan `record.is_rental_order` (item loop) — copy-paste error. Kalau dipanggil untuk >1
+`sale.order` sekaligus (bulk action apapun yang menyentuh field ini, bukan cuma batch-confirm),
+`self.is_rental_order` melempar `ValueError: Expected singleton`.
+**Dampak:** crash nyata, dikonfirmasi live via `RMV-03` sebelum fix diterapkan.
+**Keputusan pemilik modul (2026-09-23):** **PERBAIKI** — beda dari `MF-08` (yang tetap
+dipertahankan). **Fix HANYA diterapkan di branch `migration/20.0` (versi 20 ke atas) — TIDAK
+di-backport ke `migration/19.0` atau versi sebelumnya**, sesuai instruksi eksplisit dev. Fix:
+`self.is_rental_order` → `record.is_rental_order` (satu baris). Diverifikasi via test baru
+`test_mf26_compute_is_rental_order_installed_batch` (`sale_margin_threshold/tests/
+test_high_risk_ac.py`) — batch 3 record, 0 failed/0 error setelah fix (sebelumnya akan crash).
 
 ### MF-27 — `list_price`/`lst_price` view `position="replace"` di `sale_margin_threshold`
 **Ditemukan di:** Step 1, project 19.0→20.0 (2026-09-21)

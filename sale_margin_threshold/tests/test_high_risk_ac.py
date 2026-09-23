@@ -234,3 +234,38 @@ class TestHighRiskAcceptanceCriteria(TransactionCase):
             lst_price_nodes[0].get('decoration-danger'), 'is_less_minimum_sale',
             "AC-04-04 (regression guard, sekalian dicek di sini): lst_price harus tetap "
             "decoration-danger via is_less_minimum_sale, tidak boleh ikut ter-strip dedup")
+
+    def test_mf26_compute_is_rental_order_installed_batch(self):
+        """MF-26 regression guard (fixed 20.0 only, per dev decision 2026-09-23): the compute
+        used to read `self.is_rental_order` (whole recordset) instead of `record.is_rental_order`
+        inside its own `for record in self:` loop, raising "Expected singleton" the moment it ran
+        on more than one sale.order at once -- e.g. any bulk/batch action touching sale.order,
+        not just an explicit batch-confirm. Reproduced live via Cross-Version Compare (RMV-03)
+        before this fix."""
+        partner = self.env['res.partner'].create({'name': 'BACKFILL MF-26 Partner'})
+        product = self.env['product.product'].create({
+            'name': 'BACKFILL MF-26 Product',
+            'categ_id': self.category.id,
+            'standard_price': 50.0,
+            'type': 'consu',
+        })
+        orders = self.env['sale.order'].create([
+            {
+                'partner_id': partner.id,
+                'order_line': [(0, 0, {
+                    'product_id': product.id,
+                    'product_uom_qty': 1,
+                    'price_unit': 100.0,
+                })],
+            }
+            for _i in range(3)
+        ])
+        self.assertEqual(len(orders), 3)
+        try:
+            values = orders.mapped('is_rental_order_installed_true')
+        except ValueError as exc:
+            self.fail(
+                "MF-26 regressed: computing is_rental_order_installed_true on a multi-record "
+                f"recordset raised {exc!r} instead of computing per-record"
+            )
+        self.assertEqual(values, [False, False, False])
