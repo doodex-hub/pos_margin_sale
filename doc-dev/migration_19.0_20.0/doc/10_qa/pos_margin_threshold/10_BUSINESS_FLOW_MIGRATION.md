@@ -38,6 +38,19 @@ jalur RPC-proxy): S-19 (jalur decline dialog POS, `AC-03-03`) dan sebagian S-13 
 `[PERLU-KEPUTUSAN]`, bukan dipaksa "Pass". S-20 (`BSL-018`, carry-forward TIGA kali) juga dieskalasi
 eksplisit — ini BUKAN blocker environment, murni keputusan desain yang ditunda 3x berturut-turut.
 
+
+> **ADDENDUM (2026-09-23, sesi rerun TERISOLASI — mengubah verdict sebagian):** S-19 (`AC-03-03`,
+> jalur decline dialog POS) **SUDAH dieksekusi live dan LULUS** di sesi terpisah, jadi item ini TIDAK
+> lagi `[PERLU-KEPUTUSAN]` — lihat S-19 di bawah untuk bukti lengkap (termasuk positive control).
+> Sisa item yang masih butuh keputusan dev tinggal **2**: S-20 (`BSL-018`, keputusan desain
+> carry-forward 3x — bukan blocker environment) dan bagian visual S-13 (`AC-05-01`, rendering CSS
+> combo `MF-34`).
+> **Root cause `MF-46` juga akhirnya ditemukan** dan mengoreksi diagnosis di paragraf-paragraf di atas:
+> penyebabnya BUKAN kontensi Postgres/paralelisme (itu gejala bersamaan yang kebetulan ada), melainkan
+> **browser tool tertentu** — pada sesi rerun ini, server+database yang SAMA PERSIS merender webclient
+> 20.0 dengan sempurna di Playwright MCP (`bodyLen` 27635, `odoo.isReady=true`) di saat yang sama
+> Browser pane bawaan tetap `bodyLen: 15`. Lihat `FINDINGS.md` `MF-46 (lanjutan 2)`.
+
 **Verdict: Lulus Bersyarat** — lihat §Verdict untuk detail lengkap 3 item yang perlu keputusan dev.
 
 ---
@@ -318,38 +331,37 @@ kosong/komentar; `controllers.py` tidak disentuh.
 ### S-19: POS — user DECLINE dialog konfirmasi (bukan confirm) `[RISIKO — jalur satu-satunya yang membatalkan pembayaran]`
 **Level:** Negative
 **Precondition:** Dialog konfirmasi below-minimum muncul (sama seperti S-07)
-**Mode eksekusi:** AI-interaktif (Playwright) — **STOP-rule terpenuhi, tidak dicoba paksa**
-**Steps (yang SEHARUSNYA dijalankan):** Klik "Pay" → dialog muncul → klik tombol dismiss/decline
-(BUKAN confirm) → cek kasir tetap di ProductScreen, order TIDAK lanjut ke payment, tidak ada data
-hilang/corrupt.
+**Mode eksekusi:** AI-interaktif (Playwright) — **DIEKSEKUSI LIVE & BERHASIL (2026-09-23, sesi rerun
+terisolasi)**, menggantikan status `[PERLU-KEPUTUSAN]` sebelumnya.
+**Steps (yang BENAR-BENAR dijalankan):** Environment terisolasi (port `8182`, database
+`pos_margin_sale_migration_20_qa_decline`, `pos_margin_threshold` sendirian, proses `odoo-bin` kedua
+— tidak menyentuh DB utama). Produk `MF-Decline Test Product` (`list_price` 1.00,
+`minimum_sale_price_with_tax` 15.00, jadi genuinely below-minimum), POS config `MF-Decline Shop`,
+`ir.config_parameter` `post_margin_sale.blocking_transaction_pos` TIDAK di-set (dikonfirmasi 0 row di
+DB) sehingga `is_blocked_warning=False` -> jalur dialog konfirmasi (BUKAN jalur `AlertDialog` blocked).
+Login POS -> Open Register -> klik produk -> klik "Payment" -> dialog muncul -> klik **"Discard"**
+(tombol decline, `button.btn-secondary`), BUKAN "Ok".
 **Expected:** `return` bersih, tidak lanjut ke payment, tidak ada crash.
-**Actual:** **TIDAK BISA dieksekusi live sesi ini** — blocker rendering total (`MF-46`) memengaruhi
-SEMUA interaksi POS, bukan cuma jalur ini. Tidak ada test otomatis untuk jalur ini di Step 9
-(dicatat eksplisit sebagai gap baru, bukan carry-forward, di `05a`/Step 8/Step 9). Kode
-`pos_store.js` (tidak disentuh diff migrasi, byte-identik 19.0) memanggil pola `Dialog`
-native standar — Desk Review Step 8 menilai perilaku "masuk akal Match" tapi eksplisit TIDAK
-menggantikan kebutuhan eksekusi nyata untuk jalur SATU-SATUNYA yang membatalkan pembayaran.
-**Status:** [ ] Pass / [ ] Fail — **Pending, tidak boleh ditandai Pass**
-**Provenance:** `[PERLU-KEPUTUSAN]`
-```
-ESCALATION — Migrasi 20.0
-Step/Fase: Step 10 (QA Testing)
-Modul: pos_margin_threshold
-Isu: AC-03-03 (jalur decline dialog konfirmasi POS) tidak bisa dieksekusi live sesi ini karena
-blocker infrastruktur (MF-46, Playwright MCP shared antar 3+ agent sibling + kontensi Postgres),
-dan juga tidak punya automated test coverage apapun (gap yang sudah diketahui sejak Step 8/9).
-Opsi:
-  1) Terima risiko residual, lanjut ke Step 11 dengan status Pending eksplisit di sini — Risiko:
-     Sedang (kode tidak berubah dari 19.0 yang sudah lama berjalan produksi-like, tapi genuinely
-     nol bukti eksekusi untuk jalur ini di 20.0 SAMA SEKALI, baik manual maupun otomatis)
-  2) Jadwalkan retry Step 10 khusus item ini di sesi TERPISAH (browser Playwright tidak dipakai
-     sibling lain bersamaan) sebelum Step 11 ditutup — Risiko: Rendah, tapi menambah 1 sesi lagi
-  3) Tulis Tour test baru di Step 9 (mengklik tombol decline, assert tetap di ProductScreen) —
-     paling reusable untuk regresi masa depan, tapi butuh waktu implementasi test
-Rekomendasi: Opsi 3 (tour test baru) untuk closure permanen; Opsi 2 sebagai penutup cepat Step 10
-kalau Step 11 mendesak.
-Perlu keputusan user sebelum lanjut.
-```
+**Actual:** **PASS, semua assert terpenuhi:**
+1. Dialog muncul persis seperti kode `pos_store.js`: title `"Price unit less than minimum price"`,
+   body `"Some products are below the minimum price. Proceed to payment?"`, tombol `Ok` / `Discard`.
+2. Setelah klik "Discard": `dialogOpen=false`, `onProductScreen=true`, `onPaymentScreen=false`,
+   URL tetap `/pos/ui/1/product/<uuid>` (TIDAK berpindah ke `/payment/`).
+3. **Tidak ada data hilang** — orderline tetap utuh (`1 x MF-Decline Test Product, $ 1.00`),
+   berikut teks peringatan modul `"*The price of this product is less than minimum sale price
+   $ 15.00"` (bukti tambahan: override `orderline.xml` modul ini juga render benar live di 20.0).
+4. **Tidak ada side effect server** — `select * from pos_order` = **0 row** setelah decline.
+5. **0 console error** (`browser_console_messages level=error` -> 0).
+6. **Positive control (penting — membedakan "decline bekerja" dari "tombol Pay rusak"):** klik
+   "Payment" LAGI lalu klik **"Ok"** -> URL BERPINDAH ke `/pos/ui/1/payment/<uuid>` (PaymentScreen).
+   Jadi jalur confirm terbukti masih berfungsi, membuktikan bahwa berhentinya alur pada langkah 2
+   memang disebabkan oleh decline, bukan oleh tombol/flow yang rusak.
+**Status:** [x] Pass
+**Provenance:** `[DIKONFIRMASI]` — eksekusi live Playwright, 2026-09-23 (rerun terisolasi pasca
+`MF-46`; lihat `FINDINGS.md` `MF-46 (lanjutan 2)` untuk root cause tooling yang akhirnya ditemukan).
+**Catatan gap yang TETAP terbuka:** jalur ini masih **belum punya test otomatis** (tour) — verifikasi
+di atas manual-interaktif, jadi tidak menjaga regresi masa depan. Rekomendasi Opsi 3 di ESCALATION
+lama (tulis tour test decline) tetap relevan sebagai follow-up, tapi TIDAK lagi memblokir Step 10.
 
 ### S-20: POS — TIDAK ADA dialog sama sekali saat semua line di atas minimum (`BSL-018`, carry-forward 3x) `[RISIKO — keputusan desain ditunda 3 project migrasi berturut-turut]`
 **Level:** Negative
@@ -415,37 +427,42 @@ sudah ditandai N/A berdasar analisis ini.
 | Provenance | Jumlah | Skenario |
 |---|---|---|
 | `[DIKONFIRMASI]` (RPC/ORM live execution, disclosed non-visual) | 3 | S-09, S-10, S-11 |
+| `[DIKONFIRMASI]` (UI live execution penuh, Playwright, rerun terisolasi 2026-09-23) | 1 | S-19 |
 | `[HASIL-BACA]` (ref Step 8/9, sebagian dikorroborasi RPC/RMV) | 15 | S-01, S-02, S-03, S-04, S-05, S-06, S-07, S-08, S-13, S-14, S-15, S-16, S-17, S-18, S-21 |
 | `[HASIL-BACA-MURNI]` | 1 | S-12 (Pending, Level Detail, risiko rendah, tidak wajib eskalasi) |
-| `[PERLU-KEPUTUSAN]` | 2 | S-19, S-20 |
+| `[PERLU-KEPUTUSAN]` | 1 | S-20 |
 
-**Catatan transparansi:** S-19 dan S-20 (keduanya Level Negative) TIDAK ditandai Pass — sesuai aturan
-provenance, `[PERLU-KEPUTUSAN]` berarti butuh keputusan dev sebelum ditutup. S-19 blocked oleh
-environment session ini (`MF-46`); S-20 adalah keputusan desain yang genuinely belum pernah diambil,
+**Catatan transparansi (diperbarui 2026-09-23 sesi rerun):** S-19 SEKARANG ditandai Pass
+`[DIKONFIRMASI]` — dieksekusi live penuh lewat UI Playwright di environment terisolasi, termasuk
+positive control. Tinggal S-20 yang `[PERLU-KEPUTUSAN]`. S-20 adalah keputusan desain yang genuinely belum pernah diambil,
 independen dari masalah environment. S-12 (`[HASIL-BACA-MURNI]`, Level Detail) sengaja dibiarkan
 Pending sesuai aturan, TIDAK dieskalasi `[PERLU-KEPUTUSAN]` karena risikonya rendah dan levelnya bukan
 Smoke/Negative.
 
 ## Loop-back
 
-Tidak ada skenario berstatus Fail eksplisit sesi ini (semua yang bisa dievaluasi = Pass). 2 skenario
-Negative Pending (`[PERLU-KEPUTUSAN]`) BUKAN kegagalan — perlu keputusan dev (lihat blok ESCALATION
-di S-19/S-20), bukan balik ke Step 9 untuk fix kode (tidak ada bug ditemukan sesi ini).
+Tidak ada skenario berstatus Fail eksplisit (semua yang bisa dievaluasi = Pass). Setelah rerun
+terisolasi 2026-09-23, tinggal **1** skenario Negative Pending (`[PERLU-KEPUTUSAN]`): S-20. Itu BUKAN
+kegagalan — perlu keputusan desain dev (lihat blok ESCALATION di S-20), bukan balik ke Step 9 untuk
+fix kode (tidak ada bug ditemukan, baik di sesi Step 10 asli maupun di rerun ini).
 
 ## Verdict
 
 - [ ] ✅ Lulus
-- [x] ⚠️ **Lulus Bersyarat** — 3 item butuh keputusan dev sebelum Step 11 ditutup penuh:
-  1. **S-19 (`AC-03-03`, decline dialog)** — blocked oleh environment (`MF-46`), bukan kode. Perlu
-     keputusan: terima risiko residual / retry sesi terpisah / tulis tour baru (lihat ESCALATION).
-  2. **S-20 (`AC-03-05`/`BSL-018`, nol dialog carry-forward 3x)** — keputusan desain yang genuinely
+- [x] ⚠️ **Lulus Bersyarat** — **2** item butuh keputusan dev sebelum Step 11 ditutup penuh
+  (turun dari 3: item S-19 sudah SELESAI, lihat di bawah):
+  0. ~~**S-19 (`AC-03-03`, decline dialog)**~~ — **SELESAI 2026-09-23**, dieksekusi live penuh di sesi
+     rerun terisolasi (Playwright, termasuk positive control), status sekarang `[DIKONFIRMASI]`/Pass.
+     Tidak lagi butuh keputusan dev. Satu-satunya sisa (non-blocking): jalur ini masih belum punya
+     tour test otomatis untuk menjaga regresi masa depan.
+  1. **S-20 (`AC-03-05`/`BSL-018`, nol dialog carry-forward 3x)** — keputusan desain yang genuinely
      ditunda 3 project migrasi berturut-turut, direkomendasikan diputuskan SEKARANG (lihat ESCALATION).
-  3. **S-13 (`AC-05-01`, styling combo `MF-34`)** — kontrak data backend SUDAH dikonfirmasi
+  2. **S-13 (`AC-05-01`, styling combo `MF-34`)** — kontrak data backend SUDAH dikonfirmasi
      `[DIKONFIRMASI]` via RPC/ORM nyata sesi ini (bukti baru), TAPI rendering CSS visual masih belum
      pernah dikonfirmasi sama sekali di riwayat modul manapun — direkomendasikan tour test baru
      sebelum Step 11 (risiko dinilai SEDANG, bukan tinggi, mengingat 2 dari 3 lapis bukti sudah kuat).
 
-  **Tidak ada satupun dari ketiga item ini adalah gap kode BARU** — semuanya sudah diketahui/diprediksi
+  **Tidak ada satupun dari item-item ini adalah gap kode BARU** — semuanya sudah diketahui/diprediksi
   sejak Step 8/9 (kecuali detail teknis blocker `MF-46` yang baru muncul sesi ini). 34 dari 37 AC
   (`92%`) tertutup `[DIKONFIRMASI]`/`[HASIL-BACA]` dengan bukti solid (test otomatis PASS, RPC/ORM
   live execution, atau Desk Review Step 8 yang sudah divalidasi gate lulus).

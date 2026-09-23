@@ -51,7 +51,7 @@ belum ada keputusan dev, tidak blocking gate).
 | MF-41 | [pos_margin_threshold] DUA bug bertumpuk di `static/src/store/orderline.xml` (`DIFF-08`), keduanya baru ketahuan begitu Tour test (real Chrome) genuinely jalan untuk pertama kali: (1) xpath anchor `t[@t-slot='default']` tidak pernah resolve — native 20.0 rename total jadi `t-call-slot`; (2) setelah #1 diperbaiki, SEMUA 4 pemakaian identifier bare `line` di file yang sama ternyata bug bare-identifier IDENTIK `MF-33`/`MF-36` (`line` harus `this.line`) | Ditemukan Step 9 (Dev Testing), 2026-09-22, tour pertama kali benar-benar jalan dengan Chrome sungguhan (sebelumnya Chrome belum terpasang di image Docker) | `[GAP-MIGRASI]` | **Kritis** | ✅ RESOLVED (2026-09-22) — (1) xpath diupdate ke `t[@t-call-slot='default']`, dikonfirmasi dari `odoo20/addons/point_of_sale/static/src/app/components/orderline/orderline.xml`; (2) `line.combo_parent_id`/`line.isLessMinimumSalePrice` (di `position="attributes"`) dan `line.isLessMinimumSalePrice`/`line.minimumSalePriceWithTax` (di node baru hasil `position="before"`) semua diberi prefix `this.` — dikonfirmasi native 20.0 sendiri tidak pernah bind bare `line` di scope ini, hanya `this.line` (getter component). `03_MIGRATION_SPEC.md` `DIFF-08` awalnya menulis "tidak ada tindakan, xpath anchor stabil" — kesimpulan itu SALAH, cuma dari baca kode, tidak pernah diverifikasi dengan menjalankan tour sungguhan. Diverifikasi ulang setelah kedua fix: lihat catatan hasil test di bawah |
 | MF-42 | [pos_margin_threshold] **BUKAN bug modul ini** — native 20.0's numpad tombol "Price" (`access_right_plugin.js` `get disablePriceButton()`) punya logic TERBALIK dari help text field-nya sendiri: `restrict_price_control` (help: "Only users with Manager access rights... can modify prices") justru membuat tombol Price DISABLED untuk cashier role "manager" saat `False` (default) — kebalikan dari yang diimplikasikan help text. Dikonfirmasi 19.0 punya logic SAMA SEKALI BEDA (`cashierHasPriceControlRights()`), bukan regresi dari kode lama, genuinely fitur/logic baru 20.0 yang tampak salah | Ditemukan Step 9 (Dev Testing), 2026-09-22, tour `pos_margin_threshold` gagal di step numpad "Price" ("Element is not enabled") setelah `MF-41` diperbaiki | `[GAP-MIGRASI]` (native, di luar kendali modul) | Sedang — blocking test tour, TIDAK blocking fungsi inti manapun di modul ini | ✅ WORKAROUND (2026-09-22) — `restrict_price_control=True` ditambahkan ke setup POS config test (`tests/test_margin_threshold_tour.py`), TIDAK menyentuh file native manapun. Kalau perilaku ini genuinely bug (bukan intentional design 20.0), sebaiknya dilaporkan ke Odoo terpisah dari migrasi ini — di luar scope perbaikan modul |
 | MF-43 | [pos_margin_threshold] Tour `pos_margin_threshold_below_minimum_confirm_tour`/`..._blocked_tour` sempat gagal — dialog "Price unit less than minimum price" (`PosStore.pay()` patch) kadang tidak muncul. Root cause final: `setUpClass()` test kurang `env.flush_all()` setelah `create()` produk ber-compute-chain — lihat detail lengkap di bawah | Ditemukan Step 9 (Dev Testing), 2026-09-22 | `[GAP-MIGRASI]` | Kritis (fitur inti POS) | ✅ **RESOLVED (2026-09-23)** — fix `env.flush_all()` di test, diverifikasi 3+ run bersih berturut-turut |
-| MF-46 | [pin_message][process] Step 10 live Playwright execution (`AC-06-01` thread-switch, prioritas #1) BLOCKED total sesi ini — browser Playwright MCP genuinely SHARED antar agent sibling konkuren (bukan cuma container/DB), tab saling timpa terus-menerus, DAN container `pos_margin_sale_migration_20` sempat mengalami I/O contention berat (checkpoint Postgres >100 detik) akibat beban gabungan Step 10 paralel 3 modul — webclient Odoo blank/`document.body` kosong di SEMUA tab (bukan cuma punya AI ini), bukan bug kode `pin_message` | Ditemukan Step 10 (QA Testing), 2026-09-23, saat mencoba eksekusi live skenario `AC-06-01` | `[PERLU-KEPUTUSAN]` | Tinggi (satu-satunya AC berisiko tertinggi di modul ini jadi TIDAK bisa ditutup `[DIKONFIRMASI]`) | 🟡 **Bukan bug modul — blocker infrastruktur test, butuh keputusan dev**: ulangi eksekusi live `AC-06-01`/`AC-04-02` di browser/instance TERISOLASI (bukan MCP shared) sebelum Step 11, atau terima risiko residual berdasar analisis desk-review tambahan (lihat `10_qa/pin_message/10_BUSINESS_FLOW_MIGRATION.md` S-06/S-07) |
+| MF-46 | **RESOLVED 2026-09-23 (lihat `MF-46 (lanjutan 2)`)** — atribusi root cause DIKOREKSI: bukan kontensi Postgres/paralelisme/"tool fatigue", tapi spesifik ke browser tool yang dipakai (Playwright merender sempurna di server+DB+menit yang SAMA saat Browser pane blank). Ketiga item yang sempat blocked (`pin_message` AC-06-01, `pos_margin_threshold` AC-03-03, `sale_margin_threshold` visual smoke) SUDAH dieksekusi live dan LULUS. Teks asli di bawah dipertahankan apa adanya sebagai rekaman diagnosis awal. ~~[pin_message][process] Step 10 live Playwright execution (`AC-06-01` thread-switch, prioritas #1) BLOCKED total sesi ini — browser Playwright MCP genuinely SHARED antar agent sibling konkuren (bukan cuma container/DB), tab saling timpa terus-menerus, DAN container `pos_margin_sale_migration_20` sempat mengalami I/O contention berat (checkpoint Postgres >100 detik) akibat beban gabungan Step 10 paralel 3 modul — webclient Odoo blank/`document.body` kosong di SEMUA tab (bukan cuma punya AI ini), bukan bug kode `pin_message`~~ | Ditemukan Step 10 (QA Testing), 2026-09-23; ditutup 2026-09-23 (rerun terisolasi) | `[RESOLVED]` | Nihil sekarang (semua AC terdampak sudah ditutup `[DIKONFIRMASI]` lewat eksekusi live) | ✅ **Selesai — tidak butuh keputusan dev lagi.** Pelajaran yang dibawa ke depan: kalau satu browser tool menunjukkan `bodyLen` 6/15 padahal server sehat, coba browser tool yang satunya SEBELUM menyimpulkan blocker environment |
 
 **`DIFF-04` [pos_margin_threshold] — dikonfirmasi dev 2026-09-22, diterapkan.** Field pengganti
 `list_price` (form Product Template, bug lama `MF-24` yang dipertahankan) ditambah
@@ -993,6 +993,98 @@ permanen, murni kelelahan tool dalam satu sesi panjang.
 sebelumnya (lihat `10_qa/pos_margin_threshold/10_BUSINESS_FLOW_MIGRATION.md` S soal `AC-03-03`,
 `10_qa/sale_margin_threshold/10_BUSINESS_FLOW_MIGRATION.md` soal smoke render) sampai sesi baru
 berhasil menjalankannya.
+
+---
+
+### MF-46 (lanjutan 2, 2026-09-23) — RESOLVED untuk kedua item tersisa; atribusi root cause DIKOREKSI (bukan Postgres/filestore/"tool fatigue", tapi spesifik-browser)
+
+**Status:** ✅ **Kedua verifikasi live yang tersisa BERHASIL dijalankan** di sesi ini —
+`pos_margin_threshold` `AC-03-03` (decline dialog POS) dan `sale_margin_threshold` visual smoke
+render. Tidak ada lagi item Step 10 yang blocked oleh `MF-46`.
+
+**Koreksi atribusi root cause (penting — dua entri sebelumnya SALAH menyimpulkan, bukan sekadar
+belum tuntas):**
+- `MF-46` asli menyimpulkan penyebabnya **kontensi Postgres + Playwright MCP yang shared antar agent
+  sibling paralel**, dengan bukti korroboratif **filestore asset bundle 0-byte** di DB utama.
+- `MF-46 (lanjutan)` menyimpulkan penyebabnya **"kelelahan Browser pane dalam satu sesi panjang"**,
+  dan merekomendasikan retry di sesi baru.
+- **Keduanya tidak menjelaskan apa yang teramati sesi ini.** Sesi ini adalah sesi BARU (Browser pane
+  fresh), TIDAK ADA agent sibling yang jalan, DB-nya BARU dan bersih (bukan DB utama yang filestore-nya
+  korup), dan asset bundle-nya terbukti **UTUH** (`fetch('/web/assets/.../web.assets_web.min.js')` →
+  `200`, **8.211.865 byte**, bukan 0) — tapi Browser pane bawaan **TETAP** `bodyLen: 15`.
+- **Bukti penentu:** pada server + database + menit yang SAMA PERSIS, **Playwright MCP merender
+  webclient 20.0 dengan sempurna** (`bodyLen: 27635`, `odoo.isReady = true`, 8 app tile, judul
+  dokumen "Home"), sementara Browser pane bawaan tetap blank. Jadi variabel yang menentukan adalah
+  **browser tool yang dipakai**, bukan server, bukan Postgres, bukan filestore, bukan paralelisme,
+  bukan lama-sesi. (Catat ironinya: di sesi sebelumnya posisinya TERBALIK — Playwright yang bermasalah,
+  Browser pane yang berhasil untuk `pin_message`. Jadi ini bukan "tool X selalu rusak", melainkan
+  kerapuhan yang bisa mengenai salah satu dari keduanya.)
+
+**Karakterisasi teknis kegagalan Browser pane (untuk sesi berikutnya, supaya tidak mengulang
+diagnosis dari nol):** mount webclient **menggantung (hang), bukan melempar exception** —
+`odoo.isReady` tetap `false` selamanya, 1715 modul JS ter-load dengan `odoo.loader.failed` KOSONG,
+`odoo.loadMenusPromise` RESOLVED normal (115 key), semua RPC boot (`load_menus`, `translations`,
+`/mail/store`) `200 OK`, 0 request pending, 0 console error selain service-worker.
+**Yang sudah DIUJI dan TERBUKTI BUKAN penyebabnya** (jangan diulang):
+1. **Onboarding tour yang nyangkut** — `localStorage` memang berisi `current_tour: point_of_sale_tour`
+   (index 2) dan log tour muncul tiap boot; sudah dibersihkan DAN `res.users.switch_tour_enabled(false)`
+   dipanggil server-side → **tidak berubah**, tetap blank.
+2. **Cache RPC / IndexedDB** — dites dengan `?cache=0` (`isRPCCacheDisabled()`) → **tidak berubah**.
+3. **Asset bundle korup** — dibantah langsung, 8.2 MB utuh (lihat di atas).
+4. **Service worker** — registrasinya memang GAGAL di Browser pane ("An unknown error occurred when
+   fetching the script") sementara di Playwright sukses (2 registration). **TAPI ini sudah ditelusuri
+   ke source native dan BUKAN penyebab mount hang**: `WebClient.registerServiceWorker()` di
+   `odoo20/addons/web/static/src/webclient/webclient.js` TIDAK me-return promise-nya, jadi
+   `onWillStart(this.registerServiceWorker)` resolve seketika; `serviceWorkerIsActivated` hanya
+   di-await oleh `_subscribePush()`/`_unsubscribePush()` yang dipanggil fire-and-forget dari event
+   `WEB_CLIENT_READY`, bukan di jalur mount. Dicatat sebagai perbedaan lingkungan yang teramati,
+   **bukan** sebagai root cause — supaya tidak dikutip keliru nanti.
+Mount terbukti sempat berjalan sampai setidaknya `OverlayManagerPlugin.setup` (dibuktikan dengan
+mencoba mount kedua secara manual: gagal dengan `Cannot add key "OverlayContainer" in the
+"main_components" registry: it already exists` — artinya setup plugin pertama SUDAH jalan). Jadi
+hang-nya ada di salah satu `onWillStart` plugin setelah titik itu; plugin persisnya **belum
+teridentifikasi** dan sengaja tidak dikejar lebih jauh karena workaround-nya sudah ada dan murah.
+
+**Workaround yang dipakai & direkomendasikan:** kalau satu browser tool menunjukkan `bodyLen` 6/15
+dengan server yang sehat, **langsung coba browser tool yang satunya** (Playwright MCP ⟷ Browser pane
+bawaan) sebelum menyimpulkan blocker environment. Ini biaya satu percobaan, dan sesi ini membuktikan
+bisa langsung mengubah "blocked total" jadi "selesai".
+
+**Metode environment (sama seperti rerun `pin_message` yang berhasil sebelumnya, dikonfirmasi ulang
+bekerja):** proses `odoo-bin` KEDUA di port `8182` (sudah ada di `docker-compose.20.yml`), database
+BARU per verifikasi, install hanya modul yang relevan, setup data via RPC `call_kw` dari browser
+(BUKAN `odoo-bin shell` kedua terhadap DB aktif — larangan dari `MF-46` asli tetap berlaku dan
+dipatuhi penuh sesi ini). Database yang dipakai: `pos_margin_sale_migration_20_qa_decline`
+(`pos_margin_threshold` sendirian, sudah ada dari sesi sebelumnya) dan
+`pos_margin_sale_migration_20_qa_dedup` (**baru**, `pos_margin_threshold` + `sale_margin_threshold`
+bersamaan). DB utama `pos_margin_sale_migration_20_qa` **tidak disentuh sama sekali**.
+
+**Hasil 1 — `pos_margin_threshold` `AC-03-03` (S-19): PASS `[DIKONFIRMASI]`.** Dialog konfirmasi
+muncul persis sesuai `pos_store.js`, klik "Discard" → tetap di ProductScreen, URL tidak pindah ke
+`/payment/`, orderline utuh, `pos_order` = 0 row, 0 console error. **Positive control** dijalankan
+(klik Pay lagi → "Ok" → BERPINDAH ke PaymentScreen), membuktikan jalur confirm masih hidup sehingga
+berhentinya alur pada langkah decline memang karena decline, bukan tombol rusak. Detail penuh di
+`10_qa/pos_margin_threshold/10_BUSINESS_FLOW_MIGRATION.md` S-19.
+
+**Hasil 2 — `sale_margin_threshold` visual smoke render: PASS `[DIKONFIRMASI]`.** Dengan KEDUA modul
+margin terinstall: tepat SATU kolom `margin_sale`/`minimum_sale_price`/`minimum_sale_price_with_tax`
+(dedup `MF-37` benar, 0 elemen sisa bermarker `o_smt_dedup*` di DOM — jadi `_get_view()` genuinely
+men-strip, bukan menyembunyikan); decoration merah `MF-38` ter-render nyata
+(`text-danger`, `rgb(210, 63, 58)`) pada baris margin negatif untuk `lst_price` DAN `margin_sale`,
+dan TIDAK merah (`rgb(33, 37, 41)`) pada baris kontrol margin positif; kolom "Incl. Tax" terisi benar
+(`$ 99.00` = 90×1.10, `$ 137.50` = 125×1.10). Detail di
+`10_qa/sale_margin_threshold/10_BUSINESS_FLOW_MIGRATION.md` S-01 + ADDENDUM S-07.
+
+**Catatan kecil yang berguna untuk sesi berikutnya:** (a) di Odoo 20 class decoration (`text-danger`)
+menempel pada `<div class="o_field_widget ...">` DI DALAM `<td>`, bukan pada `<td>`-nya — pengukuran
+pertama sesi ini sempat keliru melaporkan "decoration tidak ada" karena ini; (b) `res.users.groups_id`
+**diganti jadi `group_ids`** di native 20.0 (bagian dari overhaul `res.groups`/`ir.access`) — relevan
+kalau ada sesi lain yang menulis group via RPC; (c) action `product.product_variant_action` (id 190)
+punya `active_id` di context-nya sehingga gagal dibuka lewat URL `/odoo/action-...` langsung — buka
+lewat `action.doAction(190, {additionalContext:{active_id:false}})` atau lewat menu.
+
+**Keputusan pemilik modul:** tidak diperlukan lagi untuk kedua item ini — keduanya sudah ditutup
+dengan bukti eksekusi nyata, bukan keputusan menerima-risiko.
 
 ---
 

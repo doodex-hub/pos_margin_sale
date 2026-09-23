@@ -494,6 +494,40 @@ masih butuh tour test nyata, belum ada bukti genuinely gagal).
 
 ---
 
+**Rerun Step 10 pasca-`MF-46` — SELESAI, kedua item tersisa LULUS (2026-09-23).** Dua verifikasi live
+yang sempat blocked akhirnya dijalankan:
+- **`pos_margin_threshold` `AC-03-03` (decline dialog POS)** — dialog konfirmasi muncul, klik
+  "Discard" → tetap di ProductScreen, URL tidak pindah ke `/payment/`, orderline utuh, `pos_order`
+  0 row, 0 console error. **Positive control** dijalankan (Pay lagi → "Ok" → PINDAH ke PaymentScreen),
+  jadi terbukti alur berhenti karena decline, bukan karena tombol rusak. Status `[DIKONFIRMASI]`/Pass.
+- **`sale_margin_threshold` visual smoke render** — dengan KEDUA modul margin terinstall: tepat SATU
+  set kolom Margin/Minimum sale price/Incl. Tax (dedup `MF-37` benar, 0 sisa marker `o_smt_dedup*` di
+  DOM), decoration merah `MF-38` ter-render nyata (`rgb(210, 63, 58)`) pada baris margin negatif untuk
+  `lst_price` DAN `margin_sale` dan TIDAK merah di baris kontrol positif, kolom "Incl. Tax" terisi
+  benar (`$ 99.00`/`$ 137.50`). Verdict modul ini **naik jadi ✔️ Lulus** (dari Lulus Bersyarat).
+
+**`MF-46` — RESOLVED, dan atribusi root cause-nya DIKOREKSI (dua kesimpulan sebelumnya salah).**
+Bukan kontensi Postgres, bukan filestore korup, bukan "kelelahan tool dalam sesi panjang": penentu
+sebenarnya adalah **browser tool mana yang dipakai**. Pada server + database + menit yang SAMA PERSIS,
+Playwright MCP merender webclient 20.0 sempurna (`bodyLen` 27635, `odoo.isReady=true`) sementara
+Browser pane bawaan tetap `bodyLen: 15` — di sesi BARU, DB BERSIH, dengan asset bundle terbukti utuh
+(8.2 MB, bukan 0-byte). Sudah diuji dan dibantah sebagai penyebab: onboarding tour nyangkut, cache
+RPC/IndexedDB, bundle korup, service worker. **Aturan praktis untuk sesi berikutnya: kalau satu
+browser tool blank padahal server sehat, langsung coba browser tool yang satunya sebelum menyimpulkan
+blocker environment.** Detail lengkap di `FINDINGS.md` `MF-46 (lanjutan 2)`.
+
+**Sisa yang masih terbuka di Step 10 (semuanya non-blocking untuk gate, tapi perlu keputusan dev
+sebelum Step 11 ditutup penuh):**
+1. `pos_margin_threshold` `AC-03-05`/`BSL-018` — keputusan desain yang ditunda 3 project migrasi
+   berturut-turut. Ini murni keputusan dev, BUKAN masalah environment.
+2. `pos_margin_threshold` `AC-05-01` (`MF-34`) — kontrak data backend sudah `[DIKONFIRMASI]`, tapi
+   rendering CSS combo-child belum pernah dikonfirmasi visual di riwayat modul manapun.
+3. Gap test otomatis (bukan gap kode): jalur decline POS, dedup kolom `MF-37`, dan thread-switch
+   `pin_message` `AC-06-01` semuanya baru terverifikasi manual — belum ada tour/test yang menjaga
+   regresi ke depan.
+
+**Langkah berikutnya: Step 11 (UAT Sign-off)** untuk ketiga modul — belum mulai.
+
 **Bootstrap selesai (2026-09-21).** Branch `migration/20.0` belum di-push ke remote (dev perlu
 jalankan sendiri `git push -u origin migration/20.0` kapan pun siap — AI tidak pernah melakukan
 ini). Yang sudah dikerjakan sesi ini:
@@ -531,7 +565,7 @@ satu-satunya yang tersisa sebelum gate Step 1 ditutup dan lanjut ke Step 2.
 | 7 | Data Migration Scripts | — (asumsi N/A) | — (asumsi N/A) | — (asumsi N/A) |
 | 8 | Code Review | ✔️ Gate lulus (2026-09-23) — 0🔴/1🟡/2🔵, `MF-45` (`@api.depends` kurang lengkap) ditemukan+fixed | ✔️ Gate lulus (2026-09-23) — 0🔴/2🟡/1🔵, `MF-45` ditemukan+fixed di sini juga | ✔️ Gate lulus (2026-09-23) — 0🔴/1🟡/2🔵 (thread-switch refresh timing masih perlu tour test nyata) |
 | 9 | Dev Testing | ✔️ Gate lulus (2026-09-23) — 11/11 test pass, 0 stub, `09_DEV_TESTING.md` ditulis | ✔️ Gate lulus TANPA SYARAT (2026-09-23) — dev pilih Opsi 1 (tulis semua test dulu), 6 test baru ditulis untuk 5 AC HIGH-RISK, 12/12 test pass, tidak ada bug baru ditemukan | ✔️ Gate lulus bersyarat (2026-09-23) — 7/7 test pass, `MF-36` regresi terbukti tertangkap; AC-06-01 (thread-switch) jadi prioritas follow-up |
-| 10 | QA Testing | ⚠️ Lulus Bersyarat (2026-09-23) — 21 skenario (3 `[DIKONFIRMASI]` via RPC/ORM live, 15 `[HASIL-BACA]`, 1 `[HASIL-BACA-MURNI]`, 2 `[PERLU-KEPUTUSAN]`: `AC-03-03` decline blocked by env, `AC-03-05`/`BSL-018` carry-forward 3x butuh keputusan) | ⚠️ Lulus Bersyarat (2026-09-23) — 13 skenario, logic backend diverifikasi bersih via ORM langsung (0 bug baru), verifikasi visual browser murni tertunda `MF-46` | ✔️ **Lulus** (2026-09-23) — 11 skenario, `AC-06-01` (thread-switch, risiko tertinggi) berhasil `[DIKONFIRMASI]` via rerun terisolasi setelah `MF-46` diatasi; temuan sampingan `MF-47` (native 20.0 punya fitur pin/unpin sendiri) — informational, tidak blocking |
+| 10 | QA Testing | ⚠️ Lulus Bersyarat (2026-09-23) — 21 skenario. **Rerun terisolasi 2026-09-23 menutup `AC-03-03`** (decline dialog POS) jadi `[DIKONFIRMASI]`/Pass lewat eksekusi live + positive control. Sisa 1 `[PERLU-KEPUTUSAN]`: `AC-03-05`/`BSL-018` (carry-forward 3x, keputusan desain dev — BUKAN blocker environment) + bagian visual `AC-05-01` (`MF-34`) | ✔️ **Lulus** (2026-09-23, dinaikkan dari Lulus Bersyarat lewat rerun terisolasi) — 13 skenario. S-01 (webclient mount) dan render-pixel S-07 (dedup `MF-37` 1 kolom, decoration merah `MF-38` `rgb(210,63,58)`, kolom Incl. Tax benar) dikonfirmasi VISUAL live; 0 `[PERLU-KEPUTUSAN]` tersisa | ✔️ **Lulus** (2026-09-23) — 11 skenario, `AC-06-01` (thread-switch, risiko tertinggi) berhasil `[DIKONFIRMASI]` via rerun terisolasi setelah `MF-46` diatasi; temuan sampingan `MF-47` (native 20.0 punya fitur pin/unpin sendiri) — informational, tidak blocking |
 | 11 | UAT Sign-off | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 
 Legenda: ⬜ Belum mulai · 🔄 Sedang dikerjakan · ✅ Draft/selesai ditulis · ✔️ Disetujui/lulus gate.

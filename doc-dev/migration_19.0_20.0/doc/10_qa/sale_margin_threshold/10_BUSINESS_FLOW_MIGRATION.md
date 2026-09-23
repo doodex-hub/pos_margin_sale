@@ -74,20 +74,22 @@ tidak paralel).
 
 ### S-01: Admin bisa login & mengakses webclient Odoo 20.0 (akses dasar, prasyarat SEMUA skenario lain)
 **Level:** Smoke
-**Precondition:** DB `pos_margin_sale_migration_20_qa`, user `admin`/`admin`.
-**Mode eksekusi:** AI-interaktif — dicoba Playwright MCP, lalu Claude Browser pane (2 engine
-berbeda, sesuai STOP-rule "retry sekali dengan pendekatan berbeda").
-**Steps:** 1) Buka `http://localhost:8078/web/login`. 2) Isi email/password `admin`/`admin`. 3) Klik
-Log in. 4) Amati webclient (menu Sales/Inventory) ter-render.
-**Expected:** Redirect ke `/odoo`, menu aplikasi tampil, bisa navigasi ke Sales.
-**Actual:** Autentikasi server-side BERHASIL (session valid, `session_info.uid=2`,
-`is_admin=true`, redirect ke `/odoo` terjadi) — dikonfirmasi lewat `network_requests`/`javascript_tool`
-langsung membaca `window.odoo.__session_info__`. TAPI halaman tetap blank total di KEDUA browser
-(`document.body.innerHTML` = 15 karakter) — root cause `MF-46` (lihat §1), bukan kegagalan
-otentikasi/otorisasi modul ini.
-**Status:** [ ] Pass / [x] Fail (render UI, bukan logic)
-**Provenance:** `[PERLU-KEPUTUSAN]` — Level Smoke, live execution genuinely diblokir infra bersama
-(`MF-46`), bukan bug `sale_margin_threshold`. Lihat Verdict.
+**Precondition:** DB `pos_margin_sale_migration_20_qa_dedup` (rerun 2026-09-23; DB asli sesi pertama
+adalah `pos_margin_sale_migration_20_qa` yang filestore-nya korup — lihat `MF-46`), user `admin`/`admin`.
+**Mode eksekusi:** AI-interaktif — **BERHASIL di rerun terisolasi 2026-09-23** (Playwright MCP,
+environment tidak dipakai bersamaan sesi lain). Percobaan sesi pertama (`MF-46`) gagal di kedua engine.
+**Steps:** 1) Buka `http://localhost:8182/web/login`. 2) Isi email/password `admin`/`admin`. 3) Klik
+Log in. 4) Amati webclient ter-render + navigasi ke list Product Variants.
+**Expected:** Redirect ke `/odoo`, menu aplikasi tampil, bisa navigasi ke list view.
+**Actual:** **PASS.** Redirect ke `/odoo` terjadi, webclient genuinely MOUNTING:
+`document.body.innerHTML` = **27635 karakter** (bukan 15), `odoo.isReady = true`, 8 app tile ter-render,
+judul dokumen berubah jadi "Home". Navigasi lanjutan ke Inventory + list "Product Variants" juga
+ter-render penuh (lihat S-07). **Ini juga yang mengoreksi root cause `MF-46`** — server/DB/app
+tidak pernah bermasalah; yang gagal adalah browser tool tertentu (Browser pane bawaan tetap
+`bodyLen: 15` pada server+DB+detik yang SAMA saat Playwright sukses). Lihat `FINDINGS.md`
+`MF-46 (lanjutan 2)`.
+**Status:** [x] Pass
+**Provenance:** `[DIKONFIRMASI]` — eksekusi live Playwright, 2026-09-23 (rerun terisolasi).
 
 ---
 
@@ -218,10 +220,35 @@ yang gagal ter-strip.) Variant 85/86: `margin_sale=-10.0` (negatif → merah), `
 minimum_sale_price=90.0` (`is_less_minimum_sale=True` → merah), `minimum_sale_price_with_tax=99.0`
 (`90*1.10`, benar).
 **Status:** [x] Pass (arch-level, live re-verified terhadap kode TERKINI)
-**Provenance:** `[DIKONFIRMASI]` untuk arch (fresh, kode commit `db3b73c`/`74c4415`); `[HASIL-BACA —
-ref: FINDINGS.md MF-37/MF-38, verifikasi visual Docker 2026-09-22]` untuk render pixel (bukti visual
-SEBELUM commit hari ini, tapi commit hari ini tidak mengubah arch/logic dedup ini sama sekali — lihat
-§0 — jadi tetap valid sebagai bukti render, hanya bukan dari sesi ini).
+**Provenance:** `[DIKONFIRMASI]` untuk arch (fresh, kode commit `db3b73c`/`74c4415`) DAN
+`[DIKONFIRMASI]` untuk render pixel sejak rerun 2026-09-23 (lihat ADDENDUM di bawah — sebelumnya
+`[HASIL-BACA]`).
+
+---
+**ADDENDUM — VERIFIKASI VISUAL LIVE (2026-09-23, rerun terisolasi Playwright):** bagian "render pixel"
+yang sebelumnya `[HASIL-BACA]` sekarang **`[DIKONFIRMASI]` penuh**. Dijalankan di DB BARU
+`pos_margin_sale_migration_20_qa_dedup` (fresh install `pos_margin_threshold` + `sale_margin_threshold`
+bersamaan, port `8182`), data uji dibuat via RPC: varian "QA Dedup NEGATIVE margin"
+(`margin_sale=-10`, `lst_price=80`, `minimum_sale_price=90`, `minimum_sale_price_with_tax=99`,
+`is_less_minimum_sale=true`) dan varian kontrol "QA Dedup POSITIVE margin" (`margin_sale=25`,
+`lst_price=500`, min `125`, incl.tax `137.50`). List "Product Variants" dibuka lewat UI nyata
+(Inventory -> action `product.product_variant_action`), lalu DOM hasil render dibaca langsung:
+1. **Dedup benar (`MF-37`)** — header kolom `margin_sale` count=**1**, `minimum_sale_price` count=**1**,
+   `minimum_sale_price_with_tax` count=**1**. Label tampil: `Margin`, `Minimum sale price`, `Incl. Tax`.
+   **Tidak ada satupun** elemen bersisa dengan marker `o_smt_dedup*` di DOM (`querySelectorAll` = 0) —
+   membuktikan `ProductProduct._get_view()` genuinely men-strip node `sale_margin_threshold`, bukan
+   sekadar menyembunyikannya.
+2. **Decoration merah benar (`MF-38`)** — baris NEGATIVE: `lst_price` dan `margin_sale` keduanya
+   ber-class `text-danger` pada elemen field-nya, dengan warna komputasi nyata
+   `rgb(210, 63, 58)` (merah). Baris kontrol POSITIVE: tanpa `text-danger`, warna `rgb(33, 37, 41)`
+   (default gelap). Jadi decoration bukan cuma "ada di arch" tapi benar-benar ter-render merah, dan
+   benar-benar KONDISIONAL (tidak merah di baris yang tidak seharusnya).
+3. **Kolom "Incl. Tax" terisi benar** — `$ 99.00` (= 90 x 1.10) dan `$ 137.50` (= 125 x 1.10).
+**Catatan metodologi (transparan):** pengecekan pertama sempat melaporkan decoration TIDAK ada, karena
+class `text-danger` diperiksa pada `<td>`-nya; di Odoo 20 class decoration menempel pada `<div
+class="o_field_widget ...">` DI DALAM `<td>`. Setelah diperiksa pada node yang benar, hasilnya positif —
+dicatat di sini supaya sesi berikutnya tidak salah ukur dengan cara yang sama.
+**Screenshot bukti:** `smt-dedup-visual.png` — diserahkan ke dev langsung di sesi chat; file-nya ada di `.playwright-mcp/` (folder gitignored, artefak sesi, sengaja TIDAK di-commit karena repo ini tidak punya preseden menyimpan biner di `doc-dev/`).
 
 ---
 
@@ -348,10 +375,10 @@ implementasi `sale_margin_threshold`, independen urutan install.
 
 | Provenance | Jumlah | Skenario |
 |---|---|---|
-| `[DIKONFIRMASI]` | 5 | S-02, S-03, S-04, S-07 (arch), S-08 |
-| `[HASIL-BACA]` | 5 | S-05, S-06 (arch), S-07 (pixel), S-11, S-12, S-13 (catatan: S-06/S-07 masing-masing punya 2 baris provenance — arch vs pixel — dihitung sesuai baris yang relevan) |
+| `[DIKONFIRMASI]` | 7 | S-01 (rerun 2026-09-23), S-02, S-03, S-04, S-07 (arch), S-07 (render pixel — rerun 2026-09-23), S-08 |
+| `[HASIL-BACA]` | 4 | S-05, S-06 (arch), S-11, S-12, S-13 (catatan: S-06/S-07 masing-masing punya 2 baris provenance — arch vs pixel — dihitung sesuai baris yang relevan) |
 | `[HASIL-BACA-MURNI]` | 2 | S-09, S-10 |
-| `[PERLU-KEPUTUSAN]` | 1 | S-01 |
+| `[PERLU-KEPUTUSAN]` | 0 | — (S-01 sudah ditutup `[DIKONFIRMASI]` di rerun 2026-09-23) |
 
 **Live-executed genuinely sesi ini (bukan sitir step lain): 5 dari 13 skenario (S-02, S-03, S-04,
 S-07 arch, S-08)** — semua via Odoo shell/ORM terhadap kode & DB TERKINI, BUKAN via browser (blocked
@@ -383,12 +410,24 @@ lapisan lain (Step 8 desk review + Step 9 automated test + S-02..S-08 live ORM s
 
 ## Verdict
 
-- [x] ⚠️ **Lulus Bersyarat** — S-01 (`[PERLU-KEPUTUSAN]`, Level Smoke) TIDAK bisa dieksekusi live
-  karena blocker infrastruktur bersama (`MF-46`, dikonfirmasi independen oleh 2 sibling agent lain +
-  sesi ini, root cause: corruption filestore asset bundle akibat beban gabungan berat, BUKAN bug kode
-  modul ini). Backend logic untuk SEMUA skenario Main Flow/Detail/Negative sudah genuinely diverifikasi
-  benar (5 live ORM execution + 4 kutipan bukti Step 8/9 yang valid) terhadap kode & DB TERKINI —
-  tidak ditemukan satupun regresi/bug baru pada `sale_margin_threshold`. Keputusan dev diperlukan
-  HANYA untuk: (a) apakah Step 11 boleh lanjut dengan render-browser S-01/S-05/S-09/S-10 masih
-  Pending, atau (b) wajib re-run Step 10 browser-based di sesi terpisah dulu (rekomendasi `MF-46`)
-  sebelum Step 11 ditutup untuk modul ini.
+> **DIPERBARUI 2026-09-23 (rerun terisolasi) — verdict NAIK dari "Lulus Bersyarat" jadi "Lulus".**
+> S-01 (Smoke) dan bagian render-pixel S-07 sudah dieksekusi live dan LULUS di sesi terpisah
+> (Playwright, DB bersih `pos_margin_sale_migration_20_qa_dedup`, port `8182`). Tidak ada lagi item
+> `[PERLU-KEPUTUSAN]` untuk modul ini. Rincian bukti ada di S-01 dan ADDENDUM S-07.
+
+- [x] ✅ **Lulus** — tidak ada skenario Fail, tidak ada `[PERLU-KEPUTUSAN]` tersisa.
+  Backend logic untuk SEMUA skenario Main Flow/Detail/Negative genuinely diverifikasi benar (5 live
+  ORM execution + 4 kutipan bukti Step 8/9 yang valid) terhadap kode & DB TERKINI, DAN sekarang
+  lapisan render UI-nya (S-01 webclient mount, S-07 dedup kolom + decoration merah + kolom Incl. Tax)
+  juga diverifikasi visual live. Tidak ditemukan satupun regresi/bug baru pada `sale_margin_threshold`
+  di sesi Step 10 asli maupun di rerun ini.
+
+**Sisa residual (TIDAK blocking, bukan `[PERLU-KEPUTUSAN]`):** S-05, S-09, S-10 masih Pending
+(`[HASIL-BACA]`/`[HASIL-BACA-MURNI]`, Level Negative/Detail). Ketiganya butuh interaksi edit-cepat
+/klik wizard yang tidak dicakup rerun ini — rerun ini fokus pada 2 item yang memang di-scope dev
+(S-01 render + S-07 visual). Direkomendasikan ditutup lewat test otomatis, bukan sesi manual lagi.
+
+**Root cause `MF-46` sekarang diketahui** dan mengoreksi kalimat "corruption filestore asset bundle
+akibat beban gabungan berat" di verdict versi sebelumnya: itu gejala yang kebetulan bersamaan, bukan
+penyebab umum. Penyebab sebenarnya spesifik ke browser tool — lihat `FINDINGS.md`
+`MF-46 (lanjutan 2)`.
