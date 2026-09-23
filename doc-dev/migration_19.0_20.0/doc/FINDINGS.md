@@ -959,6 +959,43 @@ karena modul KITA sendiri tetap berfungsi benar sesuai `01b_BASELINE_SPEC.md`).
 
 ---
 
+### MF-46 (lanjutan) — Rerun `pos_margin_threshold`/`sale_margin_threshold` GAGAL, STOP-rule ditegakkan — Browser pane tool sendiri yang stuck, BUKAN masalah server/app
+**Ditemukan di:** Step 10, 2026-09-23, langsung setelah rerun `pin_message` (`AC-06-01`) BERHASIL di
+sesi terisolasi yang SAMA (server/environment identik, jadi bukan soal server).
+**Tag:** proses/tooling, bukan gap kode.
+**Kronologi:** environment isolasi (port `8182`, database baru `pos_margin_sale_migration_20_qa_decline`,
+`pos_margin_threshold` sendirian) disiapkan sama seperti `pin_message` yang barusan berhasil. Login
+sukses, RPC setup data (produk test, pos.config, payment method) semua sukses. **Server log
+mengonfirmasi POS boot SEPENUHNYA SUKSES sekali** (`pos.session.load_data` 200 OK 155971 byte, diikuti
+~15 RPC lanjutan semua 200 OK tanpa error, bahkan satu `ir.cron` job selesai normal) — tapi
+`document.body.innerHTML` di Browser pane tetap `bodyLen: 6` (shell kosong) di SETIAP pengecekan,
+sebelum maupun sesudah boot sukses itu tercatat di log.
+**≥8 percobaan berbeda, signature identik:** tab baru (`tabs_create`), reload (`navigate` ulang),
+front tab eksplisit (`tabs_select`), tutup semua tab lain (mengeliminasi kemungkinan tab lain
+mengganggu), tunggu diperpanjang (3-8 detik berulang) — SEMUA `bodyLen: 6`/`15`, 0 console error
+selain noise service-worker yang sudah dikenal tidak terkait.
+**Bukti penentu bahwa ini BUKAN soal POS/app tertentu:** dicoba juga halaman GENERIK yang jauh lebih
+sederhana (`/odoo/inventory/products`, list view biasa, kompleksitas mirip form Contact yang berhasil
+untuk `pin_message` barusan) — **signature kegagalan SAMA PERSIS** (`bodyLen` kosong). Ini
+mengonfirmasi: bukan POS-specific, bukan `sale_margin_threshold`-specific, murni Browser pane tool
+sesi ini yang genuinely stuck/degraded — kemungkinan akibat penggunaan berat/lama (banyak
+tabs_create/close, navigate, sepanjang sesi Step 10 hari ini).
+**Dampak:** `pos_margin_threshold` decline-payment dialog (`AC-03-03`) dan `sale_margin_threshold`
+visual smoke render TIDAK bisa dieksekusi live sesi ini — tetap `[HASIL-BACA]`/`[PERLU-KEPUTUSAN]`
+seperti sebelumnya (TIDAK ada progres baru untuk dua item spesifik ini, beda dari `pin_message` yang
+berhasil). STOP-rule ditegakkan (≥2 percobaan signature sama → stop, jangan coba varian ketiga
+tanpa batas).
+**Rekomendasi ke dev:** jalankan ulang di SESI BARU (Browser pane/tool fresh, bukan sesi yang sudah
+dipakai sepanjang hari ini) — kemungkinan besar akan berhasil (server/environment sudah terbukti
+sehat, `pin_message` berhasil di server yang SAMA persis beberapa menit sebelumnya). Bukan blocker
+permanen, murni kelelahan tool dalam satu sesi panjang.
+**Keputusan pemilik modul:** belum — item ini tetap `[PERLU-KEPUTUSAN]`/`[HASIL-BACA]` seperti
+sebelumnya (lihat `10_qa/pos_margin_threshold/10_BUSINESS_FLOW_MIGRATION.md` S soal `AC-03-03`,
+`10_qa/sale_margin_threshold/10_BUSINESS_FLOW_MIGRATION.md` soal smoke render) sampai sesi baru
+berhasil menjalankannya.
+
+---
+
 ### RMV-01 [pos_margin_threshold][sale_margin_threshold] — MF-29 popup↔list: paritas kapabilitas dikonfirmasi, satu trade-off UX disengaja dicatat
 **Ditemukan di:** Cross-Version Compare, 2026-09-23 — item review visual Step 10 yang sudah dijanjikan
 eksplisit di keputusan desain `MF-29` ("dicatat untuk review visual Step 10... bandingkan tampilan
