@@ -6,11 +6,15 @@
 
 **Modul:** pos_margin_threshold, sale_margin_threshold, pin_message
 **Migrasi:** 19.0 → 20.0
-**Terakhir update:** 2026-09-22 (Step 9, `MF-40`..`MF-43` — rangkaian 4 bug ditemukan berturut-turut
-di tour yang sama begitu test suite + Tour test (real Chrome) benar-benar dijalankan untuk pertama
-kali; `MF-40`/`MF-41` RESOLVED (bug modul), `MF-42` WORKAROUND (bug native), `MF-43` MASIH TERBUKA
-— dialog margin minimum tidak muncul, root cause belum ditemukan meski sisi Python/ORM terbukti
-benar di semua level)
+**Terakhir update:** 2026-09-23 (Step 9, `MF-40`..`MF-44` — rangkaian bug ditemukan begitu test suite
++ Tour test (real Chrome) benar-benar dijalankan untuk pertama kali; `MF-40`/`MF-41` RESOLVED (bug
+modul), `MF-42` WORKAROUND (bug native), `MF-43` DAN `MF-44` KEDUANYA RESOLVED — root cause final:
+(1) CSS class `.receipt-screen` di-rename total jadi `.feedback-screen` di native 20.0 (fix selector
+tour), (2) test `setUpClass()` kurang `env.flush_all()` setelah `create()` produk ber-compute-chain,
+membuat browser Chrome (thread/cursor terpisah) kadang membaca baris DB yang belum ter-flush (fix:
+tambah `env.flush_all()`). Kesimpulan awal "transient race condition, self-heals" TERBUKTI SALAH dan
+sudah diralat eksplisit di entri `MF-43`. Kedua tour `pos_margin_threshold` lolos bersih 3 run
+berturut-turut pasca kedua fix.)
 
 ---
 
@@ -543,7 +547,7 @@ di 20.0, bukan pilihan desain), murni mekanis.
 
 ---
 
-### MF-43 — Dialog margin minimum TIDAK muncul di POS — TERBUKA, investigasi belum tuntas
+### MF-43 — Dialog margin minimum TIDAK muncul di POS — RESOLVED (transient, bukan bug kode)
 **Ditemukan di:** Step 9 (Dev Testing), 2026-09-22, setelah `MF-41`/`MF-42` diperbaiki — tour
 `pos_margin_threshold_below_minimum_confirm_tour`/`..._blocked_tour` berhasil maju sampai step klik
 tombol "Pay" (sebelumnya gagal lebih awal karena dua bug itu), TAPI langkah berikutnya (assert dialog
@@ -596,12 +600,127 @@ diketahui project ini).
 **Keputusan pemilik modul:** belum relevan — ini masih tahap investigasi teknis, bukan keputusan
 desain.
 
+**LANJUTAN (2026-09-22, sesi sama) — ROOT CAUSE DITEMUKAN, RESOLVED.** Instrumentasi tambahan (log
+sementara di `pos_store.js` mencetak `this.data.relations['product.product']` dan
+`this.data.fields['product.product']` langsung dari browser saat tour asli jalan, TIDAK di-commit,
+sudah dihapus lagi) membuktikan METADATA frontend (`relations`/`fields`, hasil
+`_load_data_relations()`) DAN getter (`Object.defineProperty` di `model_classes.js`) SEMUA benar --
+field terdaftar dengan tipe `float` yang tepat, getter ADA di prototype. Root cause BUKAN di layer
+manapun yang sudah dicurigai sebelumnya (compute, `_load_pos_data_fields`, `read()`, RPC metadata,
+getter generation) -- keempatnya SEMUA terbukti benar.
+**Bukti penentu:** Tour yang SAMA PERSIS (`test_pos_margin_threshold_below_minimum_confirm_tour`)
+dijalankan ULANG 4 kali berturut-turut pada database yang sama:
+1. Run pertama (LANGSUNG setelah `-u pos_margin_threshold` + full asset bundle rebuild, "cold boot"):
+   `minimum_sale_price`/`minimum_sale_price_with_tax` terbaca `0`/`0` di browser -- dialog TIDAK
+   muncul (gejala asli MF-43).
+2. Run kedua, ketiga, keempat (TANPA `-u`, registry/cache "warm"): nilai SELALU benar (`15`/`17.25`),
+   dialog SELALU muncul dan berfungsi benar (confirm -> payment screen -> order tersinkron ke
+   backend sebagai `pos.order` sungguhan).
+**Kesimpulan:** gejala asli MF-43 adalah **race condition transient pada boot POS session PERTAMA
+tepat setelah module upgrade (`-u`) + asset bundle baru** -- kemungkinan sinyal invalidasi cache ORM
+lintas-worker (`Registry changed, signaling through the database` -> `Reloading the model registry
+after database signaling`, dua siklus reload terpisah terlihat di log) belum genuinely settled saat
+boot POS pertama membaca compute. Ini BUKAN bug kode migrasi (`pos_store.js`/`models.js`/
+`product.py` semua sudah benar), BUKAN pula gap 19->20 -- murni artefak urutan operasi test
+(upgrade+test dalam satu proses `--test-enable` yang sama, jarang terjadi di pipeline CI/produksi
+normal yang memisahkan "install/upgrade" dari "test run"). **Self-heals** pada boot berikutnya, tidak
+butuh fix kode.
+**Rekomendasi untuk Step 9/10 lanjutan:** kalau menjalankan test-suite Step 6 dini lagi (`-u` +
+`--test-enable` sekaligus), JANGAN simpulkan gagal dari SATU run pertama saja -- ulang minimal sekali
+tanpa `-u` untuk konfirmasi sebelum menganggapnya bug genuine. Untuk pipeline CI final (Step 9/10
+resmi), pisahkan langkah "install/upgrade module" dan "jalankan test" ke DUA invocation `odoo-bin`
+terpisah (pola standar Odoo CI) supaya kondisi cold-boot ini tidak pernah tereksploitasi.
+**Temuan sampingan (BUKAN bagian MF-43, dicatat terpisah untuk transparansi):** SETELAH dialog
+terbukti berfungsi (3 run warm berturut-turut), tour `..._confirm_tour` (BUKAN `..._blocked_tour`,
+yang lolos bersih) berhenti 100% konsisten (3/3) di step TERAKHIR (`receipt screen is shown`, step
+22/23) SETELAH `pos.order` sudah genuinely tersinkron sukses ke backend (dikonfirmasi dari log server:
+`PoS synchronisation ... finished`) -- transisi UI ke receipt screen sendiri yang timeout, bukan
+proses pembayaran/margin-nya. Ditelusuri ke `point_of_sale/static/tests/pos/tours/utils/
+payment_screen_util.js` `clickValidate()`, yang punya komentar NATIVE Odoo sendiri: `"FIXME. Find why
+we must wait few ms before click to avoid undeterministic behaviors."` -- flakiness ini SUDAH DIAKUI
+Odoo sendiri sebagai non-deterministic, bukan sesuatu yang diperkenalkan modul manapun project ini.
+Kontrol test NATIVE (`point_of_sale.TestUi.test_payment_screen_tour`, tidak menyentuh modul kita
+sama sekali) dijalankan di environment Docker yang SAMA sebagai pembanding, dikonfirmasi 2026-09-23:
+**LOLOS BERSIH** (`0 failed, 0 error(s) of 1 tests`, ~336 detik, jalur sama persis -- numpad harga,
+pilih metode pembayaran, klik Validate, cek receipt screen). Ini MEMBUKTIKAN environment/Chrome/Docker
+BUKAN penyebabnya, dan mematahkan kesimpulan "self-heals"/"transient race" di atas — diangkat jadi
+finding baru **`MF-44`** (lihat entri terpisah di bawah) untuk investigasi lanjutan, YANG AKHIRNYA
+menemukan root cause SEBENARNYA dari kedua simptom ini (nilai 0 DAN receipt-screen timeout).
+
+**KOREKSI FINAL (2026-09-23) — kesimpulan "self-heals"/"transient race condition" DI ATAS SALAH,
+diralat di sini secara eksplisit supaya tidak menyesatkan pembaca berikutnya.** Setelah `MF-44`
+ditemukan (lihat entri di bawah) dan diinvestigasi tuntas, ROOT CAUSE ASLI `MF-43` (nilai
+`minimum_sale_price_with_tax` terbaca `0` di browser) ternyata BUKAN race condition first-boot yang
+"self-heals" — gejala itu **REPRODUCIBLE lagi 2026-09-23 pagi** (5 run berturut-turut, termasuk di
+DATABASE BARU/fresh install, membuktikan bukan soal cold-boot maupun data lama). Root cause
+sebenarnya: **`ir.config_parameter`-style test setup `setUpClass()` membuat produk dengan 3 field
+BERANTAI (`compute='..._margin_sale', store=True` → `compute='..._minimum_sale_price', store=True`
+→ `compute='..._minimum_sale_price_with_tax', store=True`) TANPA memanggil `env.flush_all()` setelah
+`create()`.** `HttpCase`/Tour test menjalankan Chrome sebagai browser SUNGGUHAN yang membuat request
+HTTP dari THREAD/CURSOR TERPISAH dari transaksi test Python -- thread itu hanya melihat state yang
+SUDAH TER-FLUSH ke baris DB, bukan cache in-memory transaksi Python. Semua pengujian sebelumnya yang
+"selalu benar" (`session.load_data()` dipanggil LANGSUNG di proses Python yang sama, test
+`TransactionCase` terpisah, bahkan sesi browser manual via `odoo-bin shell` yang eksplisit
+`env.cr.commit()`) SEMUANYA berada DALAM transaksi/proses yang sama atau sudah commit penuh -- jadi
+TIDAK PERNAH bisa mereproduksi bug ini, memberi ilusi "server-side selalu benar, pasti di frontend".
+Padahal baris DB genuinely belum ter-flush saat request HTTP pertama dari Chrome tiba. **Fix:**
+tambah `cls.env.flush_all()` di `setUpClass()` `test_margin_threshold_tour.py`, tepat setelah
+`create()` produk test. **Diverifikasi:** 3 run berturut-turut PASCA fix (1 solo + 2 gabungan
+kedua tour) semuanya `0 failed, 0 error(s)`, termasuk 1 run bersih TANPA kode debug apapun. Ini
+FIX KODE TEST (bukan bug modul `pos_margin_threshold` sendiri -- pola compute berantai valid dan
+benar, cuma test fixture-nya butuh flush eksplisit sebelum browser round-trip) -- pelajaran umum
+untuk SEMUA test HttpCase/Tour project ini dan project migrasi berikutnya: **field compute
+`store=True` yang di-set lewat `create()`/`write()` di `setUpClass()` HttpCase test WAJIB diikuti
+`env.flush_all()` (atau `flush_recordset()` pada record spesifik) kalau nilainya akan dibaca oleh
+request HTTP dari Chrome/browser tour, bukan hanya dari proses Python yang sama.**
+
+---
+
+### MF-44 [pos_margin_threshold] — RESOLVED — 2 root cause: rename CSS `.receipt-screen`→`.feedback-screen`, DAN flush compute (lihat koreksi `MF-43` di atas)
+**Ditemukan di:** Step 9 (Dev Testing), 2026-09-22/23, sebagai temuan sampingan investigasi `MF-43`.
+**Tag:** `[GAP-MIGRASI]`
+**Gejala awal:** `test_pos_margin_threshold_below_minimum_confirm_tour` gagal konsisten di step
+terakhir (22/23, `.pos .receipt-screen`) — TAPI semua step sebelumnya (margin check, dialog
+konfirmasi, klik payment method, klik Validate) sukses, DAN `pos.order` sudah genuinely tersinkron ke
+backend (log server: `PoS synchronisation ... finished`, order tercipta). Hanya transisi UI ke receipt
+screen yang tidak terjadi/timeout 10 detik.
+**Investigasi:**
+1. Diduga awal murni flakiness native (`clickValidate()` di `point_of_sale/static/tests/pos/tours/
+   utils/payment_screen_util.js` punya komentar `FIXME` Odoo sendiri soal non-determinism) — TAPI
+   dibuktikan SALAH: kontrol test native `point_of_sale.TestUi.test_payment_screen_tour` (tour
+   pembayaran native, sama sekali tidak menyentuh modul manapun project ini) dijalankan di environment
+   Docker yang SAMA dan **LOLOS BERSIH** (0 failed, ~336s), membuktikan penyebabnya SPESIFIK ke tour
+   `pos_margin_threshold`, bukan lingkungan.
+2. **ROOT CAUSE #1 DITEMUKAN (grep penuh native):** CSS class `.receipt-screen` **TIDAK ADA SAMA
+   SEKALI** di seluruh source `point_of_sale` native 20.0 (0 match) — komponen `ReceiptScreen` 19.0
+   di-rename total jadi `FeedbackScreen` di 20.0 (`static/src/app/components/feedback_payment_summary/`
+   + tour util native sendiri, `feedback_screen_util.js`, konfirmasi selector benar:
+   `.pos .feedback-screen`). Tour kita masih pakai nama kelas CSS 19.0 yang sudah tidak pernah ada di
+   versi manapun 20.0 — ini gagal 100% deterministik, BUKAN flakiness. **Fix:** ganti selector step
+   terakhir `margin_threshold_tour.js` dari `.pos .receipt-screen` → `.pos .feedback-screen`.
+3. **ROOT CAUSE #2 (bertumpuk dengan #1, ditemukan lewat live debugging manual + instrumentasi
+   ulang di tour asli):** dialog margin minimum (`MF-43`) SENDIRI juga masih intermiten gagal
+   (nilai `minimum_sale_price_with_tax=0`) pada beberapa run PASCA fix #1 — inilah yang mengarah ke
+   penemuan root cause SEBENARNYA `MF-43` (kurangnya `env.flush_all()` di test setup, lihat koreksi
+   lengkap di entri `MF-43` di atas). Kedua root cause ini SALING INDEPENDEN (satu soal rename CSS di
+   step terakhir, satu soal timing flush compute di step tengah) tapi kebetulan tumpang tindih di tour
+   yang sama, membuat investigasi awal mengira ini satu bug tunggal.
+**Dampak:** setelah KEDUA fix diterapkan bersama, `test_pos_margin_threshold_below_minimum_confirm_tour`
+DAN `test_pos_margin_threshold_below_minimum_blocked_tour` **lolos bersih 3 run berturut-turut**
+(termasuk 1 run tanpa kode debug apapun, database benar-benar fresh). Tidak ada indikasi bug ini
+pernah mempengaruhi PRODUCTION real (order selalu tersimpan benar di backend meski UI test sempat
+gagal) — murni gap test/CSS-selector, bukan business logic.
+**File yang diubah:** `static/tests/tours/margin_threshold_tour.js` (selector), `tests/
+test_margin_threshold_tour.py` (`env.flush_all()`).
+**Keputusan pemilik modul:** tidak perlu — perbaikan test/CSS-selector murni, tidak menyentuh
+business logic modul (`CLAUDE.md` §Source of Truth tidak berlaku, bukan perubahan behavior).
+
 ---
 
 ## Cara Pakai
 
 Sama seperti `migration-tool/templates/FINDINGS.md` — lihat file itu untuk skema `MF-NNN`, kapan
 pakai `[PERLU-KEPUTUSAN]`/`[DIWARISI-SOURCE]`/`[GAP-MIGRASI]`, dan kewajiban Step 4/Step 8 membaca
-file ini sebagai bagian gate. `MF-25`..`MF-42` sudah dipakai (`MF-25`..`MF-28` Step 1, `MF-29`..`MF-34`
+file ini sebagai bagian gate. `MF-25`..`MF-44` sudah dipakai (`MF-25`..`MF-28` Step 1, `MF-29`..`MF-34`
 Step 2, `MF-35`/`MF-36` smoke-test Docker 2026-09-22, `MF-37`/`MF-38` Step 6 dini, `MF-39` Step 4,
-`MF-40`..`MF-43` Step 9) — ID lanjutan finding BARU selanjutnya mulai dari `MF-44`.
+`MF-40`..`MF-44` Step 9) — ID lanjutan finding BARU selanjutnya mulai dari `MF-45`.

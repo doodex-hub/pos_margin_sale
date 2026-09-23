@@ -27,6 +27,15 @@ class TestMarginThresholdTour(TestPointOfSaleHttpCommon):
             'margin_sale': 50.0,  # minimum_sale_price = 10 * 1.5 = 15
             'taxes_id': [],
         })
+        # MF-43/MF-44 re-investigation: force stored compute fields (margin_sale ->
+        # minimum_sale_price -> minimum_sale_price_with_tax) to flush to the DB row now,
+        # instead of staying pending in this transaction's cache. HttpCase's browser makes
+        # requests from a SEPARATE thread/cursor that only sees committed DB state -- if these
+        # computes haven't been flushed by the time the browser's first read of this product
+        # happens, it can read the field's un-computed default (0.0) instead of the correct
+        # value, even though every same-transaction/in-process check (session.load_data()
+        # called directly, this test's own ORM reads) always sees the correct in-memory value.
+        cls.env.flush_all()
         cls.main_pos_config.write({
             'payment_method_ids': [(4, cls.bank_payment_method.id)],
             # MF-42 (native bug, NOT our module): 20.0's numpad Price button reads

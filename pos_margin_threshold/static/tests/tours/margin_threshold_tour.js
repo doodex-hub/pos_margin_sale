@@ -44,8 +44,17 @@ registry.category("web_tour.tours").add("pos_margin_threshold_below_minimum_conf
             PaymentScreen.clickPaymentMethod("Bank"),
             PaymentScreen.clickValidate(),
             {
+                // MF-44: native 20.0 renamed ReceiptScreen -> FeedbackScreen (CSS class
+                // ".receipt-screen" no longer exists anywhere in native point_of_sale, confirmed by
+                // full grep). Native's own tour utils (feedback_screen_util.js isShown()) trigger on
+                // ".pos .feedback-screen" instead. Using the old 19.0 class name here made this step
+                // ALWAYS time out (100% reproducible, not flaky) even though payment had already
+                // synced correctly to the backend -- confirmed via a native control test
+                // (point_of_sale.TestUi.test_payment_screen_tour, unrelated to this module) passing
+                // cleanly in the same environment, which is what proved this wasn't environment
+                // flakiness. See FINDINGS.md MF-44.
                 content: "receipt screen is shown (payment went through)",
-                trigger: ".pos .receipt-screen",
+                trigger: ".pos .feedback-screen",
             },
             Chrome.endTour(),
         ].flat(),

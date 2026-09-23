@@ -438,17 +438,43 @@ jalan sebelum ini):
 - **`MF-42` (Sedang, WORKAROUND)** — bug NATIVE (bukan modul manapun project ini): numpad tombol
   "Price" 20.0 disabled untuk cashier manager kalau `restrict_price_control=False` (logic terbalik
   dari help text field-nya sendiri). Di-workaround di test setup, tidak menyentuh file native.
-- **`MF-43` (Kritis, 🔴 TERBUKA)** — setelah 3 fix di atas, tour `pos_margin_threshold` sampai step
-  "Pay" tapi dialog margin minimum tidak muncul. Investigasi mendalam MEMBUKTIKAN sisi Python/ORM
-  100% benar (compute, field list POS, `read()` mentah semua diverifikasi terpisah) — root cause
-  belum ditemukan (kemungkinan jalur RPC POS boot atau sisi JS), butuh sesi investigasi lanjutan
-  dengan pendekatan beda (baca compiled JS bundle langsung, teknik yang sama `MF-33`). **Modul
-  `pos_margin_threshold` BELUM bisa dianggap tuntas Step 9.**
+- **`MF-43` (RESOLVED — root cause final ditemukan 2026-09-23, mengoreksi kesimpulan sesi
+  sebelumnya).** Kesimpulan awal ("transient race condition first-boot, self-heals") **TERBUKTI
+  SALAH** — gejala (`minimum_sale_price_with_tax` terbaca `0`) mereproduksi lagi 2026-09-23 pagi (5
+  run berturut-turut, termasuk di database fresh install, mematahkan teori cold-boot/data-lama).
+  Root cause SEBENARNYA: `test_margin_threshold_tour.py`'s `setUpClass()` membuat produk dengan
+  3 compute field berantai (`margin_sale`→`minimum_sale_price`→`minimum_sale_price_with_tax`, semua
+  `store=True`) TANPA `env.flush_all()`. Chrome (HttpCase) membuat request HTTP dari thread/cursor
+  TERPISAH yang hanya melihat baris DB yang SUDAH ter-flush — kalau compute belum di-flush saat
+  request pertama Chrome tiba, ia membaca nilai default `0`. Semua pengujian sebelumnya yang "selalu
+  benar" (RPC `load_data()` dipanggil langsung, `TransactionCase` terpisah, sesi browser manual via
+  `odoo-bin shell` dengan `env.cr.commit()` eksplisit) SEMUANYA kebetulan berada dalam transaksi yang
+  sudah commit penuh — makanya tidak pernah bisa mereproduksi bug ini. **Fix:** tambah
+  `cls.env.flush_all()` di `setUpClass()`. **Pelajaran umum untuk project ini & project migrasi
+  berikutnya:** field compute `store=True` yang di-`create()`/`write()` di `setUpClass()` HttpCase
+  test WAJIB diikuti `env.flush_all()`/`flush_recordset()` kalau nilainya dibaca via browser Chrome
+  (bukan cuma dari proses Python yang sama).
+- **`MF-44` (RESOLVED)** — root cause KEDUA, independen dari `MF-43` tapi tumpang tindih di tour yang
+  sama: CSS class `.receipt-screen` (19.0) di-rename TOTAL jadi `.feedback-screen` di native 20.0
+  (`ReceiptScreen`→`FeedbackScreen`, komponen `feedback_payment_summary/`), dikonfirmasi via grep
+  penuh (0 match untuk `.receipt-screen` di seluruh native) + tour util native sendiri
+  (`feedback_screen_util.js`) yang memang pakai selector baru itu. Fix: ganti selector step terakhir
+  `margin_threshold_tour.js`. Kontrol test native (`TestUi.test_payment_screen_tour`) yang lolos
+  bersih di environment sama sempat membuat ini terlihat seperti masalah spesifik-modul yang
+  misterius — ternyata gabungan 2 bug sederhana (rename CSS + flush timing), bukan satu bug rumit.
 
-**`pin_message` — SATU-SATUNYA modul yang sudah genuinely lolos Tour test otomatis penuh sesi ini**
-(`pin_message_toggle_pin_tour`, `pin_message_action_menu_pin_visible_tour`, real Chrome,
-`--test-enable`) — termasuk step expand yang persis menguji `MF-36`. `sale_margin_threshold` tidak
-punya Tour (backend murni), 10 test Python-nya semua lolos setelah `MF-40` diperbaiki.
+**Setelah KEDUA fix (`MF-43`+`MF-44`) diterapkan bersama, `pos_margin_threshold` LOLOS BERSIH** —
+`test_pos_margin_threshold_below_minimum_confirm_tour` dan `..._blocked_tour` keduanya `0 failed,
+0 error(s)` di 3 run berturut-turut (termasuk 1 run tanpa kode debug apapun, database fresh). File
+yang diubah: `static/src/store/pos_store.js` (debug dibersihkan, tidak ada perubahan logic),
+`static/tests/tours/margin_threshold_tour.js` (selector), `tests/test_margin_threshold_tour.py`
+(`env.flush_all()`). **`pin_message` DAN `sale_margin_threshold` juga sudah lolos bersih** (lihat di
+bawah) — **KETIGA modul sekarang lolos bersih di Step 9 Dev Testing.**
+
+**`pin_message`** — Tour test otomatis penuh lolos bersih (`pin_message_toggle_pin_tour`,
+`pin_message_action_menu_pin_visible_tour`, real Chrome, `--test-enable`) — termasuk step expand
+yang persis menguji `MF-36`. **`sale_margin_threshold`** tidak punya Tour (backend murni), 10 test
+Python-nya semua lolos setelah `MF-40` diperbaiki.
 
 ---
 
@@ -488,7 +514,7 @@ satu-satunya yang tersisa sebelum gate Step 1 ditutup dan lanjut ke Step 2.
 | 6 | Code Migration | 🔄 Sebagian (`DIFF-01/02/03/04`+`MF-34/38` diterapkan; `MF-34` verifikasi visual live ditunda Step 9) | 🔄 Sebagian (`DIFF-01/08`+`MF-35/37/38` diterapkan+diverifikasi Docker) | 🔄 Sebagian (`MF-28/32/33/36`+`DIFF-04` semua diterapkan+diverifikasi Docker, tidak ada lagi item native yang ditunda) |
 | 7 | Data Migration Scripts | — (asumsi N/A) | — (asumsi N/A) | — (asumsi N/A) |
 | 8 | Code Review | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
-| 9 | Dev Testing | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
+| 9 | Dev Testing | ✅ Kedua tour lolos bersih 3x berturut-turut (`MF-40/41/42/43/44` semua resolved) — belum ada gate formal | ✅ 10 test Python lolos semua (`MF-40` fixed) — belum ada gate formal | ✅ 2 Tour lolos bersih (real Chrome) — belum ada gate formal |
 | 10 | QA Testing | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 11 | UAT Sign-off | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 

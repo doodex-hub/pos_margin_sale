@@ -22,21 +22,23 @@ sebelum `MF-29` benar-benar final. Applicability Check penuh (Fase A→G) belum 
 | `MF-40` | `ir.config_parameter.get_param()` dihapus total di native 20.0. `PosConfig._compute_blocked_warning()` crash runtime setiap kali dipanggil. Fix: `get_param`→`get_bool`. | `models/pos_config.py` | `FINDINGS.md` `MF-40` |
 | `MF-41` | Xpath anchor `t[@t-slot='default']` tidak resolve (native rename ke `t-call-slot`) — template `Orderline` gagal kompilasi total. Setelah diperbaiki, ketahuan SEMUA 4 pemakaian `line` bare di file yang sama juga bug bare-identifier (pola `MF-33`) — diberi prefix `this.`. | `static/src/store/orderline.xml` | `FINDINGS.md` `MF-41` |
 | `MF-42` (workaround, bukan fix modul) | Native 20.0 numpad tombol "Price" disabled untuk cashier role manager kalau `restrict_price_control=False` (logic terbalik dari help text field-nya sendiri, bug native). Workaround: set `restrict_price_control=True` di setup test. | `tests/test_margin_threshold_tour.py` | `FINDINGS.md` `MF-42` |
+| `MF-44` | CSS class `.receipt-screen` (19.0) di-rename total jadi `.feedback-screen` di native 20.0 (`ReceiptScreen`→`FeedbackScreen`) — selector step terakhir tour tidak pernah match. Fix: update selector. | `static/tests/tours/margin_threshold_tour.js` | `FINDINGS.md` `MF-44` |
+| `MF-43` (root cause final) | `setUpClass()` test membuat produk dengan compute chain (`margin_sale`→`minimum_sale_price`→`minimum_sale_price_with_tax`) tanpa flush — browser Chrome (thread/cursor terpisah) kadang membaca baris DB sebelum ter-flush, terbaca `0`. Fix: `env.flush_all()` setelah `create()`. | `tests/test_margin_threshold_tour.py` | `FINDINGS.md` `MF-43` (koreksi final) |
 
 ## Belum diterapkan (sengaja, menunggu keputusan/urutan normal)
 
 - G1/G2 (install test, tour test) formal — baru dijalankan sebatas smoke-install manual via Docker
   untuk keperluan review visual, BUKAN full test suite Step 6/9 resmi.
 
-## 🔴 BLOCKER TERBUKA — `MF-43`
+## ✅ Step 9 Dev Testing — LOLOS BERSIH (2026-09-23)
 
-Setelah `MF-40`/`MF-41`/`MF-42` diperbaiki, tour `pos_margin_threshold_below_minimum_confirm_tour`/
-`..._blocked_tour` berhasil maju sampai step klik "Pay", TAPI dialog margin minimum
-(`PosStore.pay()` patch) **tidak pernah muncul**. Investigasi mendalam (lihat `FINDINGS.md` `MF-43`
-untuk detail lengkap) MEMBUKTIKAN sisi Python/ORM 100% benar di semua level (compute, field list POS,
-`read()` mentah) — root cause BELUM ditemukan, kemungkinan di jalur RPC/loading real POS boot atau
-sisi JS. **Modul ini BELUM bisa dianggap tuntas Step 9** sampai ini diselesaikan. Verifikasi visual
-live `MF-34` (combo product) JUGA masih tertunda karena tour yang sama belum bisa selesai lolos.
+`MF-43` (root cause final: kurang `env.flush_all()` di test setup) dan `MF-44` (rename CSS
+`.receipt-screen`→`.feedback-screen`) sudah diperbaiki. Kedua tour
+(`test_pos_margin_threshold_below_minimum_confirm_tour`,
+`test_pos_margin_threshold_below_minimum_blocked_tour`) **lolos bersih 3 run berturut-turut**
+(termasuk 1 run tanpa kode debug apapun, database fresh install). Modul ini sekarang tuntas Step 9.
+Verifikasi visual live `MF-34` (combo product) sudah bisa dilakukan lewat tour yang sama (order
+combo tidak eksplisit di test ini, tapi styling tidak lagi diblokir oleh kegagalan tour).
 
 ## Catatan proses
 
