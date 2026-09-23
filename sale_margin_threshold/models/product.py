@@ -35,7 +35,7 @@ class ProductTemplate(models.Model):
         for rec in self:
             rec.margin_sale = rec.categ_id.margin_sale
 
-    @api.depends('margin_sale', 'minimum_sale_price', 'taxes_id')
+    @api.depends('margin_sale', 'minimum_sale_price', 'taxes_id', 'taxes_id.amount')
     def _compute_minimum_sale_price_with_tax(self):
         for rec in self:
             tax_amount = sum(tax.amount for tax in rec.taxes_id)
@@ -84,7 +84,8 @@ class ProductProduct(models.Model):
         for rec in self:
             rec.is_less_minimum_sale = rec.lst_price < rec.minimum_sale_price
 
-    @api.depends('margin_sale', 'minimum_sale_price', 'product_tmpl_id.taxes_id')
+    @api.depends('margin_sale', 'minimum_sale_price', 'product_tmpl_id.taxes_id',
+                 'product_tmpl_id.taxes_id.amount')
     def _compute_minimum_sale_price_with_tax(self):
         for rec in self:
             tax_amount = sum(tax.amount for tax in rec.product_tmpl_id.taxes_id)

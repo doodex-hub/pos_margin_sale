@@ -476,6 +476,22 @@ bawah) — **KETIGA modul sekarang lolos bersih di Step 9 Dev Testing.**
 yang persis menguji `MF-36`. **`sale_margin_threshold`** tidak punya Tour (backend murni), 10 test
 Python-nya semua lolos setelah `MF-40` diperbaiki.
 
+**Step 8 (Code Review) — SELESAI, GATE LULUS untuk KETIGA modul (2026-09-23), via 3 agent review
+paralel (skill `odoo-review`), masing-masing menulis `08_review/<modul>/08_CODE_REVIEW.md` lengkap
+(§A Issues, §B Gap vs Spec, §C Gap vs AC dengan Desk Review, §D P1 Fidelity 3-arah, §E/§F/§G).**
+0 finding 🔴 Critical di ketiga modul. **`MF-45` (baru, ditemukan+RESOLVED)** — `@api.depends` di
+`_compute_minimum_sale_price_with_tax` (kedua modul, `ProductTemplate` DAN `ProductProduct`, total 4
+lokasi) tidak menyertakan `taxes_id.amount`/`product_tmpl_id.taxes_id.amount`, padahal compute-nya
+membaca `tax.amount` — kalau persentase pajak yang SUDAH terpasang diedit, kolom "Incl. Tax" (visual
+parity `MF-38`) tidak ikut ter-recompute. Ini kode BARU migrasi ini sendiri (bukan bug lama yang harus
+dipertahankan) jadi langsung diperbaiki di keempat lokasi, diverifikasi 14 test Python lolos bersih
+setelah fix. Detail di `FINDINGS.md` `MF-45`. Item non-blocking lain (rekomendasi, bukan gate-blocker)
+per modul — lihat masing-masing `08_CODE_REVIEW.md`: `pos_margin_threshold` (test coverage MF-29/37/38
+list-column masih nihil, `BSL-018` masih carry-forward 3x, kecil-kecil lain); `sale_margin_threshold`
+(pola `_get_view()`/`ormcache` fragile — bekerja hanya karena reload registry penuh saat install
+module, bukan mekanisme resmi `groups=`); `pin_message` (thread-switch refresh timing `MF-33`/`AC-06`
+masih butuh tour test nyata, belum ada bukti genuinely gagal).
+
 ---
 
 **Bootstrap selesai (2026-09-21).** Branch `migration/20.0` belum di-push ke remote (dev perlu
@@ -513,7 +529,7 @@ satu-satunya yang tersisa sebelum gate Step 1 ditutup dan lanjut ke Step 2.
 | 5 | Acceptance Criteria & Test Plan | ✅ Selesai (2026-09-22, 37 AC) — tidak ada gate | ✅ Selesai (2026-09-22, 29 AC) — tidak ada gate | ✅ Selesai (2026-09-22, 21 AC) — tidak ada gate |
 | 6 | Code Migration | 🔄 Sebagian (`DIFF-01/02/03/04`+`MF-34/38` diterapkan; `MF-34` verifikasi visual live ditunda Step 9) | 🔄 Sebagian (`DIFF-01/08`+`MF-35/37/38` diterapkan+diverifikasi Docker) | 🔄 Sebagian (`MF-28/32/33/36`+`DIFF-04` semua diterapkan+diverifikasi Docker, tidak ada lagi item native yang ditunda) |
 | 7 | Data Migration Scripts | — (asumsi N/A) | — (asumsi N/A) | — (asumsi N/A) |
-| 8 | Code Review | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
+| 8 | Code Review | ✔️ Gate lulus (2026-09-23) — 0🔴/1🟡/2🔵, `MF-45` (`@api.depends` kurang lengkap) ditemukan+fixed | ✔️ Gate lulus (2026-09-23) — 0🔴/2🟡/1🔵, `MF-45` ditemukan+fixed di sini juga | ✔️ Gate lulus (2026-09-23) — 0🔴/1🟡/2🔵 (thread-switch refresh timing masih perlu tour test nyata) |
 | 9 | Dev Testing | ✅ Kedua tour lolos bersih 3x berturut-turut (`MF-40/41/42/43/44` semua resolved) — belum ada gate formal | ✅ 10 test Python lolos semua (`MF-40` fixed) — belum ada gate formal | ✅ 2 Tour lolos bersih (real Chrome) — belum ada gate formal |
 | 10 | QA Testing | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 11 | UAT Sign-off | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |

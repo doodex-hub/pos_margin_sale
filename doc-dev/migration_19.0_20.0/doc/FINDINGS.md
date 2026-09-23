@@ -27,7 +27,7 @@ berturut-turut pasca kedua fix.)
 | MF-23 | [pos_margin_threshold] `_compute_warning` (`is_less_minimum_sale`), instance terpisah dari MF-21 | Dibawa dari project 18.0→19.0, Step 8 | `[DIWARISI-SOURCE]` | Sedang | 🔵 Terbuka — belum ada keputusan user |
 | MF-24 | [pos_margin_threshold] `list_price` di-`position="replace"` bukan `attributes`, diam-diam menghapus atribut core (§Detail: ada instance KEDUA baru ditemukan Step 1) | Dibawa dari project 18.0→19.0, Step 8 | `[DIWARISI-SOURCE]` | Sedang | 🔵 Terbuka — belum ada keputusan user |
 | MF-08 | [sale_margin_threshold] `action_confirm()` singleton-assumption — **mekanisme dikoreksi Step 1: hard crash, bukan silent skip** | Dibawa dari project 17.0→18.0, dikonfirmasi tetap ada di 18.0→19.0, mekanisme dikoreksi Step 1 project ini | `[DIWARISI-SOURCE]` | Tinggi | 🔵 Terbuka — **[KEPUTUSAN USER 2026-08-27, project 18.0→19.0]: dipertahankan**, jangan diperbaiki tanpa keputusan baru |
-| MF-25 | [pos_margin_threshold] Instance KEDUA `position="replace"` (pola sama `MF-24`) di `lst_price`, `product_variant_easy_edit_view_margin_sale` — belum pernah dicatat | Step 1, project 19.0→20.0 (2026-09-21) | `[DIWARISI-SOURCE]` | Sedang | 🔵 Terbuka — baru ditemukan, belum ada keputusan user |
+| MF-25 | [pos_margin_threshold] Instance KEDUA `position="replace"` (pola sama `MF-24`) di `lst_price`, `product_variant_easy_edit_view_margin_sale` — belum pernah dicatat | Step 1, project 19.0→20.0 (2026-09-21) | `[DIWARISI-SOURCE]` | Sedang | ✅ RESOLVED (2026-09-23, Step 8 Code Review) — moot: record yang mengandung instance ini dihapus total oleh rewrite `MF-29`/`DIFF-03` (record baru inherit `product.product_product_tree_view` pakai `position="attributes"`, bukan `replace`) — lihat `08_review/pos_margin_threshold/08_CODE_REVIEW.md` §E |
 | MF-26 | [sale_margin_threshold] Singleton-assumption bug KEDUA (beda method dari `MF-08`) di `_compute_is_rental_order_installed` | Step 1, project 19.0→20.0 (2026-09-21) | `[DIWARISI-SOURCE]` | Sedang | 🔵 Terbuka — baru ditemukan, belum ada keputusan user |
 | MF-27 | [sale_margin_threshold] `position="replace"` pada `list_price`/`lst_price` (pola sama `MF-24`/`MF-25`, modul berbeda) — belum pernah dicatat | Step 1, project 19.0→20.0 (2026-09-21) | `[DIWARISI-SOURCE]` | Sedang | 🔵 Terbuka — baru ditemukan, belum ada keputusan user |
 | MF-28 | [pin_message] native 20.0 `mail.message` tidak punya `_to_store()` lagi — diganti `_store_message_fields()`/`res.attr("is_pinned")` | Step 1, solusi Step 2, **diterapkan & diverifikasi 2026-09-22** | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED — `is_pinned` dikonfirmasi tersimpan+toggle benar via UI nyata |
@@ -129,7 +129,20 @@ TIDAK berubah — jangan diperbaiki di project ini tanpa keputusan baru eksplisi
 project migrasi sebelumnya tapi belum pernah dicatat di `FINDINGS.md` manapun.
 **Dampak:** sama seperti `MF-24` — menghapus atribut native diam-diam, rawan pecah lebih parah kalau
 native 20.0 menambah atribut baru ke elemen yang sama.
-**Keputusan pemilik modul:** *(kosong — baru ditemukan)*
+**✅ RESOLVED (2026-09-23, ditemukan ulang saat Step 8 Code Review) — moot, bukan lagi berlaku di
+20.0.** Record `product_variant_easy_edit_view_margin_sale` yang menjadi lokasi instance ini SUDAH
+DIHAPUS TOTAL oleh rewrite `MF-29`/`DIFF-03` (native 20.0 menghapus view target inherit-nya,
+`product.product_variant_easy_edit_view` — lihat `MF-29`). Record penggantinya
+(`product_product_tree_view_inherit_margin_sale`, inherit `product.product_product_tree_view`)
+sengaja pakai `position="attributes"` untuk `lst_price` (bukan `replace`) — lihat
+`03_MIGRATION_SPEC.md` §2a catatan implementasi `DIFF-03`, dan `AC-07-02`
+(`05a_MIGRATION_ACCEPTANCE_CRITERIA.md`) yang eksplisit memverifikasi pola lama TIDAK terulang di
+lokasi baru. Bug class-nya (pola `MF-24`) sendiri masih hidup di lokasi LAIN (`AC-06-01`,
+`views/products.xml` record `product_template_inherit_pos_margin_threshold`) — hanya instance
+SPESIFIK `MF-25` ini yang moot karena lokasinya hilang, bukan seluruh pola. Ditutup sebagai bagian
+Step 8 Code Review (`08_review/pos_margin_threshold/08_CODE_REVIEW.md`), tidak perlu keputusan user
+lebih lanjut untuk finding INI (beda dari `MF-24` yang masih terbuka di lokasi lain).
+**Keputusan pemilik modul:** *(tidak perlu — moot secara struktural, bukan keputusan desain)*
 
 ### MF-26 — Singleton-assumption kedua di `_compute_is_rental_order_installed`
 **Ditemukan di:** Step 1, project 19.0→20.0 (2026-09-21)
@@ -717,10 +730,31 @@ business logic modul (`CLAUDE.md` §Source of Truth tidak berlaku, bukan perubah
 
 ---
 
+### MF-45 [pos_margin_threshold][sale_margin_threshold] — RESOLVED — `@api.depends` kurang lengkap di `_compute_minimum_sale_price_with_tax` (kedua modul, identik)
+**Ditemukan di:** Step 8 (Code Review), 2026-09-23, oleh review paralel `sale_margin_threshold` —
+pola yang sama ternyata ada IDENTIK di `pos_margin_threshold` juga (2 compute, `ProductTemplate` DAN
+`ProductProduct`, di kedua modul — total 4 lokasi).
+**Tag:** `[GAP-MIGRASI]` — kode BARU dari migrasi ini (`MF-38`, field `minimum_sale_price_with_tax`
+belum pernah ada di 19.0 untuk `ProductProduct`; untuk `ProductTemplate` field-nya sudah ada di 19.0
+tapi compute-nya diwarisi dengan gap yang sama, jadi ini bukan "port kode saja" murni pun sebelumnya).
+**Gejala:** `@api.depends('margin_sale', 'minimum_sale_price', 'taxes_id')` (atau
+`'product_tmpl_id.taxes_id'` untuk variant) TIDAK menyertakan `taxes_id.amount` — padahal compute-nya
+sendiri membaca `tax.amount` (`sum(tax.amount for tax in rec.taxes_id)`). Kalau seorang akuntan
+mengedit PERSENTASE pajak yang SUDAH terpasang di suatu produk (bukan menambah/menghapus tax baru),
+`minimum_sale_price_with_tax` tidak ikut ter-recompute — kolom "Incl. Tax" (AC berisiko tinggi,
+ditambahkan sebagai visual parity `MF-38`) jadi basi sampai field lain di record yang sama dipicu.
+**Fix:** tambah `taxes_id.amount`/`product_tmpl_id.taxes_id.amount` ke `@api.depends` di keempat
+lokasi (`pos_margin_threshold/models/product.py` baris ~25/~70, `sale_margin_threshold/models/
+product.py` baris ~38/~87).
+**Keputusan pemilik modul:** tidak perlu — fix teknis murni pada kode BARU migrasi ini sendiri,
+bukan perubahan business rule atau bug lama yang harus dipertahankan.
+
+---
+
 ## Cara Pakai
 
 Sama seperti `migration-tool/templates/FINDINGS.md` — lihat file itu untuk skema `MF-NNN`, kapan
 pakai `[PERLU-KEPUTUSAN]`/`[DIWARISI-SOURCE]`/`[GAP-MIGRASI]`, dan kewajiban Step 4/Step 8 membaca
-file ini sebagai bagian gate. `MF-25`..`MF-44` sudah dipakai (`MF-25`..`MF-28` Step 1, `MF-29`..`MF-34`
+file ini sebagai bagian gate. `MF-25`..`MF-45` sudah dipakai (`MF-25`..`MF-28` Step 1, `MF-29`..`MF-34`
 Step 2, `MF-35`/`MF-36` smoke-test Docker 2026-09-22, `MF-37`/`MF-38` Step 6 dini, `MF-39` Step 4,
-`MF-40`..`MF-44` Step 9) — ID lanjutan finding BARU selanjutnya mulai dari `MF-45`.
+`MF-40`..`MF-44` Step 9, `MF-45` Step 8) — ID lanjutan finding BARU selanjutnya mulai dari `MF-46`.
