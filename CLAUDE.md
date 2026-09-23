@@ -530,7 +530,7 @@ satu-satunya yang tersisa sebelum gate Step 1 ditutup dan lanjut ke Step 2.
 | 6 | Code Migration | 🔄 Sebagian (`DIFF-01/02/03/04`+`MF-34/38` diterapkan; `MF-34` verifikasi visual live ditunda Step 9) | 🔄 Sebagian (`DIFF-01/08`+`MF-35/37/38` diterapkan+diverifikasi Docker) | 🔄 Sebagian (`MF-28/32/33/36`+`DIFF-04` semua diterapkan+diverifikasi Docker, tidak ada lagi item native yang ditunda) |
 | 7 | Data Migration Scripts | — (asumsi N/A) | — (asumsi N/A) | — (asumsi N/A) |
 | 8 | Code Review | ✔️ Gate lulus (2026-09-23) — 0🔴/1🟡/2🔵, `MF-45` (`@api.depends` kurang lengkap) ditemukan+fixed | ✔️ Gate lulus (2026-09-23) — 0🔴/2🟡/1🔵, `MF-45` ditemukan+fixed di sini juga | ✔️ Gate lulus (2026-09-23) — 0🔴/1🟡/2🔵 (thread-switch refresh timing masih perlu tour test nyata) |
-| 9 | Dev Testing | ✔️ Gate lulus (2026-09-23) — 11/11 test pass, 0 stub, `09_DEV_TESTING.md` ditulis | ⚠️ **ESCALATION** — 8/8 test pass tapi 5 AC HIGH-RISK view/formula tanpa test otomatis, user diminta pilih opsi (lihat `09_DEV_TESTING.md`) | ✔️ Gate lulus bersyarat (2026-09-23) — 7/7 test pass, `MF-36` regresi terbukti tertangkap; AC-06-01 (thread-switch) jadi prioritas follow-up |
+| 9 | Dev Testing | ✔️ Gate lulus (2026-09-23) — 11/11 test pass, 0 stub, `09_DEV_TESTING.md` ditulis | ✔️ Gate lulus TANPA SYARAT (2026-09-23) — dev pilih Opsi 1 (tulis semua test dulu), 6 test baru ditulis untuk 5 AC HIGH-RISK, 12/12 test pass, tidak ada bug baru ditemukan | ✔️ Gate lulus bersyarat (2026-09-23) — 7/7 test pass, `MF-36` regresi terbukti tertangkap; AC-06-01 (thread-switch) jadi prioritas follow-up |
 | 10 | QA Testing | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 | 11 | UAT Sign-off | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 

@@ -14,6 +14,8 @@ secara paralel, sengaja dipisah supaya tidak bentrok)
 
 **Langkah 1 — registrasi:** `tests/__init__.py` meng-import KEDUA file
 (`test_action_confirm`, `test_cross_module`) — tidak ada file test yang luput ter-load.
+**(Update 2026-09-23: sekarang TIGA file — `test_high_risk_ac.py` ditambahkan, lihat bagian "Update
+2026-09-23" di bawah.)**
 
 **Langkah 2 — klasifikasi AST tiap method** (dijalankan di dalam container, `python3` lokal Windows
 tidak tersedia):
@@ -40,7 +42,7 @@ nilai/exception spesifik.
 | AC-01-02 | `minimum_sale_price = standard_price*(1+margin_sale/100)` | `test_action_confirm_blocking_below_minimum` (assert `120.0`) | ✅ Lengkap | |
 | AC-01-03 | Inverse `minimum_sale_price` → `margin_sale` | — | ❌ Tidak ada | |
 | AC-01-04 | Edit `margin_sale` per-variant menulis ke template bersama | — | ❌ Tidak ada | |
-| AC-01-05 | `minimum_sale_price_with_tax` formula (**[HIGH-RISK]**, `MF-38`/`MF-45`) | — | ❌ Tidak ada | Field ini baru dapat fix `@api.depends` di `MF-45` (Step 8) — TIDAK ada unit test Python yang meng-assert nilai aritmetika pajaknya (`120*1.10=132.0`), padahal ini murni backend/testable tanpa browser. Hanya diverifikasi visual manual di Docker (`MF-38`: "kolom Incl. Tax terisi benar"). |
+| AC-01-05 | `minimum_sale_price_with_tax` formula (**[HIGH-RISK]**, `MF-38`/`MF-45`) | `test_high_risk_ac.py::test_ac_01_05_minimum_sale_price_with_tax_template`/`_product` | ✅ Lengkap (ditambahkan 2026-09-23) | Assert langsung aritmetika pajak (`120.0*1.10=132.0`) di `product.template` DAN `product.product`, plus regression guard `MF-45` (edit persentase tax yang SUDAH terpasang, bukan tambah/hapus tax baru, harus tetap memicu recompute — `120.0*1.25=150.0`). |
 | AC-01-06 | Stale-cache `is_less_minimum_sale` (`MF-21`, bug dipertahankan) | — | ❌ Tidak ada | Deskriptif/dokumentasi bug warisan, bukan prasyarat wajib test baru. |
 | AC-02-01 | Rental order skip validasi margin (`BSL-001`) | — | ❌ Tidak ada (di modul ini) | Diverifikasi manual visual Docker (`sale_renting` di kedua environment, "dikonfirmasi identik") — bukan test Python otomatis di sini (butuh Enterprise `sale_renting`, di luar test suite modul). |
 | AC-02-02 | Confirm langsung kalau semua harga OK (`BSL-002`) | `test_action_confirm_normal_no_price_issue` | ✅ Lengkap | |
@@ -49,13 +51,13 @@ nilai/exception spesifik.
 | AC-02-05 | `skip_check_price` context mencegah rekursi (`BSL-004`) | `test_action_confirm_wizard_path_when_not_blocking` (indirect) | ⚠️ Lengkap-tidak langsung | Tervalidasi lewat efek sampingnya (wizard confirm berhasil), tidak ada assert eksplisit context flag itu sendiri. |
 | AC-02-06 | Wizard confirm → state `sale`; Cancel → no-op (`BSL-005`) | `test_action_confirm_wizard_path_when_not_blocking` (jalur confirm saja) | ⚠️ Sebagian | Jalur Cancel **BELUM ada test** — sudah di-flag di 05a §Catatan Gap Traceability sejak Step 5, non-blocking, bukan temuan baru. |
 | AC-02-07 | Pesan bilingual `fr`/lainnya (`BSL-006`/`007`) | — | ❌ Tidak ada | |
-| AC-02-08 | Decoration merah `order_line` list, fix xpath `MF-35` (**[HIGH-RISK]**) | — | ❌ Tidak ada (view-level) | Modul ini tidak punya Tour/HttpCase (backend-only, dikonfirmasi Applicability Check Fase E = N/A). View decoration hanya diverifikasi manual smoke-install Docker (`MF-35`: "sudah diperbaiki & diverifikasi"), belum ada regression test otomatis. |
+| AC-02-08 | Decoration merah `order_line` list, fix xpath `MF-35` (**[HIGH-RISK]**) | `test_high_risk_ac.py::test_ac_02_08_order_line_decoration_danger_arch` | ✅ Lengkap (ditambahkan 2026-09-23) | Arch-inspection via `get_view()` pada form `sale.order` — assert xpath `MF-35` resolve TEPAT SATU kali di list desktop (`list[@name='sol_list']`, bukan kanban mobile card sibling-nya yang punya `price_unit` sendiri dan TIDAK PERNAH didekorasi bahkan di 19.0, dikonfirmasi `git show migration/19.0:...`), dan ekspresi `decoration-danger` persis sama dengan spec (`minimum_sale_price > price_unit and not parent.is_rental_order_installed_true`). |
 | AC-03-01 | Batch confirm crash `ValueError` (`BSL-009`/`MF-08`, **[HIGH-RISK — regresi kritis]**) | `test_action_confirm_BATCH_MULTI_ORDER_F05` | ✅ Lengkap | AC prioritas tertinggi di modul ini — tercakup penuh & PASS. |
 | AC-03-02 | `_compute_is_rental_order_installed` singleton (`MF-26`) | — | N/A (deskriptif) | AC sendiri menyatakan ini dokumentasi bug, bukan prasyarat test wajib. |
 | AC-03-03 | `implied_ids` salah tipe di `groups.xml` (`MF-20`) | — | N/A (tidak perlu test) | Prioritas rendah, dipertahankan apa adanya. |
-| AC-04-01 | Kolom list Product Variants `optional="show"` + editable (**[HIGH-RISK]**, `MF-29`) | — | ❌ Tidak ada (view-level) | |
-| AC-04-02 | Dedup kolom lewat `_get_view()` (**[HIGH-RISK]**, `MF-37`) | — | ❌ Tidak ada | Sudah di-flag Step 5 sebagai "baru diverifikasi manual sekali via Docker, belum ada regression test otomatis" — bukan temuan baru, tapi masih terbuka. |
-| AC-04-03 | Paritas visual (merah margin negatif + kolom Incl. Tax) (**[HIGH-RISK]**, `MF-38`) | — | ❌ Tidak ada | Diverifikasi manual live Docker sesi sebelumnya, belum otomatis. |
+| AC-04-01 | Kolom list Product Variants `optional="show"` + editable (**[HIGH-RISK]**, `MF-29`) | `test_high_risk_ac.py::test_ac_04_01_product_variants_columns_visible_and_editable` | ✅ Lengkap (ditambahkan 2026-09-23) | Arch-inspection `get_view()` pada `product.product` list — assert `editable='bottom'`/`multi_edit='1'` tetap ada di root, dan TEPAT SATU kolom `margin_sale`/`minimum_sale_price` tampil dengan `optional='show'`. Independen dari kombinasi install (assert generik "exactly one set", bukan spesifik modul mana). |
+| AC-04-02 | Dedup kolom lewat `_get_view()` (**[HIGH-RISK]**, `MF-37`) | `test_high_risk_ac.py::test_ac_04_02_product_variants_columns_dedup_contract` | ✅ Lengkap (ditambahkan 2026-09-23) | Dijalankan dengan KEDUA modul terinstall (DB `_v10`) — assert TIDAK ADA node bermarker `o_smt_dedup_*` (milik `sale_margin_threshold` sendiri) tersisa di arch final, dan TEPAT SATU kolom `margin_sale`/`minimum_sale_price`/`minimum_sale_price_with_tax` yang tampil (milik `pos_margin_threshold`). `skipTest()` otomatis kalau `pos_margin_threshold` tidak terinstall (pola sama `test_cross_module.py`). |
+| AC-04-03 | Paritas visual (merah margin negatif + kolom Incl. Tax) (**[HIGH-RISK]**, `MF-38`) | `test_high_risk_ac.py::test_ac_04_03_visual_parity_decoration_and_incl_tax_column` | ✅ Lengkap (ditambahkan 2026-09-23) | Assert `decoration-danger='margin_sale < 0.0'` pada kolom margin yang tampil, kolom `minimum_sale_price_with_tax` (`string='Incl. Tax'`) tampil TEPAT SATU kali (dedup-aware, sama seperti AC-04-02), dan `lst_price` tetap `decoration-danger='is_less_minimum_sale'` (regression guard AC-04-04 sekalian). |
 | AC-04-04 | Decoration merah `lst_price` + skenario stale-cache | — | ❌ Tidak ada | |
 | AC-04-05 | Edit inline `margin_sale`/`minimum_sale_price` di list tersimpan benar | — | ❌ Tidak ada | |
 | AC-05-01 | MRO `wizard.margin.product` menang `sale_margin_threshold` (`BSL-015`) | `test_wizard_margin_product_model_merged_when_both_installed` | ✅ Lengkap (test ada, real) — **SKIPPED di run DB ini** | DB `_v8` hanya install `sale_margin_threshold` sendirian (sesuai instruksi task), jadi `skipTest()` otomatis terpicu (`pos_margin_threshold tidak terinstall`) — bukan gagal, memang butuh DB gabungan untuk genuinely jalan. |
@@ -66,14 +68,18 @@ nilai/exception spesifik.
 | AC-07-03 | `depends_context('uid')` nit efisiensi (`BSL-016`) | — | N/A (nit) | |
 | AC-07-04 | `position="replace"` hilangkan `options=` (`BSL-019`/`MF-27`) | — | N/A (dipertahankan, kontras `AC-04-01`) | |
 
-**Tally:** 6 method test — **6 Lengkap, 0 Stub, 0 Tidak valid**. Dari 29 AC: **8 Lengkap (assert
-langsung PASS)**, **2 Lengkap-tapi-skip-di-run-ini** (AC-05-01/02, butuh DB gabungan), **1
-Lengkap-tidak-langsung** (AC-02-05), **1 sebagian** (AC-02-06, jalur Cancel kosong), **~13 Tidak ada
-test eksplisit**, **7 N/A** (deskriptif/quirk yang memang tidak perlu test per keputusan dev).
+**Tally (setelah update 2026-09-23):** 12 method test — **12 Lengkap, 0 Stub, 0 Tidak valid** (6
+method backfill lama + 6 method baru `test_high_risk_ac.py`, lihat "Update 2026-09-23" di bawah).
+Dari 29 AC: **14 Lengkap (assert langsung PASS)**, **2 Lengkap-tapi-skip-di-run-standalone**
+(AC-05-01/02, butuh DB gabungan — TAPI genuinely dieksekusi PASS di run `_v10` yang menginstall kedua
+modul, lihat di bawah), **1 Lengkap-tidak-langsung** (AC-02-05), **1 sebagian** (AC-02-06, jalur
+Cancel kosong), **~8 Tidak ada test eksplisit** (turun dari ~13 — 5 AC HIGH-RISK sudah ditutup), **7
+N/A** (deskriptif/quirk yang memang tidak perlu test per keputusan dev).
 
-**Verdict audit (sebelum eksekusi final):** Beberapa AC **[HIGH-RISK]** (`AC-01-05`, `AC-02-08`,
-`AC-04-01`, `AC-04-02`, `AC-04-03`) **tidak** berstatus Lengkap secara otomatis — lihat eskalasi di
-bagian Verdict di bawah, bukan diam-diam dianggap tercakup.
+**Verdict audit (sebelum eksekusi final, 2026-09-22):** ~~Beberapa AC **[HIGH-RISK]** (`AC-01-05`,
+`AC-02-08`, `AC-04-01`, `AC-04-02`, `AC-04-03`) **tidak** berstatus Lengkap secara otomatis~~ — **SUDAH
+DITUTUP 2026-09-23**, lihat "Update 2026-09-23" dan Verdict final di bawah. Paragraf audit di atas
+dipertahankan apa adanya sebagai jejak historis keputusan Opsi 1 (tulis test tambahan) yang diambil.
 
 ---
 
@@ -123,9 +129,61 @@ konvensi hitung internal Odoo, bukan indikasi ada test tersembunyi yang gagal �
 | AC-02-05 | ✅ (indirect) | — | N/A | ✅ Pass (indirect) | |
 | AC-02-06 (jalur confirm) | ✅ | ✅ | N/A | ✅ Pass | jalur Cancel: gap, lihat 9a |
 | AC-03-01 | ✅ | ✅ | N/A | ✅ Pass | `ValueError: Expected singleton` ter-raise, HIGH-RISK, PASS bersih |
-| AC-05-01 | ⚠️ skipped (DB standalone) | — | N/A | ⚠️ Skipped (bukan fail) | perlu DB gabungan kedua modul untuk genuinely jalan |
-| AC-05-02 | ⚠️ skipped (DB standalone) | — | N/A | ⚠️ Skipped (bukan fail) | idem |
-| AC-01-01/03/04/05/06, AC-02-01/07/08, AC-03-02/03, AC-04-01..05, AC-06-01, AC-07-01..04 | — | — | N/A | Tidak ada test otomatis / N/A | lihat detail per-AC di §9a |
+| AC-05-01 | ⚠️ skipped (DB standalone) | — | N/A | ⚠️ Skipped (bukan fail) | perlu DB gabungan kedua modul untuk genuinely jalan — lihat run `_v10` di bawah (PASS, tidak skip) |
+| AC-05-02 | ⚠️ skipped (DB standalone) | — | N/A | ⚠️ Skipped (bukan fail) | idem — PASS di run `_v10` |
+| AC-01-05 | ✅ | — | N/A | ✅ Pass | `minimum_sale_price_with_tax == 132.0` (template & product), regression guard `MF-45` juga PASS |
+| AC-02-08 | ✅ | — | N/A | ✅ Pass | arch-inspection, xpath `MF-35` + ekspresi decoration cocok persis |
+| AC-04-01 | ✅ | — | N/A | ✅ Pass | |
+| AC-04-02 | ✅ | — | N/A | ✅ Pass | dedup contract `MF-37` genuinely diuji (kedua modul terinstall di DB `_v10`) |
+| AC-04-03 | ✅ | — | N/A | ✅ Pass | |
+| AC-01-01/03/04/06, AC-02-01/07, AC-03-02/03, AC-04-04/05, AC-06-01, AC-07-01..04 | — | — | N/A | Tidak ada test otomatis / N/A | lihat detail per-AC di §9a — gap yang TERSISA (non-HIGH-RISK, lihat Verdict) |
+
+### Update 2026-09-23 — 5 AC HIGH-RISK ditutup (Step 9 gate closure)
+
+Menindaklanjuti eskalasi di atas (2026-09-22), dev memilih **Opsi 1** (tulis test tambahan sekarang)
+untuk kelima AC HIGH-RISK yang belum tercakup. 6 method test baru ditulis di
+`sale_margin_threshold/tests/test_high_risk_ac.py` (diregistrasi di `tests/__init__.py`):
+
+- `test_ac_01_05_minimum_sale_price_with_tax_template` / `_product` (AC-01-05)
+- `test_ac_02_08_order_line_decoration_danger_arch` (AC-02-08)
+- `test_ac_04_01_product_variants_columns_visible_and_editable` (AC-04-01)
+- `test_ac_04_02_product_variants_columns_dedup_contract` (AC-04-02)
+- `test_ac_04_03_visual_parity_decoration_and_incl_tax_column` (AC-04-03)
+
+**Run final (2026-09-23), DB BARU `pos_margin_sale_migration_20_qa_v10`, port `8160`**, sengaja
+menginstall **KEDUA** modul sekaligus (`-i sale_margin_threshold,pos_margin_threshold`) supaya
+`AC-04-02` (dedup contract) dan `AC-05-01`/`AC-05-02` (cross-module, sebelumnya cuma skip di DB
+standalone `_v8`) genuinely jalan, bukan skip:
+```
+docker compose -f docker-compose.20.yml exec -T odoo bash -lc \
+  "python3 /odoo20/odoo-bin -d pos_margin_sale_migration_20_qa_v10 --db_host=db --db_user=odoo \
+   --db_password=odoo --addons-path=/odoo20/addons,/enterprise20,/mnt/extra-addons \
+   -i sale_margin_threshold,pos_margin_threshold --http-port=8160 --test-enable \
+   --test-tags=/sale_margin_threshold --stop-after-init --log-level=info \
+   --logfile=/var/log/odoo/step9_ac_tests.log"
+```
+
+**Iterasi 1 (install awal):** 1 failed, 0 error — `test_ac_02_08_order_line_decoration_danger_arch`
+gagal (`2 != 1`). **Root cause: bug di TEST, bukan di kode modul** — xpath test men-scan
+`//field[@name='order_line']//field[@name='price_unit']` tanpa scope ke `list[@name='sol_list']`,
+sehingga ikut menghitung `price_unit` milik kartu `o_kanban_mobile` (native, sibling dari list,
+`sale/views/sale_order_views.xml`) yang TIDAK PERNAH didekorasi modul ini di versi manapun
+(dikonfirmasi `git show migration/19.0:sale_margin_threshold/views/sale_order.xml` — 19.0 juga cuma
+menyentuh `list`, bukan `kanban`). Test diperbaiki (scope xpath ditambah `/list[@name='sol_list']`),
+**tidak ada perubahan kode modul**.
+
+**Iterasi 2 (re-run, `-u sale_margin_threshold` di DB yang sama, log
+`step9_ac_tests_rerun.log`):**
+```
+odoo.tests.stats: sale_margin_threshold: 18 tests 0.63s 697 queries
+odoo.tests.result: 0 failed, 0 error(s) of 12 tests when loading database 'pos_margin_sale_migration_20_qa_v10'
+```
+Semua 12 test Python (6 lama + 6 baru) genuinely dieksekusi (bukan skip) — termasuk
+`test_group_sale_margin_action_emptied_when_pos_margin_installed` dan
+`test_wizard_margin_product_model_merged_when_both_installed` (AC-05-01/02) yang di run `_v8`
+sebelumnya SKIPPED karena DB standalone, sekarang **PASS** (kedua modul terinstall). **0 failed, 0
+error** — tidak ada bug baru ditemukan di kode modul, implementasi existing sudah benar untuk kelima
+AC HIGH-RISK ini.
 
 **0 failed, 0 error** untuk seluruh test yang genuinely dieksekusi — tidak ada regresi dari `MF-40`
 (sudah RESOLVED) atau `MF-45` (fix Step 8 sudah aktif, compute `minimum_sale_price_with_tax` tidak
@@ -143,35 +201,26 @@ error saat load meski belum ada unit test khusus nilai pajaknya).
 prioritas tertinggi modul ini (`AC-03-01`, regresi kritis batch-confirm `MF-08`) PASS penuh. `MF-40`
 (config_parameter API) dan `MF-45` (`@api.depends` pajak) tetap resolved, tidak ada regresi.
 
-**⚠️ ESCALATION — tidak ditutup sebagai ✅ tanpa syarat, mengikuti instruksi audit 9a:**
+**✅ RESOLVED 2026-09-23 — eskalasi 2026-09-22 ditutup, Opsi 1 (tulis test tambahan) dieksekusi
+penuh:**
 ```
-ESCALATION — Migrasi 20.0
+ESCALATION — Migrasi 20.0 (HISTORICAL, sudah RESOLVED — dipertahankan sebagai jejak keputusan)
 Step/Fase: 9 (Dev Testing, gate)
 Modul: sale_margin_threshold
-Isu: 5 AC berlabel [HIGH-RISK — Step 9/10 extra scrutiny] TIDAK punya test otomatis:
-     AC-01-05 (formula minimum_sale_price_with_tax, backend murni — MUDAH ditest, belum ada),
-     AC-02-08 (decoration order_line list, fix MF-35), AC-04-01/02/03 (kolom list Product
-     Variants: visibility, dedup MF-37, paritas visual MF-38). Modul ini backend-only (tidak
-     ada Tour/HttpCase infrastruktur), jadi AC view-level ini hanya pernah diverifikasi manual
-     via Docker sesi sebelumnya (MF-35/37/38 log), bukan regression test yang akan
-     menangkap regresi diam-diam ke depannya.
-Opsi: 1) Tulis unit test tambahan sekarang (arch-inspection get_view() untuk AC-04-01/02/03 +
-     assert aritmetika pajak untuk AC-01-05 — keduanya feasible tanpa browser/Tour) sebelum
-     menutup gate — Risiko keterlambatan: rendah-sedang.
-     2) Lanjut ke Step 10 (QA/Business Flow) dengan gap ini didisclosure eksplisit di sana,
-     karena Step 10 memang didesain untuk verifikasi UI/business-flow manual (AC-nya sendiri
-     ditandai "Step 9/10", bukan cuma "Step 9") — Risiko: regresi UI baru bisa lolos tanpa
-     terdeteksi otomatis di masa depan (siklus migrasi berikutnya).
-     3) Disclosure + lanjut TANPA test tambahan, terima risiko permanen (konsisten pola MF-37
-     yang sudah diterima Step 5 sebagai gap non-blocking) — Risiko: sedang.
-Rekomendasi: Opsi 2 (lanjut ke Step 10 dengan gap didisclosure) — konsisten dengan label AC-nya
-sendiri ("Step 9/10"), dan gap AC-04-02 (MF-37) sudah pre-accepted sejak Step 5. TAPI AC-01-05
-direkomendasikan kuat ditambah unit test murah (Opsi 1 parsial) karena murni Python/backend,
-tidak butuh Tour — biaya rendah, high-value untuk BSL formula inti.
-Perlu keputusan user sebelum lanjut.
+Isu (2026-09-22): 5 AC berlabel [HIGH-RISK — Step 9/10 extra scrutiny] TIDAK punya test otomatis:
+     AC-01-05, AC-02-08, AC-04-01/02/03.
+Resolusi (2026-09-23): 6 method test baru ditulis (`tests/test_high_risk_ac.py`), dijalankan
+     sungguhan di Docker (DB baru `pos_margin_sale_migration_20_qa_v10`, port 8160, KEDUA modul
+     terinstall bersamaan) — hasil akhir 0 failed/0 error dari 12 test Python (18 termasuk 2 test
+     JS generik `web`). Satu test ITERASI PERTAMA sempat gagal (`AC-02-08`, `2 != 1`) tapi root
+     cause-nya adalah xpath test yang kurang scoped (ikut menghitung kartu kanban mobile native
+     yang memang tidak pernah didekorasi modul ini, dikonfirmasi ke 19.0) -- BUKAN bug kode modul.
+     Test diperbaiki, tidak ada perubahan kode produksi. Detail lengkap di "Update 2026-09-23" di
+     atas.
+Keputusan: Opsi 1 dieksekusi penuh (bukan Opsi 2/3) -- kelima AC HIGH-RISK sekarang punya
+     regression test otomatis yang akan menangkap regresi diam-diam ke depannya, tidak lagi
+     bergantung pada verifikasi manual Docker sesi lampau (MF-35/37/38).
 ```
 
-- [ ] ✅ Semua AC prioritas Unit/Integration pass tanpa syarat — lanjut ke step 10
-- [x] ⚠️ Pass bersyarat: 0 failed/0 error pada semua test yang ADA, tapi 5 AC HIGH-RISK
-  view/formula-level belum tercakup test otomatis (lihat eskalasi di atas) — user diminta memilih
-  opsi sebelum gate dianggap final closed.
+- [x] ✅ Semua AC prioritas Unit/Integration pass tanpa syarat — lanjut ke step 10
+- [ ] ~~⚠️ Pass bersyarat~~ (superseded 2026-09-23 — lihat resolusi di atas)
