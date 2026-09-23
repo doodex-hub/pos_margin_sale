@@ -159,6 +159,32 @@ Perlu keputusan user sebelum lanjut.
 
 ---
 
+## Konvensi pencatatan: perbaikan/tambahan yang HANYA ada di 20.0
+
+**Aturan dev (2026-09-23, berlaku untuk seluruh sisa project ini dan project migrasi berikutnya):**
+setiap kali sesuatu diperbaiki, ditambahkan, atau ditutup **di project 20.0 ini** padahal versi
+sebelumnya tidak punya, **catat eksplisit bahwa versi sebelumnya BELUM punya** — jangan cuma tulis
+"sudah diperbaiki" seolah berlaku di mana-mana.
+
+Yang dicatat, di tempat perbaikannya hidup (komentar kode/docstring test) DAN di `FINDINGS.md`:
+- versi/branch mana yang **belum** punya (`migration/19.0`, `migration/18.0`, dst) — sebut branch-nya,
+  bukan "versi lama";
+- kalau relevan: sudah berapa kali di-carry-forward tanpa keputusan;
+- peringatan bahwa branch lama **tidak boleh diasumsikan ikut tertutup** — kalau mau, harus
+  di-backport eksplisit.
+
+Alasannya: tiga project migrasi berturut-turut sempat mewarisi gap yang sama (`BSL-018`) tanpa ada
+satupun catatan bahwa versi sebelumnya juga belum menutupnya, sehingga tiap project menganggapnya
+"sudah beres di suatu tempat". Contoh penerapan: dua tour `BSL-018` di
+`pos_margin_threshold/static/tests/tours/margin_threshold_tour.js` + method-nya di
+`tests/test_margin_threshold_tour.py`, dan §KOREKSI di `FINDINGS.md` `MF-34`.
+
+**Kebalikannya juga berlaku:** kalau ternyata sesuatu yang dikira "baru aktif di 20.0" TERNYATA sudah
+ada sejak versi sebelumnya (kasus `MF-34`), koreksi catatannya — jangan biarkan klaim dampak yang
+salah berdiri karena sudah terlanjur disetujui.
+
+---
+
 ## Mandatory Read Order
 
 Sebelum membuat perubahan apapun (per modul yang sedang dikerjakan), baca berurutan:
