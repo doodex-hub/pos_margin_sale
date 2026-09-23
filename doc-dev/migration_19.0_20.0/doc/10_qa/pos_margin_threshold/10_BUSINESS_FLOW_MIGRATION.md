@@ -278,6 +278,48 @@ Step 8/9 sebelumnya. Risiko dinilai SEDANG (bukan tinggi) mengingat kontrak data
 sudah dua-duanya dikonfirmasi benar secara independen, hanya langkah render piksel terakhir yang
 belum tertutup.
 
+
+**ADDENDUM — VERIFIKASI VISUAL LIVE (2026-09-23, Playwright, DB `..._qa_decline` port 8182):
+`[DIKONFIRMASI]`/Pass, DENGAN satu koreksi penting atas klaim dampak `MF-34`.**
+
+**Setup nyata:** dibuat lewat RPC produk combo sungguhan — `MF34 Combo Menu`
+(`product.template` `type='combo'`, `available_in_pos=True`) dengan 2 `product.combo`
+(`MF34 Main` -> `MF34 Burger`, `MF34 Drinks` -> `MF34 Drink`). Combo diklik di POS nyata sehingga POS
+membuat line parent + 2 line child ber-`combo_parent_id`.
+
+**Hasil render (bagian visual yang selama ini kosong — sekarang tertutup):** kedua orderline child
+ter-render dengan `class="orderline border-start orderline-combo fst-italic ms-4 ... border-3"`,
+`border-left-width: 3px solid rgb(222,226,230)`, `margin-left: 24px`; line parent TIDAK ter-indent
+(`border-left-width: 0px`, `margin-left: 0px`). Jadi styling combo-child (indent + garis kiri +
+italic) **genuinely tampil di layar** — lihat screenshot `mf34-combo-visual.png`.
+
+**KOREKSI atas klaim `MF-34` ("styling combo AKTIF untuk pertama kalinya di 20.0, perubahan behavior
+yang terlihat dibanding SEMUA versi sebelumnya"):** klaim itu **TIDAK BENAR**, dan judul skenario ini
+("AKTIF pertama kali di 20.0") ikut terkoreksi. Diverifikasi dengan eksperimen langsung di DOM +
+baca source native:
+1. **Native 20.0 sendiri sudah memberi `border-start` dan `orderline-combo fst-italic ms-4`** untuk
+   setiap line ber-`combo_parent_id` — `odoo20/addons/point_of_sale/static/src/app/components/
+   orderline/orderline.js` getter `lineContainerClasses` baris 53-54.
+2. **Native 19.0 JUGA sudah memberikannya** (`odoo19/.../orderline.js` baris 61-62, isi praktis
+   identik). Jadi indent + garis kiri sudah tampil di 19.0 TERLEPAS dari typo `line.comboParent` —
+   typo itu tidak pernah menghilangkan styling, karena yang merender adalah native, bukan modul ini.
+3. **Kontribusi unik modul (`border-3`) terbukti no-op secara visual.** Diuji langsung: menghapus
+   `border-3` dari elemen -> `border-left-width` TETAP `3px`; menghapus `border-start` (milik native)
+   juga -> baru jadi `0px`/`none`. Jadi yang benar-benar menghasilkan garis adalah class NATIVE,
+   sedangkan `border-start`/`ms-4` dari modul duplikat dan `border-3` tidak mengubah lebar apapun.
+**Implikasi (positif untuk mandat migrasi):** tidak ada perubahan behavior visual 19.0 -> 20.0 di
+jalur ini — parity terjaga, dan "perubahan behavior yang terlihat" yang sempat disetujui dev di
+`MF-34` sebenarnya tidak pernah terjadi. Tidak ada aksi kode yang diperlukan.
+**Catatan penting — override modul TIDAK mati/dead code.** Atribut `t-attf-class` yang sama juga
+membawa `this.line.isLessMinimumSalePrice ? 'text-danger' : ''`, dan bagian ITU terbukti hidup di
+layar yang sama: line `MF-Decline Test Product` ter-render `text-danger` (merah) berikut baris
+peringatan `*The price of this product is less than minimum sale price $ 15.00`. Jadi fix `MF-41`
+(`this.line` + anchor `t-call-slot`) memang benar dan perlu; yang redundan HANYA bagian combo-nya.
+**Status (diperbarui):** [x] Pass — bagian data (`combo_parent_id`) DAN bagian visual keduanya
+terverifikasi.
+**Provenance (diperbarui):** `[DIKONFIRMASI]` — eksekusi live Playwright dengan combo product
+sungguhan, 2026-09-23.
+
 ### S-14: Field `margin_sale` di form Product Category — posisi anchor baru
 **Level:** Detail
 **Mode eksekusi:** RPC (arch mentah)
@@ -427,8 +469,8 @@ sudah ditandai N/A berdasar analisis ini.
 | Provenance | Jumlah | Skenario |
 |---|---|---|
 | `[DIKONFIRMASI]` (RPC/ORM live execution, disclosed non-visual) | 3 | S-09, S-10, S-11 |
-| `[DIKONFIRMASI]` (UI live execution penuh, Playwright, rerun terisolasi 2026-09-23) | 1 | S-19 |
-| `[HASIL-BACA]` (ref Step 8/9, sebagian dikorroborasi RPC/RMV) | 15 | S-01, S-02, S-03, S-04, S-05, S-06, S-07, S-08, S-13, S-14, S-15, S-16, S-17, S-18, S-21 |
+| `[DIKONFIRMASI]` (UI live execution penuh, Playwright, rerun terisolasi 2026-09-23) | 2 | S-19, S-13 (bagian visual — lihat ADDENDUM) |
+| `[HASIL-BACA]` (ref Step 8/9, sebagian dikorroborasi RPC/RMV) | 14 | S-01, S-02, S-03, S-04, S-05, S-06, S-07, S-08, S-14, S-15, S-16, S-17, S-18, S-21 |
 | `[HASIL-BACA-MURNI]` | 1 | S-12 (Pending, Level Detail, risiko rendah, tidak wajib eskalasi) |
 | `[PERLU-KEPUTUSAN]` | 1 | S-20 |
 
@@ -449,18 +491,19 @@ fix kode (tidak ada bug ditemukan, baik di sesi Step 10 asli maupun di rerun ini
 ## Verdict
 
 - [ ] ✅ Lulus
-- [x] ⚠️ **Lulus Bersyarat** — **2** item butuh keputusan dev sebelum Step 11 ditutup penuh
-  (turun dari 3: item S-19 sudah SELESAI, lihat di bawah):
+- [x] ⚠️ **Lulus Bersyarat** — **1** item butuh keputusan dev sebelum Step 11 ditutup penuh
+  (turun dari 3: S-19 dan S-13 sudah SELESAI, lihat di bawah):
   0. ~~**S-19 (`AC-03-03`, decline dialog)**~~ — **SELESAI 2026-09-23**, dieksekusi live penuh di sesi
      rerun terisolasi (Playwright, termasuk positive control), status sekarang `[DIKONFIRMASI]`/Pass.
      Tidak lagi butuh keputusan dev. Satu-satunya sisa (non-blocking): jalur ini masih belum punya
      tour test otomatis untuk menjaga regresi masa depan.
   1. **S-20 (`AC-03-05`/`BSL-018`, nol dialog carry-forward 3x)** — keputusan desain yang genuinely
      ditunda 3 project migrasi berturut-turut, direkomendasikan diputuskan SEKARANG (lihat ESCALATION).
-  2. **S-13 (`AC-05-01`, styling combo `MF-34`)** — kontrak data backend SUDAH dikonfirmasi
-     `[DIKONFIRMASI]` via RPC/ORM nyata sesi ini (bukti baru), TAPI rendering CSS visual masih belum
-     pernah dikonfirmasi sama sekali di riwayat modul manapun — direkomendasikan tour test baru
-     sebelum Step 11 (risiko dinilai SEDANG, bukan tinggi, mengingat 2 dari 3 lapis bukti sudah kuat).
+  2. ~~**S-13 (`AC-05-01`, styling combo `MF-34`)**~~ — **SELESAI 2026-09-23**, diverifikasi visual live
+     dengan combo product sungguhan (Playwright). Status `[DIKONFIRMASI]`/Pass. Tidak lagi butuh
+     keputusan dev. Bonus: verifikasi ini MENGOREKSI klaim dampak `MF-34` (styling combo ternyata
+     sudah disediakan NATIVE sejak 19.0, jadi fix ini TIDAK mengubah behavior user — parity justru
+     terjaga). Lihat ADDENDUM S-13 dan `FINDINGS.md` `MF-34` §KOREKSI.
 
   **Tidak ada satupun dari item-item ini adalah gap kode BARU** — semuanya sudah diketahui/diprediksi
   sejak Step 8/9 (kecuali detail teknis blocker `MF-46` yang baru muncul sesi ini). 34 dari 37 AC

@@ -520,8 +520,12 @@ blocker environment.** Detail lengkap di `FINDINGS.md` `MF-46 (lanjutan 2)`.
 sebelum Step 11 ditutup penuh):**
 1. `pos_margin_threshold` `AC-03-05`/`BSL-018` — keputusan desain yang ditunda 3 project migrasi
    berturut-turut. Ini murni keputusan dev, BUKAN masalah environment.
-2. `pos_margin_threshold` `AC-05-01` (`MF-34`) — kontrak data backend sudah `[DIKONFIRMASI]`, tapi
-   rendering CSS combo-child belum pernah dikonfirmasi visual di riwayat modul manapun.
+2. ~~`pos_margin_threshold` `AC-05-01` (`MF-34`)~~ — **SELESAI 2026-09-23.** Diverifikasi visual live
+   (combo product nyata di POS). Sekaligus mengoreksi klaim dampak `MF-34`: styling combo-child
+   (indent + garis kiri) ternyata sudah disediakan NATIVE sejak 19.0, dan `border-3` milik modul
+   terbukti no-op — jadi fix ini TIDAK menghasilkan perubahan behavior user seperti yang sempat
+   dicatat/disetujui. Fix-nya sendiri tetap benar dan dipertahankan. Lihat `FINDINGS.md` `MF-34`
+   §KOREKSI.
 3. Gap test otomatis (bukan gap kode): jalur decline POS, dedup kolom `MF-37`, dan thread-switch
    `pin_message` `AC-06-01` semuanya baru terverifikasi manual — belum ada tour/test yang menjaga
    regresi ke depan.
@@ -565,7 +569,7 @@ satu-satunya yang tersisa sebelum gate Step 1 ditutup dan lanjut ke Step 2.
 | 7 | Data Migration Scripts | — (asumsi N/A) | — (asumsi N/A) | — (asumsi N/A) |
 | 8 | Code Review | ✔️ Gate lulus (2026-09-23) — 0🔴/1🟡/2🔵, `MF-45` (`@api.depends` kurang lengkap) ditemukan+fixed | ✔️ Gate lulus (2026-09-23) — 0🔴/2🟡/1🔵, `MF-45` ditemukan+fixed di sini juga | ✔️ Gate lulus (2026-09-23) — 0🔴/1🟡/2🔵 (thread-switch refresh timing masih perlu tour test nyata) |
 | 9 | Dev Testing | ✔️ Gate lulus (2026-09-23) — 11/11 test pass, 0 stub, `09_DEV_TESTING.md` ditulis | ✔️ Gate lulus TANPA SYARAT (2026-09-23) — dev pilih Opsi 1 (tulis semua test dulu), 6 test baru ditulis untuk 5 AC HIGH-RISK, 12/12 test pass, tidak ada bug baru ditemukan | ✔️ Gate lulus bersyarat (2026-09-23) — 7/7 test pass, `MF-36` regresi terbukti tertangkap; AC-06-01 (thread-switch) jadi prioritas follow-up |
-| 10 | QA Testing | ⚠️ Lulus Bersyarat (2026-09-23) — 21 skenario. **Rerun terisolasi 2026-09-23 menutup `AC-03-03`** (decline dialog POS) jadi `[DIKONFIRMASI]`/Pass lewat eksekusi live + positive control. Sisa 1 `[PERLU-KEPUTUSAN]`: `AC-03-05`/`BSL-018` (carry-forward 3x, keputusan desain dev — BUKAN blocker environment) + bagian visual `AC-05-01` (`MF-34`) | ✔️ **Lulus** (2026-09-23, dinaikkan dari Lulus Bersyarat lewat rerun terisolasi) — 13 skenario. S-01 (webclient mount) dan render-pixel S-07 (dedup `MF-37` 1 kolom, decoration merah `MF-38` `rgb(210,63,58)`, kolom Incl. Tax benar) dikonfirmasi VISUAL live; 0 `[PERLU-KEPUTUSAN]` tersisa | ✔️ **Lulus** (2026-09-23) — 11 skenario, `AC-06-01` (thread-switch, risiko tertinggi) berhasil `[DIKONFIRMASI]` via rerun terisolasi setelah `MF-46` diatasi; temuan sampingan `MF-47` (native 20.0 punya fitur pin/unpin sendiri) — informational, tidak blocking |
+| 10 | QA Testing | ⚠️ Lulus Bersyarat (2026-09-23) — 21 skenario. **Rerun terisolasi 2026-09-23 menutup `AC-03-03`** (decline dialog POS) jadi `[DIKONFIRMASI]`/Pass lewat eksekusi live + positive control. **`AC-05-01` (`MF-34`) juga ditutup** — diverifikasi visual live dengan combo product sungguhan, sekaligus MENGOREKSI klaim dampak `MF-34` (styling combo ternyata disediakan NATIVE sejak 19.0; fix ini TIDAK mengubah behavior user, parity terjaga). Sisa 1 `[PERLU-KEPUTUSAN]`: `AC-03-05`/`BSL-018` (carry-forward 3x, keputusan desain dev — BUKAN blocker environment) | ✔️ **Lulus** (2026-09-23, dinaikkan dari Lulus Bersyarat lewat rerun terisolasi) — 13 skenario. S-01 (webclient mount) dan render-pixel S-07 (dedup `MF-37` 1 kolom, decoration merah `MF-38` `rgb(210,63,58)`, kolom Incl. Tax benar) dikonfirmasi VISUAL live; 0 `[PERLU-KEPUTUSAN]` tersisa | ✔️ **Lulus** (2026-09-23) — 11 skenario, `AC-06-01` (thread-switch, risiko tertinggi) berhasil `[DIKONFIRMASI]` via rerun terisolasi setelah `MF-46` diatasi; temuan sampingan `MF-47` (native 20.0 punya fitur pin/unpin sendiri) — informational, tidak blocking |
 | 11 | UAT Sign-off | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
 
 Legenda: ⬜ Belum mulai · 🔄 Sedang dikerjakan · ✅ Draft/selesai ditulis · ✔️ Disetujui/lulus gate.

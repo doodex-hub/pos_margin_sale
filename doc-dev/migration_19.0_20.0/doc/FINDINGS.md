@@ -420,6 +420,36 @@ POS terpasang, di luar scope perbaikan mekanis ini. Rekomendasi: verifikasi visu
 (Dev Testing) formal nanti, bukan diasumsikan otomatis benar dari baca kode saja (pola yang sama
 seperti `MF-33`).
 
+
+**KOREKSI (2026-09-23, dari verifikasi visual live Step 10 — mengoreksi KLAIM DAMPAK di atas, bukan
+keputusan fix-nya).** Dua kalimat di atas — "Styling border/indent combo-child TIDAK PERNAH aktif di
+versi manapun sebelum fix ini" dan "genuinely perubahan behavior yang terlihat user dibanding SEMUA
+versi sebelumnya (17.0-19.0 tidak pernah menampilkannya)" — **TIDAK BENAR**. Ditemukan saat akhirnya
+menjalankan verifikasi visual dengan combo product sungguhan di POS 20.0 (yang di paragraf di atas
+memang dicatat "BELUM dilakukan"):
+1. **Native 20.0 sudah memberi `border-start` + `orderline-combo fst-italic ms-4` sendiri** untuk
+   setiap line ber-`combo_parent_id` — `odoo20/addons/point_of_sale/static/src/app/components/
+   orderline/orderline.js`, getter `lineContainerClasses` baris 53-54.
+2. **Native 19.0 juga sudah** (`odoo19/.../orderline.js` baris 61-62, isi praktis identik). Jadi
+   indent + garis kiri combo-child SUDAH tampil di 19.0, terlepas dari typo `line.comboParent` —
+   yang merender adalah native, bukan modul ini. Typo itu tidak pernah menghilangkan styling apapun.
+3. **Kontribusi unik modul (`border-3`) terbukti no-op visual.** Diuji langsung di DOM live:
+   hapus `border-3` -> `border-left-width` TETAP `3px`; hapus `border-start` (milik native) -> baru
+   jadi `0px`/`none`.
+**Konsekuensi:** fix `MF-34` **tidak menghasilkan perubahan behavior yang terlihat user** — parity
+19.0 -> 20.0 justru TERJAGA (yang memang diinginkan mandat migrasi). Persetujuan dev untuk
+"perubahan behavior yang terlihat" ternyata tidak pernah perlu dipakai. **Fix-nya sendiri tetap
+benar dan tetap dipertahankan** (`combo_parent_id` memang nama field yang benar; `comboParent` selalu
+`undefined`), cuma dampaknya jauh lebih kecil dari yang dicatat sebelumnya.
+**Override modul TIDAK dead code** — atribut `t-attf-class` yang sama membawa
+`isLessMinimumSalePrice ? 'text-danger' : ''`, dan bagian itu terbukti hidup di layar yang sama
+(line below-minimum ter-render merah + baris peringatan). Jadi fix `MF-41` (`this.line` +
+anchor `t-call-slot`) memang perlu; yang redundan HANYA bagian combo-nya.
+**Verifikasi visual: SEKARANG SUDAH DILAKUKAN** (menutup gap yang dicatat di paragraf "Verifikasi" di
+atas) — Playwright, DB `pos_margin_sale_migration_20_qa_decline` port 8182, combo product nyata
+(`MF34 Combo Menu` + `MF34 Burger`/`MF34 Drink`). Detail di
+`10_qa/pos_margin_threshold/10_BUSINESS_FLOW_MIGRATION.md` S-13 ADDENDUM.
+
 ### MF-36 — Crash saat expand "Pinned Messages" — ROOT CAUSE DIKOREKSI, RESOLVED
 **Ditemukan di:** smoke-test Docker 20.0, 2026-09-22, saat verifikasi end-to-end `MF-28`/`MF-32`
 (toggle pin sendiri SUDAH terbukti berfungsi — badge count "Pinned Messages: 1" muncul benar begitu
