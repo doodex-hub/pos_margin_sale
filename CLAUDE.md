@@ -572,6 +572,34 @@ sebelum Step 11 ditutup penuh):**
 
 **Langkah berikutnya: Step 11 (UAT Sign-off)** untuk ketiga modul — belum mulai.
 
+**Step 11 (UAT Sign-off) — checklist SIAP untuk ketiga modul (2026-09-24), menunggu eksekusi manusia.**
+`11_uat/<modul>/11_UAT_CHECKLIST.md` ditulis untuk ketiganya, mengikuti template: bahasa awam (nama
+menu/tombol seperti yang user lihat, BUKAN istilah `AC-NNN`/`BSL-NNN`), data dummy konkret dengan
+angka nyata, dan **kolom Actual/Status/Sign-off sengaja DIKOSONGKAN** — per aturan template, UAT baru
+bermakna kalau dijalankan sendiri oleh orang yang memakai sistem, bukan diisi AI.
+
+**Yang diangkat eksplisit ke stakeholder di ketiga dokumen:**
+- **Perubahan yang memang disengaja** dijelaskan di bagian tersendiri supaya tidak disangka kerusakan
+  — terutama hilangnya popup edit-cepat varian (dihapus Odoo 20.0 sendiri, diganti kolom list
+  `MF-29`) di kedua modul margin, dan **`MF-47` di `pin_message` (dua entri "Pin" di menu aksi,
+  karena native 20.0 kini punya fitur pin sendiri)** — yang terakhir diangkat sebagai **pertanyaan
+  keputusan eksplisit**, bukan sekadar catatan, karena user akan langsung melihatnya di layar.
+- **Skenario berisiko tertinggi ditandai untuk diperiksa ekstra teliti**, dengan alasan jujur bahwa
+  ketiganya baru terverifikasi manual sekali dan belum punya test otomatis: jalur batal dialog POS
+  (`pos_margin_threshold` T-04), jalur Cancel wizard (`sale_margin_threshold` T-03), dan pindah antar
+  dokumen (`pin_message` T-06).
+- **Prasyarat go-live:** rehearsal upgrade sungguhan BELUM pernah dilakukan (konsekuensi asumsi "port
+  kode saja" yang dikonfirmasi di gate Step 1) — ditulis sebagai prasyarat eksplisit, bukan dianggap
+  beres otomatis karena Step 9/10 lulus. Ditambah pengingat bahwa **run test CI wajib memasang kedua
+  modul margin bersamaan**, kalau tidak test dedup `MF-37` ter-skip diam-diam.
+- `sale_margin_threshold` T-09 sengaja menguji `MF-08` (error saat batch confirm) **sebagai perilaku
+  lama yang dipertahankan** — dijelaskan bahwa tujuannya memastikan sama persis dengan 19.0, bukan
+  mencari bug, sekaligus membuka jalan kalau ternyata itu mengganggu operasional.
+
+**Yang TIDAK dikerjakan AI (dan memang tidak boleh):** mengisi Actual/Status, menandatangani sign-off,
+atau menyatakan gate Step 11 lulus. Itu sepenuhnya milik PM/FA/User setelah menjalankan skenarionya
+sendiri.
+
 **Bootstrap selesai (2026-09-21).** Branch `migration/20.0` belum di-push ke remote (dev perlu
 jalankan sendiri `git push -u origin migration/20.0` kapan pun siap — AI tidak pernah melakukan
 ini). Yang sudah dikerjakan sesi ini:
@@ -610,9 +638,9 @@ satu-satunya yang tersisa sebelum gate Step 1 ditutup dan lanjut ke Step 2.
 | 8 | Code Review | ✔️ Gate lulus (2026-09-23) — 0🔴/1🟡/2🔵, `MF-45` (`@api.depends` kurang lengkap) ditemukan+fixed | ✔️ Gate lulus (2026-09-23) — 0🔴/2🟡/1🔵, `MF-45` ditemukan+fixed di sini juga | ✔️ Gate lulus (2026-09-23) — 0🔴/1🟡/2🔵 (thread-switch refresh timing masih perlu tour test nyata) |
 | 9 | Dev Testing | ✔️ Gate lulus (2026-09-23) — 11/11 test pass, 0 stub, `09_DEV_TESTING.md` ditulis | ✔️ Gate lulus TANPA SYARAT (2026-09-23) — dev pilih Opsi 1 (tulis semua test dulu), 6 test baru ditulis untuk 5 AC HIGH-RISK, 12/12 test pass, tidak ada bug baru ditemukan | ✔️ Gate lulus bersyarat (2026-09-23) — 7/7 test pass, `MF-36` regresi terbukti tertangkap; AC-06-01 (thread-switch) jadi prioritas follow-up |
 | 10 | QA Testing | ✔️ **Lulus** (2026-09-24, naik dari Lulus Bersyarat) — 21 skenario, 0 `[PERLU-KEPUTUSAN]` tersisa. `AC-03-03` (decline dialog, + positive control) dan `AC-05-01` (`MF-34`, visual combo) ditutup lewat eksekusi live 2026-09-23; `AC-05-01` sekaligus MENGOREKSI klaim dampak `MF-34` (styling combo disediakan NATIVE sejak 19.0, fix ini tidak mengubah behavior user). **`BSL-018`/`AC-03-05` ditutup 2026-09-24** lewat 2 tour otomatis BARU (`0 failed, 0 error(s) of 4 tests`) — mengakhiri carry-forward 3 project, dan satu-satunya dari ketiganya yang juga menjaga regresi ke depan (`MF-48`) | ✔️ **Lulus** (2026-09-23, dinaikkan dari Lulus Bersyarat lewat rerun terisolasi) — 13 skenario. S-01 (webclient mount) dan render-pixel S-07 (dedup `MF-37` 1 kolom, decoration merah `MF-38` `rgb(210,63,58)`, kolom Incl. Tax benar) dikonfirmasi VISUAL live; 0 `[PERLU-KEPUTUSAN]` tersisa | ✔️ **Lulus** (2026-09-23) — 11 skenario, `AC-06-01` (thread-switch, risiko tertinggi) berhasil `[DIKONFIRMASI]` via rerun terisolasi setelah `MF-46` diatasi; temuan sampingan `MF-47` (native 20.0 punya fitur pin/unpin sendiri) — informational, tidak blocking |
-| 11 | UAT Sign-off | ⬜ Belum mulai | ⬜ Belum mulai | ⬜ Belum mulai |
+| 11 | UAT Sign-off | 📝 Checklist SIAP (2026-09-24) — `11_UAT_CHECKLIST.md` ditulis: 10 skenario T-01..T-10 + item non-UI, data dummy konkret. **Menunggu eksekusi manual manusia** — kolom Actual/Status/Sign-off sengaja kosong | 📝 Checklist SIAP (2026-09-24) — 9 skenario + item non-UI, termasuk T-09 yang menguji `MF-08` (batch confirm) dipertahankan identik, bukan dicari bug-nya. **Menunggu eksekusi manual manusia** | 📝 Checklist SIAP (2026-09-24) — 8 skenario + item non-UI. T-06 (pindah antar dokumen) ditandai paling rawan; **`MF-47` (dua entri "Pin") diangkat sebagai pertanyaan keputusan eksplisit** ke stakeholder. **Menunggu eksekusi manual manusia** |
 
-Legenda: ⬜ Belum mulai · 🔄 Sedang dikerjakan · ✅ Draft/selesai ditulis · ✔️ Disetujui/lulus gate.
+Legenda: ⬜ Belum mulai · 🔄 Sedang dikerjakan · ✅ Draft/selesai ditulis · 📝 Checklist siap, menunggu eksekusi manusia · ✔️ Disetujui/lulus gate.
 
 ---
 
