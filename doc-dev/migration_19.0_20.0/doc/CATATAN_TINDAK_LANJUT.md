@@ -165,13 +165,12 @@ Docker yang dibangun dari nol, bukan dari data nyata.
 Khusus `pin_message`: kalau ada pesan yang sudah di-pin di produksi, perlu dicek apakah data
 `is_pinned` lama terbawa benar.
 
-### 6. Branch belum pernah di-push
+### 6. Branch sudah di-push ✅ SELESAI
 
-`migration/20.0` belum ada di remote. Dev yang menjalankan sendiri (AI tidak pernah push):
-
-```bash
-git push -u origin migration/20.0
-```
+**Dev sudah menjalankan `git push -u origin migration/20.0` sendiri pada 2026-09-24.** Dikonfirmasi:
+`origin/migration/20.0` = commit `1c7d420`, **0 ahead / 0 behind** — seluruh pekerjaan migrasi
+(Step 1-10 + checklist Step 11 + catatan ini) sudah ada di remote. Tidak ada aksi tersisa untuk item
+ini.
 
 ---
 
@@ -184,7 +183,7 @@ git push -u origin migration/20.0
 | 3 | 3 test regresi (decline POS, Cancel wizard, thread switch) | **Kerjakan** — Step 9 addendum | dev |
 | 4 | CI pasang kedua modul margin | **Konfigurasi**, bukan coding | dev |
 | 5 | Rehearsal upgrade | **Jadwalkan** kalau ada data produksi | dev/PM |
-| 6 | Push branch | **Jalankan** | dev |
+| 6 | ~~Push branch~~ | ✅ **SELESAI** 2026-09-24 (`origin/migration/20.0` = `1c7d420`, sinkron penuh) | — |
 
 Tidak satupun dari ini memblokir apa yang sudah selesai. Step 1–10 lulus bersih untuk ketiga modul,
 dan tidak ada gap kode migrasi yang tersisa.

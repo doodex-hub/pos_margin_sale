@@ -600,9 +600,9 @@ bermakna kalau dijalankan sendiri oleh orang yang memakai sistem, bukan diisi AI
 atau menyatakan gate Step 11 lulus. Itu sepenuhnya milik PM/FA/User setelah menjalankan skenarionya
 sendiri.
 
-**Bootstrap selesai (2026-09-21).** Branch `migration/20.0` belum di-push ke remote (dev perlu
-jalankan sendiri `git push -u origin migration/20.0` kapan pun siap — AI tidak pernah melakukan
-ini). Yang sudah dikerjakan sesi ini:
+**Bootstrap selesai (2026-09-21).** Branch `migration/20.0` **sudah di-push dev sendiri 2026-09-24**
+(`origin/migration/20.0` = `1c7d420`, 0 ahead / 0 behind — seluruh Step 1-11 sudah ada di remote).
+AI tidak pernah melakukan push. Yang sudah dikerjakan saat bootstrap:
 
 - Branch `migration/20.0` dibuat dari tip `migration/19.0` (commit `5876d01`).
 - `.claude/settings.json` diisi path referensi nyata: `native-target` = `D:\Kuncoro\doodex\repo\odoo20`
@@ -648,7 +648,7 @@ tepat sasaran, bukan mulai menebak lagi. Isinya:
 | 3 | 3 skenario risiko tinggi baru terverifikasi manual (decline POS, Cancel wizard, thread switch) | **Tulis 3 tour test** — Step 9 addendum | dev |
 | 4 | Test dedup `MF-37` ter-skip diam-diam di run single-module | **Konfigurasi CI** pasang kedua modul margin — bukan coding | dev |
 | 5 | Rehearsal upgrade sungguhan belum pernah dilakukan | **Jadwalkan** kalau ternyata ada data produksi (asumsi "port kode saja" harus dikoreksi) | dev/PM |
-| 6 | Branch `migration/20.0` belum di-push | `git push -u origin migration/20.0` | dev |
+| 6 | ~~Branch belum di-push~~ | ✅ **SELESAI** — dev sudah push 2026-09-24 (`origin/migration/20.0` = `1c7d420`, sinkron penuh) | — |
 
 `CATATAN_TINDAK_LANJUT.md` juga memuat **4 pelajaran teknis dari menulis test `BSL-018`** (jebakan
 fixture pajak, `.orderline.selected` berwarna sama dengan `.text-danger`, cara memilih elemen

@@ -528,5 +528,5 @@ kalau tidak, coverage-nya ada di repo tapi tidak pernah dieksekusi.
 1. Lanjut ke **Step 11 (UAT Sign-off)** — Step 10 modul ini sudah lulus tanpa syarat.
 2. Opsional sebelum rilis: jadwalkan Step 9 addendum untuk test regresi jalur decline POS, dan
    pastikan run CI menyertakan kedua modul margin bersamaan (lihat caveat `MF-37` di atas).
-3. `git push -u origin migration/20.0` tetap sepenuhnya milik dev (Mode Git, AI tidak pernah push) —
-   branch ini belum pernah di-push, remote-nya belum ada.
+3. ~~`git push -u origin migration/20.0`~~ — **SUDAH dijalankan dev 2026-09-24**; `origin/migration/20.0`
+   sinkron penuh dengan lokal (commit `1c7d420`). Tidak ada aksi tersisa.
