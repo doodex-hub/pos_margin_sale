@@ -506,14 +506,27 @@ saat menulis test `BSL-018`.
 - [ ] ❌ Ada kegagalan
 
 **Sisa residual yang layak ditindaklanjuti (TIDAK blocking Step 11, bukan `[PERLU-KEPUTUSAN]`):**
-jalur decline POS (S-19) dan dedup kolom `MF-37` masih terverifikasi manual saja — keduanya belum
-punya test otomatis, jadi tidak ada yang menjaga regresinya ke depan. Pola `BSL-018` barusan
-menunjukkan menutup gap seperti ini murah; direkomendasikan dikerjakan sebagai Step 9 addendum,
-bukan diselipkan lagi ke Step 10.
+**jalur decline POS (S-19)** genuinely belum punya test otomatis — terverifikasi manual saja, jadi
+tidak ada yang menjaga regresinya. Pola `BSL-018` menunjukkan menutup gap seperti ini murah;
+direkomendasikan sebagai Step 9 addendum, bukan diselipkan lagi ke Step 10.
+
+**KOREKSI (2026-09-24):** versi sebelumnya paragraf ini juga menyebut dedup kolom `MF-37` "masih
+terverifikasi manual saja" — **itu SALAH**. `MF-37` SUDAH punya test otomatis sejak Step 9:
+`sale_margin_threshold/tests/test_high_risk_ac.py::test_ac_04_02_product_variants_columns_dedup_contract`,
+yang meng-assert node bermarker `o_smt_dedup_*` sudah ter-strip dari arch final DAN tersisa tepat satu
+kolom `margin_sale`/`minimum_sale_price`/`minimum_sale_price_with_tax`. Dijalankan 2026-09-24 di
+database dengan KEDUA modul terinstall (`pos_margin_sale_migration_20_qa_dedup`): **lolos, dan
+genuinely dieksekusi — bukan ter-skip** (13/13 test `sale_margin_threshold` pass di sana).
+
+**Caveat nyata yang tersisa (jauh lebih kecil dari klaim yang dikoreksi):** test itu memanggil
+`self.skipTest()` kalau `pos_margin_threshold` TIDAK terinstall. Di run test single-module yang biasa
+(hanya `sale_margin_threshold`) ia **diam-diam ter-skip** tanpa sinyal kegagalan apapun. Jadi supaya
+dedup `MF-37` benar-benar terjaga di CI, run test WAJIB menyertakan kedua modul terinstall bersamaan —
+kalau tidak, coverage-nya ada di repo tapi tidak pernah dieksekusi.
 
 **Langkah konkret berikutnya untuk dev:**
 1. Lanjut ke **Step 11 (UAT Sign-off)** — Step 10 modul ini sudah lulus tanpa syarat.
-2. Opsional sebelum rilis: jadwalkan Step 9 addendum untuk 2 test regresi di atas (decline POS,
-   dedup kolom `MF-37`).
+2. Opsional sebelum rilis: jadwalkan Step 9 addendum untuk test regresi jalur decline POS, dan
+   pastikan run CI menyertakan kedua modul margin bersamaan (lihat caveat `MF-37` di atas).
 3. `git push -u origin migration/20.0` tetap sepenuhnya milik dev (Mode Git, AI tidak pernah push) —
    branch ini belum pernah di-push, remote-nya belum ada.

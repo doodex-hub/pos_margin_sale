@@ -558,10 +558,17 @@ sebelum Step 11 ditutup penuh):**
    terbukti no-op — jadi fix ini TIDAK menghasilkan perubahan behavior user seperti yang sempat
    dicatat/disetujui. Fix-nya sendiri tetap benar dan dipertahankan. Lihat `FINDINGS.md` `MF-34`
    §KOREKSI.
-3. Gap test otomatis yang MASIH tersisa (bukan gap kode, tidak blocking Step 11): jalur decline POS,
-   dedup kolom `MF-37`, dan thread-switch `pin_message` `AC-06-01` masih terverifikasi manual saja —
-   belum ada tour/test yang menjaga regresi ke depan. `BSL-018` barusan menunjukkan menutup gap
-   seperti ini murah; direkomendasikan sebagai Step 9 addendum, bukan diselipkan ke Step 10 lagi.
+3. Gap test otomatis yang MASIH tersisa (bukan gap kode, tidak blocking Step 11): **jalur decline
+   POS** dan **thread-switch `pin_message` `AC-06-01`** masih terverifikasi manual saja — belum ada
+   tour/test yang menjaga regresi ke depan. `BSL-018` barusan menunjukkan menutup gap seperti ini
+   murah; direkomendasikan sebagai Step 9 addendum, bukan diselipkan ke Step 10 lagi.
+   **KOREKSI 2026-09-24:** daftar ini sempat menyebut dedup kolom `MF-37` juga "terverifikasi manual
+   saja" — **SALAH**. `MF-37` SUDAH punya test otomatis sejak Step 9
+   (`sale_margin_threshold/tests/test_high_risk_ac.py::test_ac_04_02_product_variants_columns_dedup_contract`),
+   dan test itu dijalankan 2026-09-24 di DB dengan KEDUA modul terinstall: lolos dan genuinely
+   dieksekusi, bukan ter-skip. **Caveat yang nyata (jauh lebih kecil):** test itu `skipTest()` kalau
+   `pos_margin_threshold` tidak terinstall, jadi di run single-module biasa ia diam-diam ter-skip —
+   run CI WAJIB memasang kedua modul margin bersamaan supaya coverage ini benar-benar dieksekusi.
 
 **Langkah berikutnya: Step 11 (UAT Sign-off)** untuk ketiga modul — belum mulai.
 
