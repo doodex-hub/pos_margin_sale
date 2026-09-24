@@ -624,6 +624,37 @@ satu-satunya yang tersisa sebelum gate Step 1 ditutup dan lanjut ke Step 2.
 > AI: update bagian ini sendiri di akhir tiap sesi kerja, supaya sesi berikutnya tahu persis harus
 > lanjut dari mana tanpa tanya ulang ke user.
 
+---
+
+## ⏸️ MIGRASI DIJEDA SEMENTARA DI TITIK INI (2026-09-24)
+
+**Keputusan dev:** migrasi dihentikan sementara setelah Step 11 checklist selesai ditulis.
+
+**Posisi saat dijeda:**
+- **Step 1–10: ✔️ LULUS untuk ketiga modul.** Tidak ada gap kode migrasi yang tersisa.
+- **Step 11: checklist siap, BELUM dijalankan.** Gate belum ditutup — menunggu PM/FA/User menjalankan
+  skenarionya sendiri dan mengisi Actual/Status/Sign-off.
+
+**➡️ Sebelum melanjutkan, BACA DULU: `doc-dev/migration_19.0_20.0/doc/CATATAN_TINDAK_LANJUT.md`**
+
+Dokumen itu mengumpulkan semua yang sengaja diangkat ke permukaan selama migrasi, lengkap dengan
+lokasi file konkret, alasan dibiarkan, dan apa yang dibutuhkan untuk menutupnya — supaya fixing nanti
+tepat sasaran, bukan mulai menebak lagi. Isinya:
+
+| # | Item | Perlu apa | Siapa |
+|---|---|---|---|
+| 1 | `MF-47` — native 20.0 punya fitur pin sendiri, 2 entri "Pin" di menu | **Keputusan** (+ 1 investigasi kecil: apakah native juga punya UI daftar pinned sendiri) | dev/user |
+| 2 | Popup varian hilang → diganti kolom list (`MF-29`) | **Konfirmasi paritas kerja** lewat UAT — bukan "apakah tampilannya sama" | user |
+| 3 | 3 skenario risiko tinggi baru terverifikasi manual (decline POS, Cancel wizard, thread switch) | **Tulis 3 tour test** — Step 9 addendum | dev |
+| 4 | Test dedup `MF-37` ter-skip diam-diam di run single-module | **Konfigurasi CI** pasang kedua modul margin — bukan coding | dev |
+| 5 | Rehearsal upgrade sungguhan belum pernah dilakukan | **Jadwalkan** kalau ternyata ada data produksi (asumsi "port kode saja" harus dikoreksi) | dev/PM |
+| 6 | Branch `migration/20.0` belum di-push | `git push -u origin migration/20.0` | dev |
+
+`CATATAN_TINDAK_LANJUT.md` juga memuat **4 pelajaran teknis dari menulis test `BSL-018`** (jebakan
+fixture pajak, `.orderline.selected` berwarna sama dengan `.text-danger`, cara memilih elemen
+pembanding di POS, dan kenapa assert layar akhir tidak cukup untuk "tidak boleh ada dialog") — pakai
+itu saat mengerjakan item #3 supaya tidak mengulang jebakan yang sama.
+
 ### Status per Step (per modul)
 
 | # | Step | pos_margin_threshold | sale_margin_threshold | pin_message |

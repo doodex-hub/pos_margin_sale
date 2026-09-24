@@ -31,6 +31,12 @@ Tidak dihitung).
 
 *(belum ada revisi kriteria di project ini)*
 
+## Status Project
+
+**⏸️ DIJEDA SEMENTARA 2026-09-24** setelah Step 11 checklist selesai ditulis. Step 1-10 lulus untuk
+ketiga modul; Step 11 menunggu eksekusi manual manusia. Sebelum melanjutkan, baca
+`CATATAN_TINDAK_LANJUT.md` (6 item terbuka + 4 pelajaran teknis, dengan lokasi file konkret).
+
 ## Ringkasan Akhir Project (isi setelah step 11 selesai)
 
 - Step dengan rasio Tool-fix tertinggi: ...
