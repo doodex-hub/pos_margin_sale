@@ -52,6 +52,7 @@ belum ada keputusan dev, tidak blocking gate).
 | MF-42 | [pos_margin_threshold] **BUKAN bug modul ini** — native 20.0's numpad tombol "Price" (`access_right_plugin.js` `get disablePriceButton()`) punya logic TERBALIK dari help text field-nya sendiri: `restrict_price_control` (help: "Only users with Manager access rights... can modify prices") justru membuat tombol Price DISABLED untuk cashier role "manager" saat `False` (default) — kebalikan dari yang diimplikasikan help text. Dikonfirmasi 19.0 punya logic SAMA SEKALI BEDA (`cashierHasPriceControlRights()`), bukan regresi dari kode lama, genuinely fitur/logic baru 20.0 yang tampak salah | Ditemukan Step 9 (Dev Testing), 2026-09-22, tour `pos_margin_threshold` gagal di step numpad "Price" ("Element is not enabled") setelah `MF-41` diperbaiki | `[GAP-MIGRASI]` (native, di luar kendali modul) | Sedang — blocking test tour, TIDAK blocking fungsi inti manapun di modul ini | ✅ WORKAROUND (2026-09-22) — `restrict_price_control=True` ditambahkan ke setup POS config test (`tests/test_margin_threshold_tour.py`), TIDAK menyentuh file native manapun. Kalau perilaku ini genuinely bug (bukan intentional design 20.0), sebaiknya dilaporkan ke Odoo terpisah dari migrasi ini — di luar scope perbaikan modul |
 | MF-43 | [pos_margin_threshold] Tour `pos_margin_threshold_below_minimum_confirm_tour`/`..._blocked_tour` sempat gagal — dialog "Price unit less than minimum price" (`PosStore.pay()` patch) kadang tidak muncul. Root cause final: `setUpClass()` test kurang `env.flush_all()` setelah `create()` produk ber-compute-chain — lihat detail lengkap di bawah | Ditemukan Step 9 (Dev Testing), 2026-09-22 | `[GAP-MIGRASI]` | Kritis (fitur inti POS) | ✅ **RESOLVED (2026-09-23)** — fix `env.flush_all()` di test, diverifikasi 3+ run bersih berturut-turut |
 | MF-46 | **RESOLVED 2026-09-23 (lihat `MF-46 (lanjutan 2)`)** — atribusi root cause DIKOREKSI: bukan kontensi Postgres/paralelisme/"tool fatigue", tapi spesifik ke browser tool yang dipakai (Playwright merender sempurna di server+DB+menit yang SAMA saat Browser pane blank). Ketiga item yang sempat blocked (`pin_message` AC-06-01, `pos_margin_threshold` AC-03-03, `sale_margin_threshold` visual smoke) SUDAH dieksekusi live dan LULUS. Teks asli di bawah dipertahankan apa adanya sebagai rekaman diagnosis awal. ~~[pin_message][process] Step 10 live Playwright execution (`AC-06-01` thread-switch, prioritas #1) BLOCKED total sesi ini — browser Playwright MCP genuinely SHARED antar agent sibling konkuren (bukan cuma container/DB), tab saling timpa terus-menerus, DAN container `pos_margin_sale_migration_20` sempat mengalami I/O contention berat (checkpoint Postgres >100 detik) akibat beban gabungan Step 10 paralel 3 modul — webclient Odoo blank/`document.body` kosong di SEMUA tab (bukan cuma punya AI ini), bukan bug kode `pin_message`~~ | Ditemukan Step 10 (QA Testing), 2026-09-23; ditutup 2026-09-23 (rerun terisolasi) | `[RESOLVED]` | Nihil sekarang (semua AC terdampak sudah ditutup `[DIKONFIRMASI]` lewat eksekusi live) | ✅ **Selesai — tidak butuh keputusan dev lagi.** Pelajaran yang dibawa ke depan: kalau satu browser tool menunjukkan `bodyLen` 6/15 padahal server sehat, coba browser tool yang satunya SEBELUM menyimpulkan blocker environment |
+| MF-48 | [pos_margin_threshold] **`BSL-018` DITUTUP** — carry-forward tanpa keputusan lewat TIGA project migrasi (17→18, 18→19, 19→20) akhirnya diakhiri atas keputusan dev. 2 tour baru ditulis: `AC-03-05` (nol dialog saat semua line di atas minimum, pakai `MutationObserver` supaya flash sekejap pun tertangkap) + assert teks/warna warning orderline dengan line kontrol. `0 failed, 0 error(s) of 4 tests`. **⚠️ Branch `migration/19.0` dan `migration/18.0` TIDAK punya test ini — 18.0/19.0 tetap tanpa coverage, jangan diasumsikan ikut tertutup.** 3 temuan sampingan (fixture `taxes_id: []` tidak menghapus pajak default; stored `minimum_sale_price_with_tax` bisa tertinggal kalau `taxes_id` ditulis di dalam `setUpClass` — BUKAN bug modul, diverifikasi recompute benar di ORM biasa; `.orderline.selected` berwarna sama dengan `.text-danger`) | Step 10 lanjutan, 2026-09-23/24 | `[RESOLVED]` | Nihil — gap test ditutup, tidak ada gap kode | ✅ **Selesai.** Tidak butuh keputusan dev lagi |
 
 **`DIFF-04` [pos_margin_threshold] — dikonfirmasi dev 2026-09-22, diterapkan.** Field pengganti
 `list_price` (form Product Template, bug lama `MF-24` yang dipertahankan) ditambah
@@ -1115,6 +1116,85 @@ lewat `action.doAction(190, {additionalContext:{active_id:false}})` atau lewat m
 
 **Keputusan pemilik modul:** tidak diperlukan lagi untuk kedua item ini — keduanya sudah ditutup
 dengan bukti eksekusi nyata, bukan keputusan menerima-risiko.
+
+---
+
+### MF-48 [pos_margin_threshold] — `BSL-018` DITUTUP (carry-forward 3 project berakhir) + 3 temuan sampingan dari menulis test-nya
+
+**Ditemukan di:** Step 10 lanjutan, 2026-09-23/24, saat menulis test `BSL-018` atas keputusan dev
+("tutup sekarang, jangan di-carry-forward keempat kalinya").
+**Tag:** `[RESOLVED]` untuk `BSL-018` itu sendiri; 3 catatan sampingan di bawah bersifat
+informasional/proses, bukan gap kode modul.
+
+**Apa yang ditutup.** `BSL-018` (`01b_BASELINE_SPEC.md`) punya dua bagian, keduanya tanpa test
+otomatis sejak modul ini pertama ditulis:
+1. **`AC-03-05`** — order yang SEMUA line-nya di atas minimum: klik "Pay" tidak boleh memunculkan
+   dialog apapun, dan AC-nya eksplisit menyebut "termasuk tidak ada flash/render sekilas".
+2. **Assert teks/warna warning orderline secara terpisah**, bukan sekadar menyimpulkan "tidak crash"
+   dari dua tour dialog yang sudah ada.
+
+**Yang ditulis** (`static/tests/tours/margin_threshold_tour.js` +
+`tests/test_margin_threshold_tour.py`):
+- `pos_margin_threshold_no_dialog_above_minimum_tour` — memasang `MutationObserver` SEBELUM klik Pay
+  dan gagal kalau ada node `.modal` pernah disisipkan, sesingkat apapun. Assert "apakah payment
+  screen tampil" saja TIDAK cukup untuk AC ini: dialog yang muncul lalu tertutup di frame yang sama
+  tetap akan lolos.
+- `pos_margin_threshold_orderline_warning_tour` — assert teks warning, nominal yang ditampilkan,
+  warna merah yang benar-benar ter-render (bukan sekadar ada class `text-danger`), plus line kontrol
+  di atas minimum yang TIDAK boleh ditandai.
+
+**Hasil:** `0 failed, 0 error(s) of 4 tests` — keempat tour `pos_margin_threshold` (2 lama + 2 baru)
+lolos bersih, real Chrome, `--test-enable`, database `pos_margin_sale_migration_20_bsl018`.
+
+**⚠️ VERSI SEBELUMNYA BELUM PUNYA INI** (per konvensi `CLAUDE.md` §"Konvensi pencatatan"):
+branch **`migration/19.0` dan `migration/18.0` TIDAK punya kedua tour ini maupun method test-nya**.
+19.0 dan 18.0 tetap **tanpa coverage otomatis** untuk kedua perilaku tersebut. Jangan diasumsikan
+ikut tertutup — kalau diinginkan di sana, harus di-backport eksplisit. Catatan yang sama ditulis
+inline di kedua file test supaya terbaca tanpa membuka dokumen ini.
+
+---
+
+**Temuan sampingan 1 — fixture: `'taxes_id': []` TIDAK menghapus pajak default.** Fixture
+`setUpClass` sejak 18.0 memberi komentar `minimum_sale_price = 10 * 1.5 = 15`, padahal nilai
+sebenarnya **17.25** — produk tetap membawa pajak sale default 15% milik fixture akuntansi, karena
+`'taxes_id': []` tidak membersihkannya. Tidak pernah terlihat karena semua tour lama menjual di harga
+5, yang ada di bawah 15 MAUPUN 17.25, dan tidak satupun pernah meng-assert nominalnya. Test
+`BSL-018` adalah yang pertama meng-assert angka itu.
+
+**Temuan sampingan 2 — stored `minimum_sale_price_with_tax` bisa tertinggal saat `taxes_id` diubah
+DI DALAM `setUpClass`.** Terobservasi dua kali, konsisten:
+- `taxes_id` di-clear (`Command.clear()`) → `taxes_id` terbaca `[]` tapi stored value tetap `17.25`
+  (seharusnya `15.00`);
+- `taxes_id` di-set ke satu pajak 15% → `taxes_id` terbaca satu pajak, tapi stored value `19.5`
+  (= `15 × 1.30`, seolah dua pajak 15% masih dijumlahkan).
+**BUKAN bug modul — sudah diverifikasi langsung.** Di transaksi ORM biasa (`odoo-bin shell`, database
+yang sama), membuat produk dengan pajak lalu meng-clear-nya me-recompute dengan benar:
+`17.25 → 15.00`. Jadi ini artefak interaksi penulisan `taxes_id` di dalam `setUpClass` HttpCase,
+bukan cacat pada `_compute_minimum_sale_price_with_tax` (yang `@api.depends`-nya justru sudah
+dilengkapi di `MF-45`). **Konsekuensi praktis yang dipakai:** fixture tidak lagi mengubah `taxes_id`
+setelah `create()`, dan test tidak meng-assert angka absolut sama sekali.
+
+**Temuan sampingan 3 — `.orderline.selected` di POS 20.0 ter-render dengan warna yang SAMA dengan
+`.text-danger`.** Ini sempat membuat assert warna gagal dua kali secara menyesatkan: line yang baru
+ditambahkan otomatis jadi `selected`, jadi membandingkan warna line ber-flag dengan line kontrol yang
+kebetulan sedang terpilih menghasilkan "keduanya merah" dan tidak membuktikan apapun. Tour sekarang
+memilih dulu line yang ber-flag (`ProductScreen.clickLine`) supaya line kontrol kembali netral.
+**Pelajaran untuk test POS berikutnya:** jangan bandingkan styling terhadap orderline tanpa
+memastikan state `selected`-nya, dan jangan pilih elemen pembanding dengan
+`li.orderline:not(.text-danger)` — POS merender orderline di lebih dari satu tempat, jadi
+`querySelector` bisa mengembalikan line dari render root lain. Identifikasi line lewat nama produk.
+
+**Desain assert yang dipakai (akibat temuan 1 & 2).** Test **tidak** memakai angka ajaib. Tour
+meng-assert invarian yang memang jadi inti `BSL-018`: baris warning menampilkan nominal nyata,
+positif, dan **strictly lebih besar dari harga jual line** (5) — warning memang hanya muncul saat
+harga < minimum. Itu tetap menangkap regresi yang layak ditangkap (field salah, `0.00`, harga satuan
+yang dipantulkan balik, format rusak) tanpa terikat perilaku pajak fixture. Sisi Python menjaga
+prakondisi `5 < minimum < 50`, sehingga pergeseran fixture gagal dengan pesan jelas, bukan sebagai
+timeout tour yang membingungkan.
+
+**Keputusan pemilik modul:** `BSL-018` ditutup (keputusan dev 2026-09-23, "lakukan"). Tidak ada
+keputusan lanjutan yang dibutuhkan untuk ketiga temuan sampingan — semuanya sudah ditangani di kode
+test atau murni catatan proses.
 
 ---
 

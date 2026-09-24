@@ -42,16 +42,17 @@ eksplisit — ini BUKAN blocker environment, murni keputusan desain yang ditunda
 > **ADDENDUM (2026-09-23, sesi rerun TERISOLASI — mengubah verdict sebagian):** S-19 (`AC-03-03`,
 > jalur decline dialog POS) **SUDAH dieksekusi live dan LULUS** di sesi terpisah, jadi item ini TIDAK
 > lagi `[PERLU-KEPUTUSAN]` — lihat S-19 di bawah untuk bukti lengkap (termasuk positive control).
-> Sisa item yang masih butuh keputusan dev tinggal **2**: S-20 (`BSL-018`, keputusan desain
-> carry-forward 3x — bukan blocker environment) dan bagian visual S-13 (`AC-05-01`, rendering CSS
-> combo `MF-34`).
+> **UPDATE 2026-09-24:** S-13 dan S-20 JUGA sudah ditutup. S-13 diverifikasi visual live (combo
+> product nyata) dan S-20 (`BSL-018`) ditutup lewat DUA tour test otomatis baru yang lolos bersih.
+> **Tidak ada lagi item `[PERLU-KEPUTUSAN]` di dokumen ini — verdict naik jadi ✅ Lulus.**
 > **Root cause `MF-46` juga akhirnya ditemukan** dan mengoreksi diagnosis di paragraf-paragraf di atas:
 > penyebabnya BUKAN kontensi Postgres/paralelisme (itu gejala bersamaan yang kebetulan ada), melainkan
 > **browser tool tertentu** — pada sesi rerun ini, server+database yang SAMA PERSIS merender webclient
 > 20.0 dengan sempurna di Playwright MCP (`bodyLen` 27635, `odoo.isReady=true`) di saat yang sama
 > Browser pane bawaan tetap `bodyLen: 15`. Lihat `FINDINGS.md` `MF-46 (lanjutan 2)`.
 
-**Verdict: Lulus Bersyarat** — lihat §Verdict untuk detail lengkap 3 item yang perlu keputusan dev.
+**Verdict: ✅ Lulus** (per 2026-09-24, naik dari "Lulus Bersyarat" setelah ketiga item ditutup) —
+lihat §Verdict untuk rinciannya.
 
 ---
 
@@ -405,39 +406,33 @@ Login POS -> Open Register -> klik produk -> klik "Payment" -> dialog muncul -> 
 di atas manual-interaktif, jadi tidak menjaga regresi masa depan. Rekomendasi Opsi 3 di ESCALATION
 lama (tulis tour test decline) tetap relevan sebagai follow-up, tapi TIDAK lagi memblokir Step 10.
 
-### S-20: POS — TIDAK ADA dialog sama sekali saat semua line di atas minimum (`BSL-018`, carry-forward 3x) `[RISIKO — keputusan desain ditunda 3 project migrasi berturut-turut]`
+### S-20: POS — TIDAK ADA dialog sama sekali saat semua line di atas minimum (`BSL-018`) — **DITUTUP**
 **Level:** Negative
 **Precondition:** Order dengan SEMUA line di atas `minimum_sale_price_with_tax` masing-masing
-**Mode eksekusi:** AI-interaktif — tidak dicoba (blocker sama, `MF-46`), TAPI ini BUKAN masalah
-environment — ini murni keputusan desain yang genuinely belum pernah diambil dev di 3 project migrasi
-berturut-turut (17.0→18.0, 18.0→19.0, 19.0→20.0).
+**Mode eksekusi:** **Tour test otomatis BARU** (`pos_margin_threshold_no_dialog_above_minimum_tour`,
+real Chrome, `--test-enable`) — dev memilih Opsi 1 dari ESCALATION lama (tulis test, jangan
+carry-forward keempat kalinya), dieksekusi 2026-09-23/24.
 **Expected:** Nol dialog/popup apapun, termasuk tidak ada flash/render sekilas.
-**Actual:** Tidak ada test otomatis (Step 9 eksplisit mencatat ini sebagai carry-forward BELUM
-diputuskan). Desk Review Step 8 menilai "behaviorally masuk akal Match" dari struktur kode (tidak ada
-jalur `Dialog` yang dipanggil tanpa kondisi below-minimum) tapi Step 8 SENDIRI merekomendasikan
-eskalasi eksplisit ke dev di gate ini (§G rekomendasi 3), bukan carry-forward lagi.
-**Status:** [ ] Pass / [ ] Fail — **Pending**
-**Provenance:** `[PERLU-KEPUTUSAN]`
-```
-ESCALATION — Migrasi 20.0
-Step/Fase: Step 10 (QA Testing)
-Modul: pos_margin_threshold
-Isu: BSL-018 ("nol dialog saat semua line di atas minimum") sudah dilewati TANPA keputusan eksplisit
-dev di TIGA project migrasi berturut-turut (17.0→18.0, 18.0→19.0, 19.0→20.0). Step 8 & Step 9 project
-INI sudah eksplisit merekomendasikan supaya TIDAK di-carry-forward keempat kalinya secara diam-diam.
-Opsi:
-  1) Tulis Tour/test otomatis baru SEKARANG (Step 9 addendum) yang assert nol dialog — menutup gap
-     permanen — Risiko: Rendah, effort kecil-menengah
-  2) Terima risiko residual secara SADAR dan EKSPLISIT untuk keempat kalinya (didokumentasikan sebagai
-     keputusan, bukan silent carry-forward) — Risiko: Rendah secara teknis, tapi pola proses yang
-     kurang sehat kalau terus berulang di project migrasi berikutnya
-  3) Verifikasi manual sekali (dev klik langsung di UI, disaksikan) sebagai penutup Step 10 —
-     Risiko: Rendah, tapi tidak reusable untuk regresi masa depan
-Rekomendasi: Opsi 1 — modul ini sudah 3x lolos tanpa insiden nyata (tidak ada bug report terkait),
-tapi coverage test yang genuinely kosong untuk "hal yang HARUS TIDAK terjadi" adalah risiko struktural
-yang murah untuk ditutup permanen sekarang.
-Perlu keputusan user sebelum lanjut.
-```
+**Actual:** **PASS.** Tour menjual produk di harga 50 (di atas minimum, dijaga prakondisi Python
+`5 < minimum < 50`), klik "Pay", lalu meng-assert tiga hal: (1) langsung sampai di
+`.pos-content .payment-screen`; (2) `body:not(:has(.modal))` saat itu; (3) **tidak ada node `.modal`
+yang PERNAH disisipkan** selama proses — dipantau `MutationObserver` yang dipasang SEBELUM klik Pay.
+Poin (3) yang membuat AC ini genuinely tertutup: assert "payment screen tampil" saja tidak cukup,
+karena dialog yang muncul lalu tertutup di frame yang sama tetap akan lolos, padahal AC-nya eksplisit
+menyebut "termasuk tidak ada flash/render sekilas".
+**Hasil run:** `0 failed, 0 error(s) of 4 tests` — keempat tour `pos_margin_threshold` (2 lama +
+2 baru) lolos bersih di database `pos_margin_sale_migration_20_bsl018`.
+**Status:** [x] Pass
+**Provenance:** `[DIKONFIRMASI]` — test otomatis, bukan klik manual, jadi juga menjaga regresi ke depan.
+**⚠️ Versi sebelumnya belum punya ini:** branch `migration/19.0` dan `migration/18.0` TIDAK punya
+tour maupun method test ini; 18.0/19.0 tetap tanpa coverage otomatis untuk perilaku ini. Jangan
+diasumsikan ikut tertutup — harus di-backport eksplisit kalau diinginkan di sana. Lihat `FINDINGS.md`
+`MF-48`.
+**Bagian kedua `BSL-018` ikut ditutup di sini:** "assert teks/warna warning orderline secara
+terpisah" (bukan sekadar menyimpulkan "tidak crash" dari tour dialog) sekarang punya tour sendiri,
+`pos_margin_threshold_orderline_warning_tour` — assert teks warning, nominalnya, warna merah yang
+benar-benar ter-render (bukan cuma ada class `text-danger`), plus line kontrol di atas minimum yang
+TIDAK boleh ditandai. Juga Pass di run yang sama.
 
 ### S-21: Cek multi-dialog dari satu aksi — N/A, dikonfirmasi tidak ada kasus
 **Level:** Negative
@@ -470,55 +465,55 @@ sudah ditandai N/A berdasar analisis ini.
 |---|---|---|
 | `[DIKONFIRMASI]` (RPC/ORM live execution, disclosed non-visual) | 3 | S-09, S-10, S-11 |
 | `[DIKONFIRMASI]` (UI live execution penuh, Playwright, rerun terisolasi 2026-09-23) | 2 | S-19, S-13 (bagian visual — lihat ADDENDUM) |
+| `[DIKONFIRMASI]` (tour test otomatis BARU, `BSL-018`, 2026-09-23/24) | 1 | S-20 |
 | `[HASIL-BACA]` (ref Step 8/9, sebagian dikorroborasi RPC/RMV) | 14 | S-01, S-02, S-03, S-04, S-05, S-06, S-07, S-08, S-14, S-15, S-16, S-17, S-18, S-21 |
 | `[HASIL-BACA-MURNI]` | 1 | S-12 (Pending, Level Detail, risiko rendah, tidak wajib eskalasi) |
-| `[PERLU-KEPUTUSAN]` | 1 | S-20 |
+| `[PERLU-KEPUTUSAN]` | 0 | — (S-20 ditutup lewat tour test baru; tidak ada item tersisa) |
 
-**Catatan transparansi (diperbarui 2026-09-23 sesi rerun):** S-19 SEKARANG ditandai Pass
-`[DIKONFIRMASI]` — dieksekusi live penuh lewat UI Playwright di environment terisolasi, termasuk
-positive control. Tinggal S-20 yang `[PERLU-KEPUTUSAN]`. S-20 adalah keputusan desain yang genuinely belum pernah diambil,
-independen dari masalah environment. S-12 (`[HASIL-BACA-MURNI]`, Level Detail) sengaja dibiarkan
+**Catatan transparansi (diperbarui 2026-09-24):** S-19 dan S-13 ditandai Pass `[DIKONFIRMASI]` lewat
+eksekusi live UI Playwright di environment terisolasi (S-19 termasuk positive control). **S-20
+(`BSL-018`) juga SUDAH ditutup** — bukan lewat klik manual, tapi lewat DUA tour test otomatis baru,
+sehingga sekaligus menjaga regresi ke depan. Tidak ada lagi skenario `[PERLU-KEPUTUSAN]` di dokumen ini. S-12 (`[HASIL-BACA-MURNI]`, Level Detail) sengaja dibiarkan
 Pending sesuai aturan, TIDAK dieskalasi `[PERLU-KEPUTUSAN]` karena risikonya rendah dan levelnya bukan
 Smoke/Negative.
 
 ## Loop-back
 
-Tidak ada skenario berstatus Fail eksplisit (semua yang bisa dievaluasi = Pass). Setelah rerun
-terisolasi 2026-09-23, tinggal **1** skenario Negative Pending (`[PERLU-KEPUTUSAN]`): S-20. Itu BUKAN
-kegagalan — perlu keputusan desain dev (lihat blok ESCALATION di S-20), bukan balik ke Step 9 untuk
-fix kode (tidak ada bug ditemukan, baik di sesi Step 10 asli maupun di rerun ini).
+Tidak ada skenario berstatus Fail (semua yang dievaluasi = Pass), dan **tidak ada lagi skenario
+Pending `[PERLU-KEPUTUSAN]`** setelah `BSL-018` ditutup 2026-09-24. Tidak perlu balik ke Step 9 untuk
+fix kode — tidak ada bug modul yang ditemukan, baik di sesi Step 10 asli, di rerun terisolasi, maupun
+saat menulis test `BSL-018`.
 
 ## Verdict
 
-- [ ] ✅ Lulus
-- [x] ⚠️ **Lulus Bersyarat** — **1** item butuh keputusan dev sebelum Step 11 ditutup penuh
-  (turun dari 3: S-19 dan S-13 sudah SELESAI, lihat di bawah):
-  0. ~~**S-19 (`AC-03-03`, decline dialog)**~~ — **SELESAI 2026-09-23**, dieksekusi live penuh di sesi
-     rerun terisolasi (Playwright, termasuk positive control), status sekarang `[DIKONFIRMASI]`/Pass.
-     Tidak lagi butuh keputusan dev. Satu-satunya sisa (non-blocking): jalur ini masih belum punya
-     tour test otomatis untuk menjaga regresi masa depan.
-  1. **S-20 (`AC-03-05`/`BSL-018`, nol dialog carry-forward 3x)** — keputusan desain yang genuinely
-     ditunda 3 project migrasi berturut-turut, direkomendasikan diputuskan SEKARANG (lihat ESCALATION).
-  2. ~~**S-13 (`AC-05-01`, styling combo `MF-34`)**~~ — **SELESAI 2026-09-23**, diverifikasi visual live
-     dengan combo product sungguhan (Playwright). Status `[DIKONFIRMASI]`/Pass. Tidak lagi butuh
-     keputusan dev. Bonus: verifikasi ini MENGOREKSI klaim dampak `MF-34` (styling combo ternyata
-     sudah disediakan NATIVE sejak 19.0, jadi fix ini TIDAK mengubah behavior user — parity justru
-     terjaga). Lihat ADDENDUM S-13 dan `FINDINGS.md` `MF-34` §KOREKSI.
+- [x] ✅ **Lulus** — 3 item yang semula bersyarat semuanya sudah ditutup dengan bukti eksekusi nyata:
+  1. ~~**S-19 (`AC-03-03`, decline dialog)**~~ — **SELESAI 2026-09-23.** Dieksekusi live penuh
+     (Playwright, environment terisolasi), termasuk positive control yang membuktikan alur berhenti
+     karena decline, bukan karena tombol rusak. `[DIKONFIRMASI]`/Pass.
+  2. ~~**S-20 (`AC-03-05`/`BSL-018`, nol dialog)**~~ — **SELESAI 2026-09-24.** Dev memilih Opsi 1
+     (tulis test, jangan carry-forward keempat kalinya). DUA tour otomatis baru ditulis dan lolos
+     (`0 failed, 0 error(s) of 4 tests`). Berbeda dari dua item lain, penutupan ini **juga menjaga
+     regresi ke depan**, bukan cuma membuktikan sekali. Lihat `FINDINGS.md` `MF-48`.
+  3. ~~**S-13 (`AC-05-01`, styling combo `MF-34`)**~~ — **SELESAI 2026-09-23.** Diverifikasi visual
+     live dengan combo product sungguhan. Sekaligus MENGOREKSI klaim dampak `MF-34`: styling combo
+     ternyata sudah disediakan NATIVE sejak 19.0, jadi fix ini TIDAK mengubah behavior user — parity
+     justru terjaga. Lihat ADDENDUM S-13 dan `FINDINGS.md` `MF-34` §KOREKSI.
 
-  **Tidak ada satupun dari item-item ini adalah gap kode BARU** — semuanya sudah diketahui/diprediksi
-  sejak Step 8/9 (kecuali detail teknis blocker `MF-46` yang baru muncul sesi ini). 34 dari 37 AC
-  (`92%`) tertutup `[DIKONFIRMASI]`/`[HASIL-BACA]` dengan bukti solid (test otomatis PASS, RPC/ORM
-  live execution, atau Desk Review Step 8 yang sudah divalidasi gate lulus).
+  **Tidak ada gap kode BARU yang ditemukan sepanjang Step 10** — yang ditutup adalah gap BUKTI dan
+  gap COVERAGE, bukan cacat modul. 37 dari 37 AC kini tertutup `[DIKONFIRMASI]`/`[HASIL-BACA]` dengan
+  bukti solid (test otomatis PASS, eksekusi live UI/RPC/ORM, atau Desk Review Step 8 yang sudah lulus
+  gate).
 - [ ] ❌ Ada kegagalan
 
-**Rekomendasi konkret ke dev (langkah bernomor, per instruksi CLAUDE.md "beri langkah bernomor
-konkret"):**
-1. Baca 2 blok `ESCALATION` di S-19/S-20 di atas, putuskan opsi untuk masing-masing.
-2. Kalau memilih "tulis tour test baru" untuk S-19/S-20/S-13 (rekomendasi dokumen ini): jadwalkan
-   sesi Step 9 addendum (mirip pola `MF-42`/`AC-02-01` sebelumnya di Step 9 project ini), BUKAN
-   dikerjakan sebagai bagian Step 10 lagi.
-3. Kalau mau retry live-browser murni untuk S-19/S-13 bagian visual: jalankan Step 10 lanjutan di
-   sesi Playwright yang TIDAK dipakai sibling manapun (jadwalkan bergiliran dengan
-   `sale_margin_threshold`/`pin_message`, atau tunggu ketiganya selesai dulu).
-4. `git push -u origin migration/20.0` tetap milik dev sepenuhnya (Mode Git, AI tidak pernah push) —
-   tidak berubah dari status sebelumnya.
+**Sisa residual yang layak ditindaklanjuti (TIDAK blocking Step 11, bukan `[PERLU-KEPUTUSAN]`):**
+jalur decline POS (S-19) dan dedup kolom `MF-37` masih terverifikasi manual saja — keduanya belum
+punya test otomatis, jadi tidak ada yang menjaga regresinya ke depan. Pola `BSL-018` barusan
+menunjukkan menutup gap seperti ini murah; direkomendasikan dikerjakan sebagai Step 9 addendum,
+bukan diselipkan lagi ke Step 10.
+
+**Langkah konkret berikutnya untuk dev:**
+1. Lanjut ke **Step 11 (UAT Sign-off)** — Step 10 modul ini sudah lulus tanpa syarat.
+2. Opsional sebelum rilis: jadwalkan Step 9 addendum untuk 2 test regresi di atas (decline POS,
+   dedup kolom `MF-37`).
+3. `git push -u origin migration/20.0` tetap sepenuhnya milik dev (Mode Git, AI tidak pernah push) —
+   branch ini belum pernah di-push, remote-nya belum ada.

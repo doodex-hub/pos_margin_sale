@@ -282,18 +282,10 @@ registry.category("web_tour.tours").add("pos_margin_threshold_orderline_warning_
                         );
                     }
                     if (channels(control).join() === [r, g, b].join()) {
-                        const dump = [...document.querySelectorAll("li.orderline")].map((li) => ({
-                            cls: li.className,
-                            color: getComputedStyle(li).color,
-                            parent: li.parentElement?.className,
-                            parentColor: getComputedStyle(li.parentElement).color,
-                            txt: li.innerText.replace(/\n/g, " | ").slice(0, 60),
-                        }));
                         throw new Error(
                             "BSL-018: flagged and unflagged orderlines render the same colour (" +
                                 getComputedStyle(control).color +
-                                "), so the decoration is not actually conditional. Lines: " +
-                                JSON.stringify(dump)
+                                "), so the decoration is not actually conditional"
                         );
                     }
                 },
