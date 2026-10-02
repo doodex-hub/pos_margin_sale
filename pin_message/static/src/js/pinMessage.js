@@ -4,7 +4,6 @@ import { messageActionsRegistry } from "@mail/core/common/message_actions";
 
 messageActionsRegistry.add("pins", {
     condition: (component) => {
-        console.log(component.message.message_type)
         if (!component.message.canAddReaction(component.props.thread)) {
             return false;
         }
@@ -22,7 +21,9 @@ messageActionsRegistry.add("pins", {
     // Odoo 18.0 message actions carry the full icon class, family prefix included ("fa fa-reply"
     // in core); 17.0 supplied the "fa" base class from the template.
     icon: "fa fa-thumb-tack",
-    title: _t("Pin"),
+    // This action pins/unpins from the actions bar. The purple marker next to the author
+    // (pinnedMessages.xml) only exists while pinned and unpins on click.
+    title: (component) => (component.props.message.is_pinned ? _t("Unpin") : _t("Pin")),
     onClick: (component) => component.onClickPin(),
     sequence: 15,
 });
