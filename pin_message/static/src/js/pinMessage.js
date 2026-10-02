@@ -4,7 +4,6 @@ import { messageActionsRegistry } from "@mail/core/common/message_actions";
 
 messageActionsRegistry.add("pins", {
     condition: (component) => {
-        console.log(component.message.message_type)
         if (!component.message.canAddReaction(component.props.thread)) {
             return false;
         }
