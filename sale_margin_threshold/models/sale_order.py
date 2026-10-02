@@ -21,12 +21,14 @@ class SaleOrder(models.Model):
                 record.is_rental_order_installed_true = False
 
     def action_confirm(self):
-
-        if self.is_rental_order_installed_true:
-            return super(SaleOrder, self).action_confirm()  
+        # `self` can hold several orders (list view > Action > Confirm), so the computed flag
+        # is read per record. Rental orders skip the price check; it runs once over the rest.
+        orders_to_check = self.filtered(lambda order: not order.is_rental_order_installed_true)
+        if not orders_to_check:
+            return super(SaleOrder, self).action_confirm()
 
         skip_check_price = self.env.context.get('skip_check_price')
-        check_product = self.check_product_price()
+        check_product = orders_to_check.check_product_price()
         # MF-40: ir.config_parameter.get_param()/set_param() removed entirely in native 20.0,
         # replaced by typed get_bool()/get_str()/etc (this field is Boolean,
         # config_parameter=...). Confirmed install-succeeds-but-crashes-at-runtime.
