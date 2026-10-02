@@ -14,7 +14,7 @@
     'website': "https://www.doodex.net",
     'license': "AGPL-3",
     'category': 'Point of Sale',
-    'version': '20.0.1.0',
+    'version': '20.0.1.0.1',
 
     'depends': [
         'base',
