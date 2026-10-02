@@ -6,6 +6,7 @@
 
 **Modul:** pos_margin_threshold, sale_margin_threshold, pin_message
 **Migrasi:** 19.0 → 20.0
+**Update pasca-rilis (2026-10-02):** hotfix `20.0.1.0.1` untuk `pos_margin_threshold` dan `sale_margin_threshold` (`pin_message` TIDAK disentuh, MF-47 masih menunggu): `MF-20` ternyata KRITIS (grup margin mengimplikasikan `base.group_system`), `MF-08`/`MF-21`/`MF-23`/`MF-24`/`MF-27` diperbaiki, `MF-26`/`MF-29`/`MF-30`/`MF-31` statusnya diselaraskan dengan kode, `MF-49`/`MF-50` BARU.
 **Terakhir update:** 2026-09-23 (Step 9, `MF-40`..`MF-44` — rangkaian bug ditemukan begitu test suite
 + Tour test (real Chrome) benar-benar dijalankan untuk pertama kali; `MF-40`/`MF-41` RESOLVED (bug
 modul), `MF-42` WORKAROUND (bug native), `MF-43` DAN `MF-44` KEDUANYA RESOLVED — root cause final:
@@ -26,18 +27,18 @@ belum ada keputusan dev, tidak blocking gate).
 
 | ID | Judul | Ditemukan di Step | Tag | Prioritas | Status |
 |---|---|---|---|---|---|
-| MF-20 | [sale_margin_threshold] `security/groups.xml` `implied_ids` diisi kategori bukan grup | Dibawa dari project 18.0→19.0, Step 8 | `[DIWARISI-SOURCE]` | Sedang | 🔵 Terbuka — belum ada keputusan user |
-| MF-21 | [sale_margin_threshold] `_compute_warning` (`is_less_minimum_sale`) tanpa `@api.depends` | Dibawa dari project 18.0→19.0, Step 8 | `[DIWARISI-SOURCE]` | Sedang | 🔵 Terbuka — belum ada keputusan user |
-| MF-23 | [pos_margin_threshold] `_compute_warning` (`is_less_minimum_sale`), instance terpisah dari MF-21 | Dibawa dari project 18.0→19.0, Step 8 | `[DIWARISI-SOURCE]` | Sedang | 🔵 Terbuka — belum ada keputusan user |
-| MF-24 | [pos_margin_threshold] `list_price` di-`position="replace"` bukan `attributes`, diam-diam menghapus atribut core (§Detail: ada instance KEDUA baru ditemukan Step 1) | Dibawa dari project 18.0→19.0, Step 8 | `[DIWARISI-SOURCE]` | Sedang | 🔵 Terbuka — belum ada keputusan user |
-| MF-08 | [sale_margin_threshold] `action_confirm()` singleton-assumption — **mekanisme dikoreksi Step 1: hard crash, bukan silent skip** | Dibawa dari project 17.0→18.0, dikonfirmasi tetap ada di 18.0→19.0, mekanisme dikoreksi Step 1 project ini | `[DIWARISI-SOURCE]` | Tinggi | 🔵 Terbuka — **[KEPUTUSAN USER 2026-08-27, project 18.0→19.0]: dipertahankan**, jangan diperbaiki tanpa keputusan baru |
+| MF-20 | [sale_margin_threshold] `security/groups.xml` `implied_ids` diisi kategori bukan grup | Dibawa dari project 18.0→19.0, Step 8 | `[DIWARISI-SOURCE]` | Sedang | ✅ RESOLVED (2026-10-02) — **KRITIS, bukan Sedang**: grup mengimplikasikan `base.group_system`; relasi dikosongkan, `20.0.1.0.1` (lihat MF-49) |
+| MF-21 | [sale_margin_threshold] `_compute_warning` (`is_less_minimum_sale`) tanpa `@api.depends` | Dibawa dari project 18.0→19.0, Step 8 | `[DIWARISI-SOURCE]` | Sedang | ✅ RESOLVED (2026-10-02) — `@api.depends` ditambahkan, `20.0.1.0.1` |
+| MF-23 | [pos_margin_threshold] `_compute_warning` (`is_less_minimum_sale`), instance terpisah dari MF-21 | Dibawa dari project 18.0→19.0, Step 8 | `[DIWARISI-SOURCE]` | Sedang | ✅ RESOLVED (2026-10-02) — `@api.depends` ditambahkan, `20.0.1.0.1` |
+| MF-24 | [pos_margin_threshold] `list_price` di-`position="replace"` bukan `attributes`, diam-diam menghapus atribut core (§Detail: ada instance KEDUA baru ditemukan Step 1) | Dibawa dari project 18.0→19.0, Step 8 | `[DIWARISI-SOURCE]` | Sedang | ✅ RESOLVED (2026-10-02) — `position="attributes"`, `20.0.1.0.1` |
+| MF-08 | [sale_margin_threshold] `action_confirm()` singleton-assumption — **mekanisme dikoreksi Step 1: hard crash, bukan silent skip** | Dibawa dari project 17.0→18.0, dikonfirmasi tetap ada di 18.0→19.0, mekanisme dikoreksi Step 1 project ini | `[DIWARISI-SOURCE]` | Tinggi | ✅ RESOLVED (2026-10-02) — keputusan 2026-08-27 "dipertahankan" DIBALIK atas permintaan user; batch-safe, `20.0.1.0.1` |
 | MF-25 | [pos_margin_threshold] Instance KEDUA `position="replace"` (pola sama `MF-24`) di `lst_price`, `product_variant_easy_edit_view_margin_sale` — belum pernah dicatat | Step 1, project 19.0→20.0 (2026-09-21) | `[DIWARISI-SOURCE]` | Sedang | ✅ RESOLVED (2026-09-23, Step 8 Code Review) — moot: record yang mengandung instance ini dihapus total oleh rewrite `MF-29`/`DIFF-03` (record baru inherit `product.product_product_tree_view` pakai `position="attributes"`, bukan `replace`) — lihat `08_review/pos_margin_threshold/08_CODE_REVIEW.md` §E |
-| MF-26 | [sale_margin_threshold] Singleton-assumption bug KEDUA (beda method dari `MF-08`) di `_compute_is_rental_order_installed` | Step 1, project 19.0→20.0 (2026-09-21) | `[DIWARISI-SOURCE]` | Sedang | 🔵 Terbuka — baru ditemukan, belum ada keputusan user |
-| MF-27 | [sale_margin_threshold] `position="replace"` pada `list_price`/`lst_price` (pola sama `MF-24`/`MF-25`, modul berbeda) — belum pernah dicatat | Step 1, project 19.0→20.0 (2026-09-21) | `[DIWARISI-SOURCE]` | Sedang | 🔵 Terbuka — baru ditemukan, belum ada keputusan user |
+| MF-26 | [sale_margin_threshold] Singleton-assumption bug KEDUA (beda method dari `MF-08`) di `_compute_is_rental_order_installed` | Step 1, project 19.0→20.0 (2026-09-21) | `[DIWARISI-SOURCE]` | Sedang | ✅ RESOLVED (20.0 saja, keputusan dev; commit `f7720b8`) — status tabel diselaraskan dengan entri detail |
+| MF-27 | [sale_margin_threshold] `position="replace"` pada `list_price`/`lst_price` (pola sama `MF-24`/`MF-25`, modul berbeda) — belum pernah dicatat | Step 1, project 19.0→20.0 (2026-09-21) | `[DIWARISI-SOURCE]` | Sedang | ✅ RESOLVED (2026-10-02) — `position="attributes"` di `sale_margin_threshold`, `20.0.1.0.1` |
 | MF-28 | [pin_message] native 20.0 `mail.message` tidak punya `_to_store()` lagi — diganti `_store_message_fields()`/`res.attr("is_pinned")` | Step 1, solusi Step 2, **diterapkan & diverifikasi 2026-09-22** | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED — `is_pinned` dikonfirmasi tersimpan+toggle benar via UI nyata |
-| MF-29 | [pos_margin_threshold][sale_margin_threshold] view `product.product_variant_easy_edit_view` DIHAPUS TOTAL di native 20.0 — **keputusan desain SUDAH DIAMBIL dev**: pindah ke kolom baru di `product_product_tree_view` (list Product Variants, native 20.0 sudah `editable="bottom"`/`multi_edit="1"`) | Step 2, project 19.0→20.0 (2026-09-21) | `[GAP-MIGRASI]` | Tinggi | 🟡 Keputusan diambil (2026-09-21) — siap dieksekusi Step 3/6, plus item review visual Step 10 |
-| MF-30 | [pos_margin_threshold][sale_margin_threshold] `ir.model.access.csv`→`ir.access.csv` — model lama dihapus total, kedua modul akan gagal install kalau tidak direname+reformat | Step 2, project 19.0→20.0 (2026-09-21) | `[GAP-MIGRASI]` | Tinggi | 🟡 Fix mekanis diketahui — rename file + reformat 1 baris ke skema `operation`/`domain` |
-| MF-31 | [pos_margin_threshold] Anchor inherit `stock_account.view_category_property_form_stock` pindah jadi `account.view_category_property_form` | Step 2, project 19.0→20.0 (2026-09-21) | `[GAP-MIGRASI]` | Sedang | 🟡 Fix mekanis diketahui — ganti `ref=` satu baris, field target tidak berubah |
+| MF-29 | [pos_margin_threshold][sale_margin_threshold] view `product.product_variant_easy_edit_view` DIHAPUS TOTAL di native 20.0 — **keputusan desain SUDAH DIAMBIL dev**: pindah ke kolom baru di `product_product_tree_view` (list Product Variants, native 20.0 sudah `editable="bottom"`/`multi_edit="1"`) | Step 2, project 19.0→20.0 (2026-09-21) | `[GAP-MIGRASI]` | Tinggi | ✅ Diterapkan di kode rilis 20.0 (diverifikasi 2026-10-02: record `product_product_tree_view_margin_sale` mewarisi `product.product_product_tree_view`; tidak ada lagi `inherit_id` ke `product_variant_easy_edit_view`; modul terpasang dan di-upgrade tanpa error di Docker 20). UAT visual tidak diulang |
+| MF-30 | [pos_margin_threshold][sale_margin_threshold] `ir.model.access.csv`→`ir.access.csv` — model lama dihapus total, kedua modul akan gagal install kalau tidak direname+reformat | Step 2, project 19.0→20.0 (2026-09-21) | `[GAP-MIGRASI]` | Tinggi | ✅ Diterapkan di kode rilis 20.0 (diverifikasi 2026-10-02: `security/ir.access.csv` ada di kedua modul, `ir.model.access.csv` tidak ada, manifest merujuk `ir.access.csv`; terpasang tanpa error) |
+| MF-31 | [pos_margin_threshold] Anchor inherit `stock_account.view_category_property_form_stock` pindah jadi `account.view_category_property_form` | Step 2, project 19.0→20.0 (2026-09-21) | `[GAP-MIGRASI]` | Sedang | ✅ Diterapkan di kode rilis 20.0 (diverifikasi 2026-10-02: anchor `account.view_category_property_form` dipakai, `stock_account.view_category_property_form_stock` tidak ada; terpasang tanpa error) |
 | MF-32 | [pin_message] `messageActionsRegistry` berubah lagi di 20.0 — 3 breaking point (getter `canAddReaction`, filter `IS_ACTION_DEFINITION_SYM`, FontAwesome→Odoo Icons `push_pin`) | Step 2, **diterapkan & diverifikasi 2026-09-22** | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED — action "Pin" dikonfirmasi muncul+berfungsi via UI nyata (badge count benar) |
 | MF-33 | [pin_message] Crash `Chatter`/`Message` di 20.0 — 3 lapis bug (import path lama, bare identifier tidak auto-resolve ke `this.xxx` di node `t-inherit-mode="extension"`, dan salah ketik `--` di komentar XML) — **SEMUA DIPERBAIKI & DIVERIFIKASI** (2026-09-22) | Step 2 (risiko teoretis), 3 crash nyata ditemukan+diperbaiki via smoke-test Docker 2026-09-22 | `[GAP-MIGRASI]` | Tinggi | ✅ RESOLVED — diverifikasi bersih di browser (0 error console terkait modul) |
 | MF-34 | [pos_margin_threshold] `line.comboParent` (styling combo di `orderline.xml`) — typo lama sejak branch `17.0` (seharusnya `combo_parent_id`) | Step 2, project 19.0→20.0 (2026-09-21); blocker infrastruktur resolved + cross-check tuntas 2026-09-22 | `[DIWARISI-SOURCE]` | Rendah | ✅ RESOLVED (2026-09-22) — **keputusan dev: perbaiki** (bukan pertahankan) — `line.comboParent` → `line.combo_parent_id`, styling combo-child aktif untuk pertama kali. Diverifikasi XML well-formed + module update bersih; verifikasi visual live di POS ditunda (butuh chart of accounts + config POS, belum tersedia di DB QA ini) |
@@ -53,6 +54,8 @@ belum ada keputusan dev, tidak blocking gate).
 | MF-43 | [pos_margin_threshold] Tour `pos_margin_threshold_below_minimum_confirm_tour`/`..._blocked_tour` sempat gagal — dialog "Price unit less than minimum price" (`PosStore.pay()` patch) kadang tidak muncul. Root cause final: `setUpClass()` test kurang `env.flush_all()` setelah `create()` produk ber-compute-chain — lihat detail lengkap di bawah | Ditemukan Step 9 (Dev Testing), 2026-09-22 | `[GAP-MIGRASI]` | Kritis (fitur inti POS) | ✅ **RESOLVED (2026-09-23)** — fix `env.flush_all()` di test, diverifikasi 3+ run bersih berturut-turut |
 | MF-46 | **RESOLVED 2026-09-23 (lihat `MF-46 (lanjutan 2)`)** — atribusi root cause DIKOREKSI: bukan kontensi Postgres/paralelisme/"tool fatigue", tapi spesifik ke browser tool yang dipakai (Playwright merender sempurna di server+DB+menit yang SAMA saat Browser pane blank). Ketiga item yang sempat blocked (`pin_message` AC-06-01, `pos_margin_threshold` AC-03-03, `sale_margin_threshold` visual smoke) SUDAH dieksekusi live dan LULUS. Teks asli di bawah dipertahankan apa adanya sebagai rekaman diagnosis awal. ~~[pin_message][process] Step 10 live Playwright execution (`AC-06-01` thread-switch, prioritas #1) BLOCKED total sesi ini — browser Playwright MCP genuinely SHARED antar agent sibling konkuren (bukan cuma container/DB), tab saling timpa terus-menerus, DAN container `pos_margin_sale_migration_20` sempat mengalami I/O contention berat (checkpoint Postgres >100 detik) akibat beban gabungan Step 10 paralel 3 modul — webclient Odoo blank/`document.body` kosong di SEMUA tab (bukan cuma punya AI ini), bukan bug kode `pin_message`~~ | Ditemukan Step 10 (QA Testing), 2026-09-23; ditutup 2026-09-23 (rerun terisolasi) | `[RESOLVED]` | Nihil sekarang (semua AC terdampak sudah ditutup `[DIKONFIRMASI]` lewat eksekusi live) | ✅ **Selesai — tidak butuh keputusan dev lagi.** Pelajaran yang dibawa ke depan: kalau satu browser tool menunjukkan `bodyLen` 6/15 padahal server sehat, coba browser tool yang satunya SEBELUM menyimpulkan blocker environment |
 | MF-48 | [pos_margin_threshold] **`BSL-018` DITUTUP** — carry-forward tanpa keputusan lewat TIGA project migrasi (17→18, 18→19, 19→20) akhirnya diakhiri atas keputusan dev. 2 tour baru ditulis: `AC-03-05` (nol dialog saat semua line di atas minimum, pakai `MutationObserver` supaya flash sekejap pun tertangkap) + assert teks/warna warning orderline dengan line kontrol. `0 failed, 0 error(s) of 4 tests`. **⚠️ Branch `migration/19.0` dan `migration/18.0` TIDAK punya test ini — 18.0/19.0 tetap tanpa coverage, jangan diasumsikan ikut tertutup.** 3 temuan sampingan (fixture `taxes_id: []` tidak menghapus pajak default; stored `minimum_sale_price_with_tax` bisa tertinggal kalau `taxes_id` ditulis di dalam `setUpClass` — BUKAN bug modul, diverifikasi recompute benar di ORM biasa; `.orderline.selected` berwarna sama dengan `.text-danger`) | Step 10 lanjutan, 2026-09-23/24 | `[RESOLVED]` | Nihil — gap test ditutup, tidak ada gap kode | ✅ **Selesai.** Tidak butuh keputusan dev lagi |
+| MF-49 | [sale_margin_threshold] `groups.xml` `implied_ids` memakai id kategori sebagai id grup → grup margin mengimplikasikan `base.group_system`; `_register_hook` memasukkan semua user internal ke grup itu | Pasca-rilis (2026-10-02) | `[DIWARISI-SOURCE]` | **Kritis** | ✅ RESOLVED (2026-10-02) — relasi dikosongkan, `20.0.1.0.1` |
+| MF-50 | [pos_margin_threshold][sale_margin_threshold] Hotfix `20.0.1.0.1`: ringkasan perubahan, bukti uji, temuan sampingan | Pasca-rilis (2026-10-02) | `[PROSES]` | Kritis | ✅ RESOLVED (2026-10-02) — `staging/20.0` `798013d` → `20.0` `9d62ccf` |
 
 **`DIFF-04` [pos_margin_threshold] — dikonfirmasi dev 2026-09-22, diterapkan.** Field pengganti
 `list_price` (form Product Template, bug lama `MF-24` yang dipertahankan) ditambah
@@ -65,6 +68,7 @@ belum ada keputusan dev, tidak blocking gate).
 ## Detail
 
 ### MF-20 — `security/groups.xml` implied_ids salah tipe
+> **Update 2026-10-02:** **Peringkat dinaikkan dari Sedang ke KRITIS; dugaan "inert/silent no-op" di bawah SALAH.** `base.module_category_hidden` adalah `ir.module.category` ber-id 5, bukan `res.groups`: `(4, ref(...))` memakai id itu sebagai id grup, sehingga "Sale Margin Action" mengimplikasikan grup ber-id 5 = `base.group_system` (Administrator) di 20.0 (`implied_ids` terbaca `[2, 5]`; 2 = `base.group_user_regular`). `_register_hook` memasukkan SEMUA user internal ke grup itu bila `pos_margin_threshold` tidak terpasang, sehingga semua user internal bisa menjadi Administrator. Dibuktikan di Docker 20.0: user internal baru yang masuk grup mendapat `base.group_system` dan `base.group_erp_manager`. Fix: `implied_ids = [(5, 0, 0)]`; sesudah upgrade `implied_ids` hanya `[2]` (default Odoo) dan user yang masuk grup tidak lagi mendapat hak Admin. RESOLVED di rilis `20.0.1.0.1`. Lihat `MF-49`/`MF-50`.
 **Ditemukan di:** Step 8, project 18.0→19.0 (2026-08-27) — dibawa masuk mentah ke project ini, belum
 diverifikasi ulang terhadap 20.0.
 **Tag:** `[DIWARISI-SOURCE]`
@@ -77,6 +81,7 @@ dipertahankan identik di 20.0 kecuali user memutuskan sebaliknya di project ini.
 **Keputusan pemilik modul:** *(kosong — belum diputuskan, dibawa dari project sebelumnya)*
 
 ### MF-21 — `_compute_warning` (`sale_margin_threshold`) tanpa `@api.depends`
+> **Update 2026-10-02:** RESOLVED di rilis `20.0.1.0.1`: `@api.depends('lst_price', 'minimum_sale_price')`. Sebelum fix `onchange` harga rendah tidak menghitung ulang `is_less_minimum_sale` (`{}`); sesudah `{"is_less_minimum_sale": true}`. Lihat `MF-50`.
 **Ditemukan di:** Step 8, project 18.0→19.0 (2026-08-27)
 **Tag:** `[DIWARISI-SOURCE]`
 **Ref:** `08_CODE_REVIEW.md` (project 18.0→19.0)
@@ -86,6 +91,7 @@ punya `@api.depends`, sehingga tidak auto-recompute saat field dependency beruba
 **Keputusan pemilik modul:** *(kosong — belum diputuskan, dibawa dari project sebelumnya)*
 
 ### MF-23 — `_compute_warning` (`pos_margin_threshold`) tanpa `@api.depends`
+> **Update 2026-10-02:** RESOLVED di rilis `20.0.1.0.1` (instance di `pos_margin_threshold`, fix sama seperti `MF-21`). Lihat `MF-50`.
 **Ditemukan di:** Step 8, project 18.0→19.0 (2026-08-27)
 **Tag:** `[DIWARISI-SOURCE]`
 **Ref:** `08_CODE_REVIEW.md` (project 18.0→19.0)
@@ -94,6 +100,7 @@ terpisah (duplikat pola) dari `MF-21`.
 **Keputusan pemilik modul:** *(kosong — belum diputuskan, dibawa dari project sebelumnya)*
 
 ### MF-24 — `list_price` view `position="replace"` menghapus atribut core diam-diam
+> **Update 2026-10-02:** RESOLVED di rilis `20.0.1.0.1`: blok `list_price` di `pos_margin_threshold/views/products.xml` diganti `position="attributes"` (hanya menambah `decoration-danger`), sehingga `options` native 20.0 (`currency_field`, `field_digits`) terbawa tanpa perlu disalin. Lihat `MF-50`.
 **Ditemukan di:** Step 8, project 18.0→19.0 (2026-08-27)
 **Tag:** `[DIWARISI-SOURCE]`
 **Ref:** `08_CODE_REVIEW.md` (project 18.0→19.0)
@@ -107,6 +114,7 @@ lihat `MF-25`.
 **Keputusan pemilik modul:** *(kosong — belum diputuskan, dibawa dari project sebelumnya)*
 
 ### MF-08 — `action_confirm()` singleton-assumption pecah di batch-confirm
+> **Update 2026-10-02:** RESOLVED di rilis `20.0.1.0.1`. Keputusan "dipertahankan" (2026-08-27) dibalik oleh user pada 2026-10-02. `action_confirm` membaca flag per record, melewati order Rental, dan menjalankan pengecekan harga sekali untuk sisanya. Sebelum fix confirm 2 order → `ValueError: Expected singleton`, semua draft; sesudah kedua order `sale`. Lihat `MF-50`.
 **Ditemukan di:** project 17.0→18.0, dikonfirmasi ulang project 18.0→19.0 (blast radius sama, tidak
 lebih parah), **mekanisme dikoreksi Step 1 project ini (2026-09-21)**
 **Tag:** `[DIWARISI-SOURCE]`
@@ -171,6 +179,7 @@ di-backport ke `migration/19.0` atau versi sebelumnya**, sesuai instruksi ekspli
 test_high_risk_ac.py`) — batch 3 record, 0 failed/0 error setelah fix (sebelumnya akan crash).
 
 ### MF-27 — `list_price`/`lst_price` view `position="replace"` di `sale_margin_threshold`
+> **Update 2026-10-02:** RESOLVED di rilis `20.0.1.0.1`: `position="replace"` pada `list_price` di `sale_margin_threshold/views/products.xml` diganti `position="attributes"`. File `views/product_template_views.xml` (yang juga memakai `replace` dan berbagi XML-ID dengan `products.xml`) dihapus dari manifest dan repo; view yang berlaku tidak berubah. Lihat `MF-50`.
 **Ditemukan di:** Step 1, project 19.0→20.0 (2026-09-21)
 **Tag:** `[DIWARISI-SOURCE]`
 **Ref:** pola identik `MF-24`/`MF-25`, modul berbeda (`sale_margin_threshold`)
@@ -951,6 +960,7 @@ dipakai tour test asli yang sudah terbukti lolos), hasilnya bersih seperti dijel
 ---
 
 ### MF-47 [pin_message] — Native 20.0 TERNYATA sudah punya fitur pin/unpin pesan sendiri, berjalan PARALEL dengan modul ini — TERBUKA, perlu keputusan dev
+> **Update 2026-10-02:** **Konteks tambahan (belum ada keputusan, `pin_message` 20.0 tidak diubah di hotfix `20.0.1.0.1`):** (1) di rilis 18.0 dan 19.0 dua kontrol pin milik modul sudah dirapikan menjadi satu toggle di bar hover plus marker ungu yang meng-unpin saat diklik (`MF-28` di dokumen 18→19 dan 17→18); `migration/20.0` masih membawa dua kontrol warisan dari 19.0. (2) Odoo 20 sendiri mencatat peringatan saat registry dimuat: `Two fields (is_pinned, pinned_at) of mail.message have the same label: Pinned. [Modules: pin_message and mail]`. (3) Bila modul dipertahankan, pola satu toggle dari 18/19 bisa dipakai, tetapi tetap menyisakan tombol bawaan.
 **Ditemukan di:** Step 10, 2026-09-23, saat verifikasi live `AC-06-01` — menu aksi pesan (klik "...")
 menampilkan **DUA entry "Pin" identik** pada thread `res.partner` yang sama.
 **Tag:** `[PERLU-KEPUTUSAN]` — bukan gap port kode, temuan arsitektural: fitur native BARU yang tidak
@@ -1303,6 +1313,36 @@ sendiri sudah rendah risiko/mekanis).
 
 ---
 
+### MF-49 [sale_margin_threshold] — `groups.xml` `implied_ids` memakai id kategori sebagai id grup: grup margin mewarisi Administrator — RESOLVED
+**Ditemukan di:** Pasca-rilis (2026-10-02), saat membaca ulang kode untuk menyiapkan perbaikan `MF-08`. Tercatat sebagai `MF-20` (Sedang, "kemungkinan inert") sejak project 18.0→19.0; dampak sebenarnya baru dibuktikan sekarang.
+**Tag:** `[DIWARISI-SOURCE]`
+**Prioritas:** **Kritis** — celah keamanan (eskalasi hak)
+**Lokasi:** `sale_margin_threshold/security/groups.xml` dan `sale_margin_threshold/models/product.py` (`_register_hook`)
+**Deskripsi:** `eval="[(4, ref('base.module_category_hidden'))]"` — `module_category_hidden` adalah `ir.module.category` (id 5 di 20.0), bukan `res.groups`. Id itu dipakai sebagai id grup = `base.group_system`. `_register_hook` memasukkan semua user internal ke grup itu selama `pos_margin_threshold` tidak terpasang.
+**Dampak (dibuktikan di Docker 20.0):** `implied_ids` grup terbaca `[2, 5]`; user internal biasa yang masuk grup mendapat `base.group_system` dan `base.group_erp_manager`. Di 18.0 hak itu bertahan setelah keluar grup; perilaku di 20.0 setelah keluar grup tidak diukur.
+**Fix:** `<field name="implied_ids" eval="[(5, 0, 0)]"/>`. Sesudah upgrade `implied_ids = [2]` (default Odoo `base.group_user_regular`, bukan sisa bug) dan user yang masuk grup `base.group_system=false`, `base.group_erp_manager=false`.
+**Catatan audit (operasional):** upgrade tidak mencabut hak yang mungkin sudah melekat pada database yang pernah menjalankan rilis 20.0 lama dengan `sale_margin_threshold` tanpa `pos_margin_threshold`. Rilis 20.0 baru dipublish 2026-10-02 dan diasumsikan belum dipakai di database nyata (keputusan user), jadi tidak ada audit yang dijadwalkan.
+**Status:** ✅ **RESOLVED** (2026-10-02) — rilis `20.0.1.0.1`.
+
+---
+
+### MF-50 [pos_margin_threshold][sale_margin_threshold] — Hotfix 20.0.1.0.1: ringkasan, bukti uji, temuan sampingan — RESOLVED
+**Ditemukan di:** Pasca-rilis (2026-10-02). Lingkup disepakati user: `MF-08` (dibalik), `MF-20`/`MF-49`, `MF-21`, `MF-23`, `MF-24`, `MF-27`, dan file view ganda di `sale_margin_threshold`. `pin_message` sengaja TIDAK disentuh (MF-47). `MF-03` (wizard `_name` ganda, kode identik) dan `_register_hook` dibiarkan.
+**Tag:** `[PROSES]`
+**Prioritas:** Kritis (karena `MF-49`)
+**Perubahan kode:** `sale_order.py` (`action_confirm` batch-safe), `groups.xml` (`implied_ids` `[(5, 0, 0)]`), `__manifest__.py` sale + penghapusan `views/product_template_views.xml` (XML-ID ganda dengan `products.xml`, yang kedua menimpa yang pertama), `models/product.py` pos+sale (`@api.depends`), `views/products.xml` pos+sale (`position="attributes"`); versi `pos_margin_threshold` dan `sale_margin_threshold` `20.0.1.0.1`, `pin_message` tetap `20.0.1.0`.
+**Bukti uji (Docker 20.0, database baru, RPC dan Playwright):**
+- `MF-08`: sebelum fix, confirm 2 order → `ValueError`/"Expected singleton", semua draft. Sesudah: kedua `sale`; batch dengan 1 di bawah minimum → wizard; mode blocking → `ValidationError` dan draft; wizard lewat `active_ids` → kedua `sale`; order tunggal tidak berubah.
+- `MF-49`: `implied_ids` `[2, 5]` → `[2]`; user baru dalam grup tidak lagi `base.group_system`/`base.group_erp_manager`.
+- View `product_template_inherit_sale_margin_threshold` tetap `product.template.common.form` sebelum dan sesudah.
+- `MF-21/23`: `onchange` harga rendah `{}` → `{"is_less_minimum_sale": true}`.
+- `MF-24/27`: arch form `list_price` memuat `options` native + `decoration-danger`; form produk menampilkan harga merah saat di bawah minimum, plus field Margin dan Minimum sale price (DOM + screenshot).
+**Temuan sampingan:** (1) di source `odoo20` yang terpasang, `mail_bot._init_odoobot` gagal dengan `RecursionError` (`discuss_channel._compute_member_indices`) saat web client pertama kali dimuat, sehingga `/odoo` memberi 500; bukan dari modul kita. Hanya dilewati di database uji dengan `odoobot_state = disabled`. (2) Di 20 setter parameter adalah `ir.config_parameter.set_bool` (`set_param` sudah tidak ada), sejalan dengan `MF-40`. (3) Peringatan label ganda `Pinned` ditambahkan sebagai konteks di `MF-47`.
+**Belum diuji:** tour test (rilis tidak membawa `test_*.py`); fix compute Rental (`MF-26`) dengan Rental terpasang. `sale_margin_threshold/tests/test_action_confirm.py` di branch ini masih menegaskan batch confirm harus gagal (`ValueError`) dan perlu disesuaikan bila branch dilanjutkan.
+**Status:** ✅ **RESOLVED** (2026-10-02) — `staging/20.0` `798013d` → `20.0` `9d62ccf`.
+
+---
+
 ## Cara Pakai
 
 Sama seperti `migration-tool/templates/FINDINGS.md` — lihat file itu untuk skema `MF-NNN`, kapan
@@ -1311,4 +1351,4 @@ file ini sebagai bagian gate. `MF-25`..`MF-47` sudah dipakai (`MF-25`..`MF-28` S
 Step 2, `MF-35`/`MF-36` smoke-test Docker 2026-09-22, `MF-37`/`MF-38` Step 6 dini, `MF-39` Step 4,
 `MF-40`..`MF-44` Step 9, `MF-45` Step 8, `MF-46` Step 10 — blocker proses/infra, bukan gap kode,
 `MF-47` Step 10 — native 20.0 punya fitur pin/unpin sendiri, tumpang tindih modul `pin_message`) — ID
-lanjutan finding BARU selanjutnya mulai dari `MF-48`.
+lanjutan finding BARU selanjutnya mulai dari `MF-51` (`MF-48` Step 10 penutupan `BSL-018`; `MF-49`/`MF-50` pasca-rilis hotfix `20.0.1.0.1`).
