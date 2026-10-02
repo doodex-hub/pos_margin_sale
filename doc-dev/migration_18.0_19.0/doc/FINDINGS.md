@@ -11,7 +11,8 @@
 lihat §"Adaptasi multi-modul" di `CLAUDE.md`, sama seperti project migrasi 17.0→18.0 sebelumnya di
 repo ini).
 **Migrasi:** 18.0 → 19.0
-**Terakhir update:** 2026-08-28 (port fix `pin_message` dari `migration/18.0` commit `82e25af`:
+**Terakhir update:** 2026-10-02 (pasca-rilis: MF-28 dua kontrol pin dirapikan di rilis 19.0 `19.0.1.0.1`; MF-29 fix MF-25/26/27
+tidak ikut ke rilis awal 19.0). Sebelumnya 2026-08-28 (port fix `pin_message` dari `migration/18.0` commit `82e25af`:
 MF-25/MF-26/MF-27 — ikon thumbtack + filter `message_type`/`thread.model`).
 MF-01..MF-10 adalah quirk/bug WARISAN dari project migrasi 17.0→18.0 sebelumnya (ID baru, dokumen
 self-contained) — lihat kolom "Ref asal" untuk ketertelusuran ke
@@ -57,6 +58,8 @@ dipilah pemilik modul saat review batch (konsisten pola `FINDINGS.md` project 17
 | MF-25 [pin_message] | Tombol pin inline render kotak kosong saat pesan belum dipin — class `fa-thumb-tack-o` tidak ada di Font Awesome 4.7 | Pasca-11 (port dari 18.0 `82e25af`) | `[DIWARISI-SOURCE]` | Rendah (kosmetik) | ✅ RESOLVED (2026-08-28) — unpinned pakai `fa-thumb-tack text-muted` |
 | MF-26 [pin_message] | `icon: "fa-thumb-tack"` tanpa prefix family — glyph action-menu jadi kotak kosong (konvensi 18.0+, tetap berlaku di 19.0) | Pasca-11 (port dari 18.0 `82e25af`) | `[GAP-MIGRASI]` | Rendah (kosmetik) | ✅ RESOLVED (2026-08-28) — `icon: "fa fa-thumb-tack"` |
 | MF-27 [pin_message] | `message.type`/`message.model` sudah mati sejak 18.0 — filter jenis-pesan tombol pin silent-fail, pin muncul di notifikasi OdooBot | Pasca-11 (port dari 18.0 `82e25af`) | `[GAP-MIGRASI]` | **Sedang-Tinggi** | ✅ RESOLVED (2026-08-28) — `message_type` + `thread?.model` |
+| MF-28 [pin_message] | Dua kontrol pin (tombol inline + action bar) memanggil `toggle_pin` yang sama; di 17.0 tombol inline tak terlihat tapi tetap bisa diklik | Pasca-rilis (2026-10-02, review visual) | `[DIWARISI-SOURCE]` | Sedang | ✅ RESOLVED (2026-10-02) — action bar = satu-satunya pin, marker ungu = unpin; `19.0.1.0.1` |
+| MF-29 [pin_message] | Fix MF-25/26/27 (`5876d01`, 28 Agu) TIDAK ikut ke `staging/19.0` → `19.0` — staging dipotong sehari sebelumnya (`3f74d55`), rilis awal 19.0 masih menampilkan ikon rusak | Pasca-rilis (2026-10-02) | `[PROSES]` | Sedang | ✅ RESOLVED (2026-10-02) — merge `migration/19.0` ke `staging/19.0` (`cfc0028`) |
 
 ---
 
@@ -464,7 +467,7 @@ SETIAP pesan yang di-render (potensi mematahkan action-menu pesan secara luas).
 **Ditemukan di:** Port dari `migration/18.0` commit `82e25af`. Code review 19.0 (I-3) sudah mencatat ini tapi tidak diubah sampai sekarang.
 **Tag:** `[GAP-MIGRASI]` (konvensi sejak 18.0, tetap di 19.0)
 **Lokasi:** `pin_message/static/src/js/pinMessage.js` (`icon`)
-**Fix:** `icon: "fa fa-thumb-tack"`. Dua tombol pin (inline + action menu) tetap desain 17.0, bukan bug.
+**Fix:** `icon: "fa fa-thumb-tack"`. Dua tombol pin (inline + action menu) tetap desain 17.0, bukan bug. **[Direvisi 2026-10-02: lihat `MF-28`, duplikasi ini akhirnya dirapikan.]**
 **Status:** ✅ **RESOLVED** (2026-08-28)
 
 ### MF-27 [pin_message] — `message.type`/`message.model` mati; filter jenis-pesan silent-fail — RESOLVED
@@ -474,6 +477,32 @@ SETIAP pesan yang di-render (potensi mematahkan action-menu pesan secara luas).
 **Fix:** `message.message_type`; `props.message.thread?.model`. `console.log` MF-10 sudah dihapus di 19.0, tidak dikembalikan.
 **Dampak yang diperbaiki:** tombol pin tidak lagi muncul di notifikasi OdooBot / notification / auto_comment.
 **Status:** ✅ **RESOLVED** (2026-08-28)
+
+---
+
+### MF-28 [pin_message] — Dua kontrol pin memanggil `toggle_pin` yang sama; tombol inline tak terlihat tapi bisa diklik (17.0) — RESOLVED
+**Ditemukan di:** Pasca-rilis (2026-10-02), review visual user di Docker 19.0 saat menyelidiki `MF-47` (project 19.0→20.0). Di 19.0 rilis awal muncul "dua pin" dengan satu ikon kotak kosong (`MF-26` belum ikut rilis, lihat `MF-29`).
+**Tag:** `[DIWARISI-SOURCE]` (desain 17.0), diperparah `MF-25`
+**Prioritas:** Sedang (UX; tidak ada error)
+**Lokasi:** `pin_message/static/src/xml/pinnedMessages.xml`, `pin_message/static/src/js/pinMessage.js`, `pin_message/static/src/js/message.js`, `pin_message/static/tests/tours/pin_message_tour.js`
+**Deskripsi:** Modul menampilkan DUA kontrol pin yang sama-sama memanggil `mail.message.toggle_pin`: (1) tombol inline di samping nama penulis (`pinnedMessages.xml`, handler `onMessagePin`) dan (2) action `"pins"` di bar hover pesan (`pinMessage.js`, handler `onClickPin`). Desain ini sudah ada sejak 17.0. Di 17.0 tombol inline TIDAK TERLIHAT saat pesan belum di-pin (`fa-thumb-tack-o` tidak punya glyph, lihat `MF-25`) tetapi tetap bisa diklik dan memanggil `toggle_pin`; setelah `MF-25` diperbaiki di 18.0 dan 19.0, kedua kontrol terlihat bersamaan sehingga duplikasinya menjadi nyata bagi user. Kartu di panel "Pinned Messages" memakai komponen pesan yang sama tetapi `hasActions="false"` (tanpa bar hover), jadi tombol inline di sana adalah satu-satunya jalan unpin langsung dari panel.
+**Perbandingan versi (dikonfirmasi lewat Docker, 2026-10-02):** 17.0 = 2 kontrol, inline tersembunyi saat belum di-pin; 18.0/19.0 (sebelum fix) = 2 kontrol terlihat; 20.0 = 2 kontrol modul + pin bawaan Odoo (`MF-47` di `migration_19.0_20.0/doc/FINDINGS.md`, belum diputuskan; `migration/20.0` masih membawa dua kontrol warisan dari 19.0).
+**Fix (rilis 19.0, branch `staging/19.0`):** bar hover = satu-satunya tempat PIN; labelnya dinamis ("Pin"/"Unpin" mengikuti `is_pinned`, `name: ({ message }) => ...`). Di samping nama, tombol hanya dirender saat `is_pinned` (pin ungu, tooltip "Unpin") dan klik padanya = unpin — juga berlaku di dalam kartu panel. Tombol "belum di-pin" dihapus, `onMessagePin` dihapus (tidak terpakai), selector tour dipindah ke `button[name='pins']`. Skenario "A" dipilih user (2026-10-02); 17.0 sengaja TIDAK diubah (keputusan user: fitur 17 dianggap final).
+**Verifikasi:** Playwright di Docker 19.0 (`pin_message` terpasang, Contacts): pin lewat bar hover → pin ungu + panel "Pinned Messages" tampil, label jadi "Unpin"; klik pin ungu di thread → unpin; klik pin ungu di kartu panel → unpin; pesan sistem ("Contact created") tanpa pin; console 0 error/warning. Tour test BELUM dijalankan (rilis tidak membawa `test_*.py`); selector divalidasi manual ke DOM nyata.
+**Catatan cache:** URL bundle aset di Docker tidak berubah walau isi berubah (header `immutable`, 1 tahun) — wajib Ctrl+Shift+R saat menguji ulang; diduga artefak bind-mount Windows, bukan masalah rilis.
+**Status:** ✅ **RESOLVED** (2026-10-02) — branch `staging/19.0` `e7e9b7b` → `19.0` `7fd6ce8`, versi `pin_message` `19.0.1.0.1`.
+
+---
+
+### MF-29 [pin_message] — Fix MF-25/26/27 tidak ikut ke rilis 19.0 (staging dipotong sebelum commit fix) — RESOLVED
+**Ditemukan di:** Pasca-rilis (2026-10-02), saat user melihat ikon kotak kosong di Docker 19.0 padahal `MF-26` tercatat RESOLVED.
+**Tag:** `[PROSES]` — bukan gap kode; fix sudah ada dan benar, hanya tidak sampai ke branch rilis.
+**Prioritas:** Sedang (rilis publik menampilkan perilaku yang dokumen ini klaim sudah diperbaiki)
+**Kronologi:** `staging/19.0` dipotong dari `migration/19.0` di `3f74d55` (2026-08-27). Commit `5876d01` (2026-08-28) yang memuat `MF-25`/`MF-26`/`MF-27` ditambahkan SESUDAH itu, hanya di `migration/19.0`. Alur cleaning → staging → `19.0` tidak mengambilnya, sehingga `19.0` rilis tetap memuat `icon: "fa-thumb-tack"` (kotak kosong), `fa-thumb-tack-o`, dan filter `message.type` yang mati.
+**Dampak:** ikon aksi pin kotak kosong; tombol inline tak terlihat saat belum di-pin; tombol pin ikut muncul di notifikasi sistem.
+**Fix:** merge `migration/19.0` ke `staging/19.0` (commit `cfc0028`; hanya `5876d01` yang ikut, `doc-dev/` tetap dihapus seperti staging), lalu rilis bersama `MF-28`.
+**Pelajaran:** sebelum publish, cek `git log origin/staging/<v>..origin/migration/<v> -- <modul>` — commit kode modul yang belum ada di staging adalah tanda fix yang tertinggal.
+**Status:** ✅ **RESOLVED** (2026-10-02)
 
 ---
 
