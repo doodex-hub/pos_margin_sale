@@ -32,7 +32,7 @@ registry.category("web_tour.tours").add("pin_message_toggle_pin_tour", {
             {
                 content: "click the inline pin button (pinnedMessages.xml patch, next to author name)",
                 trigger:
-                    ".o-mail-Message:contains('Pin message migration test note') button:has(.fa-thumb-tack-o)",
+                    ".o-mail-Message:contains('Pin message migration test note') button:has(.fa-thumb-tack.text-muted)",
                 run: "click",
             },
             {

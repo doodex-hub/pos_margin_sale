@@ -34,10 +34,13 @@
        t-inherit-mode="extension">
         <xpath expr="//span[hasclass('o-mail-Message-author')]"
                position="after">
-            <t t-if="props.message.type !== 'notification' and props.message.type !== 'auto_comment' and props.message.type !== 'user_notification' and !props.message.is_discussion and props.message.model !== 'mail.activity.thread'">
+            <t t-if="props.message.message_type !== 'notification' and props.message.message_type !== 'auto_comment' and props.message.message_type !== 'user_notification' and !props.message.is_discussion and props.message.thread?.model !== 'mail.activity.thread'">
                 <button class="btn btn-link"
                         t-on-click="() => this.onMessagePin(props.message.id)">
-                    <i t-attf-class="fa {{ props.message.is_pinned ? 'fa-thumb-tack text-primary' : 'fa-thumb-tack-o' }}"
+                    <!-- Font Awesome 4.7 (shipped by Odoo) has no outline thumb-tack variant:
+                         fa-thumb-tack-o maps to no glyph and renders as an empty box, so the
+                         unpinned state uses the solid icon dimmed instead. -->
+                    <i t-attf-class="fa {{ props.message.is_pinned ? 'fa-thumb-tack text-primary' : 'fa-thumb-tack text-muted' }}"
                        role="img"
                        t-att-aria-label="props.message.is_pinned ? 'Unpin Message' : 'Pin Message'"/>
                 </button>
