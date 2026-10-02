@@ -2,6 +2,10 @@
 <odoo>
     <record id="group_sale_margin_action" model="res.groups">
         <field name="name">Sale Margin Action</field>
-        <field name="implied_ids" eval="[(4, ref('base.module_category_hidden'))]"/>
+        <!-- base.module_category_hidden is an ir.module.category, not a res.groups: (4, ref(...)) used
+             its id as a group id and made this group imply base.group_system (Administrator on
+             20.0), so every member (the hook adds all internal users) gained admin rights. Clear
+             the relation on install and upgrade. -->
+        <field name="implied_ids" eval="[(5, 0, 0)]"/>
     </record>
 </odoo>
