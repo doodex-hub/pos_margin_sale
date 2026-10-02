@@ -11,18 +11,20 @@ class SaleOrder(models.Model):
 
     def _compute_is_rental_order_installed(self):
         for record in self:
-            if hasattr(self, 'is_rental_order') and self.is_rental_order:
+            if hasattr(record, 'is_rental_order') and record.is_rental_order:
                 record.is_rental_order_installed_true = True
             else:
                 record.is_rental_order_installed_true = False
 
     def action_confirm(self):
-
-        if self.is_rental_order_installed_true:
-            return super(SaleOrder, self).action_confirm()  
+        # `self` can hold several orders (list view > Action > Confirm), so the computed flag
+        # is read per record. Rental orders skip the price check; it runs once over the rest.
+        orders_to_check = self.filtered(lambda order: not order.is_rental_order_installed_true)
+        if not orders_to_check:
+            return super(SaleOrder, self).action_confirm()
 
         skip_check_price = self.env.context.get('skip_check_price')
-        check_product = self.check_product_price()
+        check_product = orders_to_check.check_product_price()
         blocking_warning = self.env['ir.config_parameter'].sudo().get_param('post_margin_sale.blocking_transaction_order')
         if len(check_product) > 0 and not skip_check_price:
             product_str = ('\n').join(f" {i + 1}. {product.display_name} minimum price is {product.currency_id.symbol}. {product.minimum_sale_price:.2f}" for i,product in enumerate(check_product))
