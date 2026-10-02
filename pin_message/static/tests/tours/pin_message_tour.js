@@ -30,10 +30,20 @@ registry.category("web_tour.tours").add("pin_message_toggle_pin_tour", {
                 trigger: ".o-mail-Message:contains('Pin message migration test note')",
             },
             {
-                content: "click the inline pin button (pinnedMessages.xml patch, next to author name)",
+                content: "hover the message to reveal its actions bar",
+                trigger: ".o-mail-Message:contains('Pin message migration test note')",
+                run: "hover",
+            },
+            {
+                content: "click the Pin action in the actions bar (the only pin toggle)",
                 trigger:
-                    ".o-mail-Message:contains('Pin message migration test note') button:has(.fa-thumb-tack-o)",
+                    ".o-mail-Message:contains('Pin message migration test note') .o-mail-Message-actions button[name='pins']",
                 run: "click",
+            },
+            {
+                content: "the pinned indicator (not a button) appears next to the author name",
+                trigger:
+                    ".o-mail-Message:contains('Pin message migration test note') i.fa-thumb-tack.text-primary",
             },
             {
                 content: "Pinned Messages section appears with badge 1",
@@ -50,9 +60,14 @@ registry.category("web_tour.tours").add("pin_message_toggle_pin_tour", {
                 timeout: 15000,
             },
             {
-                content: "unpin via the same inline button (now showing the pinned icon)",
+                content: "hover the message again to reveal its actions bar",
+                trigger: ".o-mail-Message:contains('Pin message migration test note')",
+                run: "hover",
+            },
+            {
+                content: "unpin via the same action (now labelled Unpin)",
                 trigger:
-                    ".o-mail-Message:contains('Pin message migration test note') button:has(.fa-thumb-tack.text-primary)",
+                    ".o-mail-Message:contains('Pin message migration test note') .o-mail-Message-actions button[name='pins']",
                 run: "click",
             },
             {
