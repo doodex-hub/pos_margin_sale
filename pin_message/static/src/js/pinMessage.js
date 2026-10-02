@@ -21,7 +21,9 @@ messageActionsRegistry.add("pins", {
     // Odoo 18.0+ message actions carry the full icon class, family prefix included
     // ("fa fa-reply" in core); 17.0 supplied the "fa" base class from the template.
     icon: "fa fa-thumb-tack",
-    name: _t("Pin"),
+    // Single pin control: this action is the only toggle. The purple icon next to the author
+    // (pinnedMessages.xml) is an indicator only.
+    name: ({ message }) => (message.is_pinned ? _t("Unpin") : _t("Pin")),
     onSelected: ({ owner }) => owner.onClickPin(),
     sequence: 15,
 });

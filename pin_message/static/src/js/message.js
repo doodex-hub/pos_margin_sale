@@ -25,8 +25,4 @@ patch(Message.prototype, {
             }
         }
     },
-    async onMessagePin(){
-        await this.orm.call("mail.message", "toggle_pin", [[this.props.message.id]]);
-        this.props.message.is_pinned = !this.props.message.is_pinned;
-    }
 });
