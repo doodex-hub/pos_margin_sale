@@ -10,7 +10,7 @@
     'data': [
     ],
     'images': [
-        'static/description/banner.png',
+        'static/description/banner.gif',
         'static/description/icon.png',
     ],
     "assets": {
