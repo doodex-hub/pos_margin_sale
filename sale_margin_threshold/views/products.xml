@@ -4,8 +4,8 @@
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_form_view"/>
         <field name="arch" type="xml">
-            <field name="list_price" position="replace">
-                <field name="list_price" decoration-danger="list_price &lt; minimum_sale_price" widget="monetary"/>
+            <field name="list_price" position="attributes">
+                <attribute name="decoration-danger">list_price &lt; minimum_sale_price</attribute>
             </field>
             <field name="categ_id" position="before">
                 <field name="module_pos_margin_threshold" invisible="1"/>
@@ -38,8 +38,8 @@
         <field name="model">product.product</field>
         <field name="inherit_id" ref="product.product_variant_easy_edit_view"/>
         <field name="arch" type="xml">
-            <field name="lst_price" position="replace">
-                <field name="lst_price" decoration-danger="is_less_minimum_sale" widget="monetary" />
+            <field name="lst_price" position="attributes">
+                <attribute name="decoration-danger">is_less_minimum_sale</attribute>
             </field>
             <group name="pricing" position="inside">
                 <field name="module_pos_margin_threshold" invisible="1"/>
