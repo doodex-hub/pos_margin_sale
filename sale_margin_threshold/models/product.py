@@ -80,6 +80,7 @@ class ProductProduct(models.Model):
         for rec in self:
             rec.product_tmpl_id.write({'margin_sale': rec.margin_sale})
 
+    @api.depends('lst_price', 'minimum_sale_price')
     def _compute_warning(self):
         for rec in self:
             rec.is_less_minimum_sale = rec.lst_price < rec.minimum_sale_price

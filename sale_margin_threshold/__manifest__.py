@@ -26,7 +26,6 @@
     'data': [
         'security/groups.xml',
         'security/ir.access.csv',
-        'views/product_template_views.xml',
         'views/products.xml',
         'views/res_config_settings.xml',
         'views/sale_order.xml',

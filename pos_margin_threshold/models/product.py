@@ -74,6 +74,7 @@ class ProductProduct(models.Model):
             tax_amount = sum(tax.amount for tax in rec.product_tmpl_id.taxes_id)
             rec.minimum_sale_price_with_tax = rec.minimum_sale_price * (1 + tax_amount / 100)
 
+    @api.depends('lst_price', 'minimum_sale_price')
     def _compute_warning(self):
         for rec in self:
             rec.is_less_minimum_sale = rec.lst_price < rec.minimum_sale_price
